@@ -1,13 +1,87 @@
-'use client';
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUser, faShoppingCart } from "@fortawesome/free-solid-svg-icons";
+import { faUser, faShoppingCart, faSearch, faBars } from "@fortawesome/free-solid-svg-icons";
+import { useState, useEffect } from "react";
 
-export default function Header() {
+interface Category {
+  _id: string;
+  name: string;
+  books: string[];
+}
+
+interface Book {
+  _id: string;
+  bookName: string;
+  title: string;
+  price: number;
+  imageUrl: string;
+  subCategory: string;
+  viewCount: number;
+}
+
+export default function Header({ onSearch }: { onSearch: (results: Book[]) => void }) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/bookstore/categories');
+        if (!response.ok) throw new Error('Failed to fetch categories');
+        const data = await response.json();
+        const validCategories = data.filter((cat: any) => cat.books.length > 0 || cat.name === "Request Your Book").map((cat: any) => ({
+          _id: cat._id,
+          name: cat.name,
+          books: cat.books,
+        }));
+        if (!validCategories.some((cat: Category) => cat.name === "Request Your Book")) {
+          validCategories.push({ _id: "static-request", name: "Request Your Book", books: [] });
+        }
+        setCategories(validCategories);
+      } catch (err) {
+        setError('Error loading categories. Please try again later.');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+
+    try {
+      const allBooks: Book[] = [];
+      for (const category of categories) {
+        const response = await fetch(`http://localhost:5000/api/bookstore/categories/${category.name.replace(/ /g, '-')}`);
+        if (response.ok) {
+          const data = await response.json();
+          allBooks.push(...data.books);
+        }
+      }
+      const filteredBooks = allBooks.filter(book =>
+        book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        book.bookName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        book.subCategory.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      onSearch(filteredBooks);
+    } catch (err) {
+      console.error('Search error:', err);
+    }
+  };
+
   return (
-    <div>
-      <div className="bg-white text-black px-29 flex justify-between items-center">
+    <div className="bg-white text-black font-sans">
+      {/* Top Bar */}
+      <div className="px-4 sm:px-6 lg:px-8 py-2 flex justify-between items-center">
         <div className="flex items-center">
           <Link href="/">
             <Image
@@ -18,82 +92,71 @@ export default function Header() {
               className="ml-2 rounded-full hover:opacity-80 transition-opacity duration-300"
             />
           </Link>
-          <input
-            type="text"
-            placeholder="Search for The Intelligent Investor"
-            className="ml-4 p-2 rounded border border-gray-300 w-64"
-          />
+          <div className="relative max-w-xl ml-4 hidden sm:block">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search for The Intelligent Investor"
+              className="p-4 rounded border border-gray-300 w-72 sm:w-96 md:w-150 pr-10 text-sm sm:text-base"
+            />
+            <FontAwesomeIcon
+              icon={faSearch}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+              onClick={handleSearch}
+            />
+          </div>
         </div>
         <div className="flex items-center space-x-4">
-          <div className="flex items-center">
+          <div className="flex items-center text-sm sm:text-base">
             <span className="text-orange-500 mr-2">Need help? Call us:</span>
             <span className="text-black">+91 7977250185</span>
           </div>
-          <Link href="/sign-in" className=" hover:underline text-black">
-            <FontAwesomeIcon icon={faUser} className="text-lg" />
+          <Link href="/login" className="hover:underline text-black">
+            <FontAwesomeIcon icon={faUser} className="text-lg sm:text-xl" title="Sign In" />
           </Link>
           <Link href="/cart" className="relative text-black hover:underline">
-            <FontAwesomeIcon icon={faShoppingCart} className="text-lg" />
-            
+            <FontAwesomeIcon icon={faShoppingCart} className="text-lg sm:text-xl" title="Cart" />
           </Link>
         </div>
       </div>
-      <nav className="bg-yellow-200 p-4">
-        <ul className="flex justify-around items-center px-29">
-          <li>
-            <Link href="/" className="text-gray-800 hover:underline">
-              Home
-            </Link>
-          </li>
-          <li>
-            <Link href="/school-books" className="text-gray-800 hover:underline">
-              School Books
-            </Link>
-          </li>
-          <li>
-            <Link href="/college-books" className="text-gray-800 hover:underline">
-              College Books
-            </Link>
-          </li>
-          <li>
-            <Link href="/ref-books" className="text-gray-800 hover:underline">
-              Ref. Books/Guides
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/entrance-exam-books"
-              className="text-gray-800 hover:underline"
-            >
-              Entrance Exam Books
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/competitive-exam-books"
-              className="text-gray-800 hover:underline"
-            >
-              Competitive Exam Books
-            </Link>
-          </li>
-          <li>
-            <Link href="/stationary" className="text-gray-800 hover:underline">
-              Stationary
-            </Link>
-          </li>
-          <li>
-            <Link href="/non-academics" className="text-gray-800 hover:underline">
-              Non Academics
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/request-book"
-              className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
-            >
-              Request Your Book
-            </Link>
-          </li>
+
+      {/* Navigation Menu */}
+      <nav className="bg-yellow-200 p-2 sm:p-4">
+        <div className="lg:hidden flex justify-end px-4">
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="text-black focus:outline-none"
+            aria-label="Toggle menu"
+          >
+            <FontAwesomeIcon icon={faBars} className="text-2xl" />
+          </button>
+        </div>
+        <ul
+          className={`${
+            isMenuOpen ? "block" : "hidden"
+          } lg:flex lg:justify-between lg:items-center p-2 sm:p-4 space-y-2 lg:space-y-0 lg:space-x-2 w-full overflow-x-hidden ${
+            isMenuOpen ? "bg-yellow-200" : ""
+          } lg:overflow-x-auto`}
+        >
+          {loading ? (
+            <li className="lg:inline-block">Loading...</li>
+          ) : error ? (
+            <li className="lg:inline-block text-red-500">{error}</li>
+          ) : (
+            categories.map(({ _id, name }) => (
+              <li key={_id} className="lg:inline-block">
+                <Link
+                  href={name === "Request Your Book" ? "/request-book" : `/${name.toLowerCase().replace(/ /g, '-')}`}
+                  className={`text-gray-800 font-bold text-sm sm:text-base p-2 hover:bg-orange-500 hover:text-white rounded transition-colors duration-300 block lg:inline-block ${
+                    name === "Request Your Book" ? "bg-black text-white" : ""
+                  }`}
+                >
+                  {name}
+                </Link>
+              </li>
+            ))
+          )}
         </ul>
       </nav>
     </div>

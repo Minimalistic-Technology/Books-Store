@@ -1,45 +1,61 @@
-"use client";
+'use client';
+
 import Header from "../components/header/page";
 import Footer from "../components/footer/page";
 import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faThLarge, faList } from "@fortawesome/free-solid-svg-icons";
 import { useState, useEffect } from "react";
-import Link from "next/link";
 
-export default function SchoolBooks() {
+export default function CompetitiveExamBooks() {
   const categories = [
-    "Class I", "Class II", "Class III", "Class IV", "Class V", "Class VI", "Class VII", "Class VIII",
-    "Class IX", "Class X", "Class XI", "Class XII", "Practical NoteBooks", "Reference Books&Notes",
-    "Maharashtra State Board", "SSC Board", "Navneet Digest", "Mathematics", "Business", "Commerce",
-    "School Textbooks",
+    "UPSC",
+    "SSC",
+    "Banking (IBPS/PO/Clerk)",
+    "Railway (RRB)",
+    "Defence (NDA/CDS)",
+    "State PSC",
+    "CAT/MBA",
+    "GATE",
+    "IELTS/TOEFL",
+    "Law Entrance (CLAT)",
+    "Miscellaneous",
+    "Class 2",
+    "Class 3",
+    "Class 4",
+    "Class 5",
+    "Class 6",
+    "Class 7",
+    "Class 8",
+    "Class 9",
   ];
 
   const [books, setBooks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]); // Empty by default
   const [priceRange, setPriceRange] = useState<string>("");
   const [status, setStatus] = useState<string>("");
-  const [booksToShow, setBooksToShow] = useState<number>(0);
+  const [booksToShow, setBooksToShow] = useState<number>(0); // Start with 0, update after fetch
   const [sortOption, setSortOption] = useState<string>("default");
 
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/bookstore/categories/School-Books');
+        const response = await fetch('http://localhost:5000/api/bookstore/categories/Competitive-Exam-Books');
         if (!response.ok) throw new Error('Failed to fetch books');
         const data = await response.json();
-        console.log('Fetched books with IDs:', data.books.map((b: any) => b._id)); // Debug log
+        console.log('Fetched books:', data.books); // Debug log
         setBooks(data.books || []);
         setBooksToShow(data.books.length || 0);
       } catch (err) {
         setError('Error loading books. Please try again later.');
-        console.error('Fetch error:', err);
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
+
     fetchBooks();
   }, []);
 
@@ -47,11 +63,9 @@ export default function SchoolBooks() {
     const classMatch = subCat.match(/Class (\d+)/);
     if (classMatch) {
       const num = parseInt(classMatch[1]);
-      return num <= 12 ? `Class ${["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"][num - 1]}` : subCat;
+      return num <= 9 ? `Class ${num}` : subCat;
     }
-    return subCat === "Practical Notebooks" ? "Practical NoteBooks" :
-           subCat === "Reference Books & Guides" ? "Reference Books&Notes" :
-           subCat === "School Textbooks" ? "School Textbooks" : subCat;
+    return subCat;
   };
 
   const bookCountPerCategory = categories.reduce((acc, category) => {
@@ -211,7 +225,7 @@ export default function SchoolBooks() {
             </div>
           </aside>
           <section className="w-full lg:w-3/4 pl-0 lg:pl-6">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-900">School Textbooks</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-gray-900">Competitive Exam Books</h2>
             <div className="mb-4 flex flex-col lg:flex-row justify-between items-center">
               <div className="flex items-center mb-2 lg:mb-0">
                 <span className="mr-2 text-3xl cursor-pointer" onClick={() => handleViewToggle("grid")}>
@@ -259,24 +273,23 @@ export default function SchoolBooks() {
                 style={{ maxHeight: viewMode === "list" ? "600px" : "auto", overflowY: viewMode === "list" ? "auto" : "visible" }}
               >
                 {filteredBooks.map((book) => (
-                  <Link href={`/overview1/${book._id}`} key={book._id} passHref>
-                    <div
-                      className={`border rounded-lg overflow-hidden shadow-md ${viewMode === "list" ? "w-full max-w-2xl mx-auto flex" : ""} cursor-pointer hover:shadow-lg transition-shadow duration-300`}
-                    >
-                      <Image
-                        src={book.imageUrl}
-                        alt={book.title}
-                        width={150}
-                        height={169}
-                        className="w-full h-auto object-cover"
-                      />
-                      <div className="p-2 text-center lg:text-left">
-                        <p className="text-sm text-gray-800">{book.title}</p>
-                        <p className="text-orange-500 font-bold mt-1">₹{book.price}.00</p>
-                        <p className="text-gray-600 text-xs mt-1">{mapSubCategory(book.subCategory)}</p>
-                      </div>
+                  <div
+                    key={book._id}
+                    className={`border rounded-lg overflow-hidden shadow-md ${viewMode === "list" ? "w-full max-w-2xl mx-auto flex" : ""}`}
+                  >
+                    <Image
+                      src={book.imageUrl}
+                      alt={book.title}
+                      width={150}
+                      height={169}
+                      className="w-full h-auto object-cover"
+                    />
+                    <div className="p-2 text-center lg:text-left">
+                      <p className="text-sm text-gray-800">{book.title}</p>
+                      <p className="text-orange-500 font-bold mt-1">₹{book.price}.00</p>
+                      <p className="text-gray-600 text-xs mt-1">{mapSubCategory(book.subCategory)}</p>
                     </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
             )}

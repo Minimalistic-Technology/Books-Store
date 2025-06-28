@@ -5,14 +5,17 @@ import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faThLarge, faList } from "@fortawesome/free-solid-svg-icons";
 import { useState, useEffect } from "react";
-import Link from "next/link";
 
 export default function SchoolBooks() {
   const categories = [
-    "Class I", "Class II", "Class III", "Class IV", "Class V", "Class VI", "Class VII", "Class VIII",
-    "Class IX", "Class X", "Class XI", "Class XII", "Practical NoteBooks", "Reference Books&Notes",
-    "Maharashtra State Board", "SSC Board", "Navneet Digest", "Mathematics", "Business", "Commerce",
-    "School Textbooks",
+    "Pens & Pencils",
+    "Notebooks & Registers",
+    "Art Supplies",
+    "Office Stationery",
+    "School Essentials",
+    "Calculators",
+    "Bags & Accessories",
+    "Miscellaneous",
   ];
 
   const [books, setBooks] = useState<any[]>([]);
@@ -21,21 +24,24 @@ export default function SchoolBooks() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<string>("");
   const [status, setStatus] = useState<string>("");
-  const [booksToShow, setBooksToShow] = useState<number>(0);
+  const [booksToShow, setBooksToShow] = useState<number>(8);
   const [sortOption, setSortOption] = useState<string>("default");
 
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/bookstore/categories/School-Books');
-        if (!response.ok) throw new Error('Failed to fetch books');
+        const response = await fetch('http://localhost:5000/api/bookstore/categories/Stationary');
+        if (!response.ok) throw new Error('Failed to fetch items');
         const data = await response.json();
-        console.log('Fetched books with IDs:', data.books.map((b: any) => b._id)); // Debug log
-        setBooks(data.books || []);
-        setBooksToShow(data.books.length || 0);
+        const mappedBooks = data.books.map((book: any) => ({
+          ...book,
+          class: book.subCategory,
+        }));
+        setBooks(mappedBooks);
+        setBooksToShow(mappedBooks.length);
       } catch (err) {
-        setError('Error loading books. Please try again later.');
-        console.error('Fetch error:', err);
+        setError('Error loading items. Please try again later.');
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -43,19 +49,8 @@ export default function SchoolBooks() {
     fetchBooks();
   }, []);
 
-  const mapSubCategory = (subCat: string) => {
-    const classMatch = subCat.match(/Class (\d+)/);
-    if (classMatch) {
-      const num = parseInt(classMatch[1]);
-      return num <= 12 ? `Class ${["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"][num - 1]}` : subCat;
-    }
-    return subCat === "Practical Notebooks" ? "Practical NoteBooks" :
-           subCat === "Reference Books & Guides" ? "Reference Books&Notes" :
-           subCat === "School Textbooks" ? "School Textbooks" : subCat;
-  };
-
   const bookCountPerCategory = categories.reduce((acc, category) => {
-    acc[category] = books.filter((book) => mapSubCategory(book.subCategory) === category).length;
+    acc[category] = books.filter((book) => book.class === category).length;
     return acc;
   }, {} as Record<string, number>);
 
@@ -63,13 +58,12 @@ export default function SchoolBooks() {
 
   const filteredBooks = books
     .filter((book) => {
-      const mappedSubCategory = mapSubCategory(book.subCategory);
-      const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(mappedSubCategory);
+      const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(book.class);
       const matchesPrice = priceRange === "" ||
-        (priceRange === "0to500" && book.price <= 500) ||
-        (priceRange === "500to1000" && book.price > 500 && book.price <= 1000) ||
-        (priceRange === "1000to1500" && book.price > 1000 && book.price <= 1500) ||
-        (priceRange === "1500to2000" && book.price > 1500 && book.price <= 2000);
+        (priceRange === "0to500" && getNumericPrice(book.price) <= 500) ||
+        (priceRange === "500to1000" && getNumericPrice(book.price) > 500 && getNumericPrice(book.price) <= 1000) ||
+        (priceRange === "1000to1500" && getNumericPrice(book.price) > 1000 && getNumericPrice(book.price) <= 1500) ||
+        (priceRange === "1500to2000" && getNumericPrice(book.price) > 1500 && getNumericPrice(book.price) <= 2000);
       const matchesStatus = status === "" || status === "inStock" || status === "outOfStock" || status === "onSale";
       return matchesCategory && matchesPrice && matchesStatus;
     })
@@ -116,6 +110,7 @@ export default function SchoolBooks() {
     imageUrl: string;
     subCategory: string;
     viewCount: number;
+    class: string;
   }
 
   type ViewMode = "grid" | "list";
@@ -143,7 +138,7 @@ export default function SchoolBooks() {
                   />
                   <label htmlFor={category} className="text-gray-800 text-sm">
                     {bookCountPerCategory[category] > 0
-                      ? `${category} - ${bookCountPerCategory[category]} books`
+                      ? `${category} - ${bookCountPerCategory[category]} items`
                       : category}
                   </label>
                 </div>
@@ -211,7 +206,7 @@ export default function SchoolBooks() {
             </div>
           </aside>
           <section className="w-full lg:w-3/4 pl-0 lg:pl-6">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-900">School Textbooks</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-gray-900">Stationery Items</h2>
             <div className="mb-4 flex flex-col lg:flex-row justify-between items-center">
               <div className="flex items-center mb-2 lg:mb-0">
                 <span className="mr-2 text-3xl cursor-pointer" onClick={() => handleViewToggle("grid")}>
@@ -246,37 +241,34 @@ export default function SchoolBooks() {
               </div>
             </div>
             {loading ? (
-              <p className="text-center text-gray-800">Loading books...</p>
+              <p className="text-center text-gray-800">Loading items...</p>
             ) : error ? (
               <p className="text-center text-red-500">{error}</p>
             ) : filteredBooks.length === 0 ? (
-              <p className="text-center text-gray-800">No books found matching the filters.</p>
+              <p className="text-center text-gray-800">No items found matching the filters.</p>
             ) : (
               <div
-                className={`grid gap-6 ${
-                  viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-1"
-                }`}
+                className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-1"}`}
                 style={{ maxHeight: viewMode === "list" ? "600px" : "auto", overflowY: viewMode === "list" ? "auto" : "visible" }}
               >
                 {filteredBooks.map((book) => (
-                  <Link href={`/overview1/${book._id}`} key={book._id} passHref>
-                    <div
-                      className={`border rounded-lg overflow-hidden shadow-md ${viewMode === "list" ? "w-full max-w-2xl mx-auto flex" : ""} cursor-pointer hover:shadow-lg transition-shadow duration-300`}
-                    >
-                      <Image
-                        src={book.imageUrl}
-                        alt={book.title}
-                        width={150}
-                        height={169}
-                        className="w-full h-auto object-cover"
-                      />
-                      <div className="p-2 text-center lg:text-left">
-                        <p className="text-sm text-gray-800">{book.title}</p>
-                        <p className="text-orange-500 font-bold mt-1">₹{book.price}.00</p>
-                        <p className="text-gray-600 text-xs mt-1">{mapSubCategory(book.subCategory)}</p>
-                      </div>
+                  <div
+                    key={book._id}
+                    className={`border rounded-lg overflow-hidden shadow-md ${viewMode === "list" ? "w-full max-w-2xl mx-auto flex" : ""}`}
+                  >
+                    <Image
+                      src={book.imageUrl}
+                      alt={book.title}
+                      width={150}
+                      height={169}
+                      className="w-full h-auto object-cover"
+                    />
+                    <div className="p-2 text-center lg:text-left">
+                      <p className="text-sm text-gray-800">{book.title}</p>
+                      <p className="text-orange-500 font-bold mt-1">₹{book.price}.00</p>
+                      <p className="text-gray-600 text-xs mt-1">Category: {book.class}</p>
                     </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
             )}

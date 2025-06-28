@@ -1,10 +1,24 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here */
+module.exports = {
   images: {
-    domains: ['harshbookcenter.com','www.amazon.in','www.selfstudys.com','scert.goa.gov.in','www.ncertbooks.guru','smartdigibook.com','www.schoolchamp.net'],
+    domains: [
+      'harshbookcenter.com',
+      'www.amazon.in',
+      'www.selfstudys.com',
+      'scert.goa.gov.in',
+      'www.ncertbooks.guru',
+      'smartdigibook.com',
+      'www.schoolchamp.net',
+      'm.media-amazon.com',
+      'via.placeholder.com',
+      'picsum.photos'
+    ],
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:5000/api/:path*',
+      },
+    ];
   },
 };
-
-export default nextConfig;

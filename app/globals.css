@@ -26,3 +26,7 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
 }
 
+.search-icon {
+  font-size: 1.2rem !important; /* Adjust as needed */
+  transition: none !important; /* Disable transitions on load if necessary */
+}

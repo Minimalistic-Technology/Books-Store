@@ -1,12 +1,26 @@
+
 "use client";
-import Header from "../components/header/page";
+import dynamic from "next/dynamic";
 import Footer from "../components/footer/page";
 import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faThLarge, faList } from "@fortawesome/free-solid-svg-icons";
 import { useState, useEffect } from "react";
+import Link from "next/link";
 
-export default function SchoolBooks() {
+// Dynamically import Header with SSR disabled to avoid hydration mismatch
+const Header = dynamic(() => import("../components/header/page"), { ssr: false });
+
+interface Item {
+  _id: string;
+  name: string;
+  price: number;
+  imageUrl: string;
+  subCategory: string;
+  viewCount: number;
+}
+
+export default function Stationery() {
   const categories = [
     "Pens & Pencils",
     "Notebooks & Registers",
@@ -18,52 +32,67 @@ export default function SchoolBooks() {
     "Miscellaneous",
   ];
 
-  const [books, setBooks] = useState<any[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState<string>("");
-  const [status, setStatus] = useState<string>("");
-  const [booksToShow, setBooksToShow] = useState<number>(8);
-  const [sortOption, setSortOption] = useState<string>("default");
+  const [priceRange, setPriceRange] = useState("");
+  const [status, setStatus] = useState("");
+  const [itemsToShow, setItemsToShow] = useState(0);
+  const [sortOption, setSortOption] = useState("default");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   useEffect(() => {
-    const fetchBooks = async () => {
+    const fetchItems = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/bookstore/categories/Stationary');
-        if (!response.ok) throw new Error('Failed to fetch items');
+        const response = await fetch('http://localhost:5000/api/bookstore/categories/Stationery');
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         const data = await response.json();
-        const mappedBooks = data.books.map((book: any) => ({
-          ...book,
-          class: book.subCategory,
-        }));
-        setBooks(mappedBooks);
-        setBooksToShow(mappedBooks.length);
+        console.log('Fetched items:', data.books);
+        setItems(data.books.map((item: any) => ({
+          _id: item._id,
+          name: item.title,
+          price: item.price,
+          imageUrl: item.imageUrl,
+          subCategory: item.subCategory,
+          viewCount: item.viewCount,
+        })));
+        setItemsToShow(data.books.length || 0);
       } catch (err) {
         setError('Error loading items. Please try again later.');
-        console.error(err);
+        console.error('Fetch error:', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchBooks();
+    fetchItems();
   }, []);
 
-  const bookCountPerCategory = categories.reduce((acc, category) => {
-    acc[category] = books.filter((book) => book.class === category).length;
+  const mapSubCategory = (subCat: string) => {
+    return (
+      subCat === "Pens and Pencils" ? "Pens & Pencils" :
+      subCat === "Notebooks and Registers" ? "Notebooks & Registers" :
+      subCat === "Office Stationary" ? "Office Stationery" :
+      categories.includes(subCat) ? subCat : "Miscellaneous"
+    );
+  };
+
+  const itemCountPerCategory = categories.reduce((acc, category) => {
+    acc[category] = items.filter((item) => mapSubCategory(item.subCategory) === category).length;
     return acc;
   }, {} as Record<string, number>);
 
   const getNumericPrice = (price: number) => price;
 
-  const filteredBooks = books
-    .filter((book) => {
-      const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(book.class);
+  const filteredItems = items
+    .filter((item) => {
+      const mappedSubCategory = mapSubCategory(item.subCategory);
+      const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(mappedSubCategory);
       const matchesPrice = priceRange === "" ||
-        (priceRange === "0to500" && getNumericPrice(book.price) <= 500) ||
-        (priceRange === "500to1000" && getNumericPrice(book.price) > 500 && getNumericPrice(book.price) <= 1000) ||
-        (priceRange === "1000to1500" && getNumericPrice(book.price) > 1000 && getNumericPrice(book.price) <= 1500) ||
-        (priceRange === "1500to2000" && getNumericPrice(book.price) > 1500 && getNumericPrice(book.price) <= 2000);
+        (priceRange === "0to500" && item.price <= 500) ||
+        (priceRange === "500to1000" && item.price > 500 && item.price <= 1000) ||
+        (priceRange === "1000to1500" && item.price > 1000 && item.price <= 1500) ||
+        (priceRange === "1500to2000" && item.price > 1500 && item.price <= 2000);
       const matchesStatus = status === "" || status === "inStock" || status === "outOfStock" || status === "onSale";
       return matchesCategory && matchesPrice && matchesStatus;
     })
@@ -72,7 +101,7 @@ export default function SchoolBooks() {
       else if (sortOption === "price-high-low") return getNumericPrice(b.price) - getNumericPrice(a.price);
       return 0;
     })
-    .slice(0, booksToShow);
+    .slice(0, itemsToShow);
 
   const handleCategoryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const category = e.target.id;
@@ -89,36 +118,22 @@ export default function SchoolBooks() {
     setStatus(e.target.id);
   };
 
-  const handleBooksToShowChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleItemsToShowChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
-    setBooksToShow(value === "all" ? books.length : parseInt(value));
+    setItemsToShow(value === "all" ? items.length : parseInt(value));
   };
 
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSortOption(e.target.value);
   };
 
-  useEffect(() => {
-    setBooksToShow(books.length);
-  }, [selectedCategories, priceRange, status, sortOption]);
-
-  interface Book {
-    _id: string;
-    bookName: string;
-    title: string;
-    price: number;
-    imageUrl: string;
-    subCategory: string;
-    viewCount: number;
-    class: string;
-  }
-
-  type ViewMode = "grid" | "list";
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
-
-  const handleViewToggle = (mode: ViewMode) => {
+  const handleViewToggle = (mode: "grid" | "list") => {
     setViewMode(mode);
   };
+
+  useEffect(() => {
+    setItemsToShow(items.length);
+  }, [selectedCategories, priceRange, status, sortOption]);
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -137,8 +152,8 @@ export default function SchoolBooks() {
                     onChange={handleCategoryChange}
                   />
                   <label htmlFor={category} className="text-gray-800 text-sm">
-                    {bookCountPerCategory[category] > 0
-                      ? `${category} - ${bookCountPerCategory[category]} items`
+                    {itemCountPerCategory[category] > 0
+                      ? `${category} - ${itemCountPerCategory[category]} items`
                       : category}
                   </label>
                 </div>
@@ -225,8 +240,8 @@ export default function SchoolBooks() {
               <div className="flex space-x-4">
                 <select
                   className="border rounded p-1 text-lg text-gray-800"
-                  onChange={handleBooksToShowChange}
-                  value={booksToShow === books.length ? "all" : booksToShow.toString()}
+                  onChange={handleItemsToShowChange}
+                  value={itemsToShow === items.length ? "all" : itemsToShow.toString()}
                 >
                   <option value="12">12</option>
                   <option value="24">24</option>
@@ -244,31 +259,38 @@ export default function SchoolBooks() {
               <p className="text-center text-gray-800">Loading items...</p>
             ) : error ? (
               <p className="text-center text-red-500">{error}</p>
-            ) : filteredBooks.length === 0 ? (
+            ) : filteredItems.length === 0 ? (
               <p className="text-center text-gray-800">No items found matching the filters.</p>
             ) : (
               <div
                 className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-1"}`}
                 style={{ maxHeight: viewMode === "list" ? "600px" : "auto", overflowY: viewMode === "list" ? "auto" : "visible" }}
               >
-                {filteredBooks.map((book) => (
-                  <div
-                    key={book._id}
-                    className={`border rounded-lg overflow-hidden shadow-md ${viewMode === "list" ? "w-full max-w-2xl mx-auto flex" : ""}`}
-                  >
-                    <Image
-                      src={book.imageUrl}
-                      alt={book.title}
-                      width={150}
-                      height={169}
-                      className="w-full h-auto object-cover"
-                    />
-                    <div className="p-2 text-center lg:text-left">
-                      <p className="text-sm text-gray-800">{book.title}</p>
-                      <p className="text-orange-500 font-bold mt-1">₹{book.price}.00</p>
-                      <p className="text-gray-600 text-xs mt-1">Category: {book.class}</p>
+                {filteredItems.map((item) => (
+                  <Link href={`/overview1/${item._id}?category=Stationery`} key={item._id} passHref>
+                    <div
+                      className={`border rounded-lg overflow-hidden shadow-md ${viewMode === "list" ? "w-full max-w-2xl mx-auto flex" : ""} cursor-pointer hover:shadow-lg transition-shadow duration-300`}
+                    >
+                      {item.imageUrl ? (
+                        <Image
+                          src={item.imageUrl}
+                          alt={item.name}
+                          width={150}
+                          height={169}
+                          className="w-full h-auto object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-[169px] flex items-center justify-center bg-gray-100">
+                          <p className="text-gray-500 text-sm">No image available</p>
+                        </div>
+                      )}
+                      <div className="p-2 text-center lg:text-left">
+                        <p className="text-sm text-gray-800">{item.name}</p>
+                        <p className="text-orange-500 font-bold mt-1">₹{item.price}.00</p>
+                        <p className="text-gray-600 text-xs mt-1">{mapSubCategory(item.subCategory)}</p>
+                      </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}

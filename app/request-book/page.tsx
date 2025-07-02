@@ -1,20 +1,34 @@
-"use client";
 
+"use client";
 import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faBookOpen,
-  faBookmark,
-  faCheckCircle,
-} from "@fortawesome/free-solid-svg-icons";
+import { faBookOpen, faBookmark, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
+
+interface FormData {
+  name: string;
+  email: string;
+  mobile: string;
+  bookTitle: string;
+  publisher: string;
+  author: string;
+  className: string;
+  message: string;
+}
+
+interface Errors {
+  name: string;
+  email: string;
+  bookTitle: string;
+  author: string;
+}
 
 const RequestBookPage: React.FC = () => {
   const router = useRouter();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: "",
     email: "",
     mobile: "",
@@ -25,24 +39,26 @@ const RequestBookPage: React.FC = () => {
     message: "",
   });
 
-  const [errors, setErrors] = useState({
+  const [errors, setErrors] = useState<Errors>({
     name: "",
     email: "",
     bookTitle: "",
     author: "",
   });
 
+  const [apiError, setApiError] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: keyof FormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    setErrors((prev) => ({ ...prev, [field]: "" })); // Clear error on change
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     let hasErrors = false;
 
-    const newErrors: any = {};
+    const newErrors: Partial<Errors> = {};
 
     if (!formData.name.trim()) {
       newErrors.name = "Name is required";
@@ -67,15 +83,43 @@ const RequestBookPage: React.FC = () => {
       hasErrors = true;
     }
 
-    setErrors(newErrors);
+    setErrors(newErrors as Errors);
 
     if (!hasErrors) {
-      console.log("Request submitted:", formData);
-      setIsSubmitted(true);
+      try {
+        const response = await fetch('http://localhost:5000/api/bookstore/book-requests', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            mobile: formData.mobile,
+            bookTitle: formData.bookTitle,
+            publisher: formData.publisher,
+            author: formData.author,
+            classLevel: formData.className, // Map className to classLevel
+            message: formData.message,
+          }),
+        });
 
-      setTimeout(() => {
-        router.push("/");
-      }, 3000);
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log("Request submitted:", result);
+        setIsSubmitted(true);
+        setApiError(null);
+
+        setTimeout(() => {
+          router.push("/");
+        }, 3000);
+      } catch (err) {
+        console.error("API error:", err);
+        setApiError("Failed to submit request. Please try again later.");
+      }
     }
   };
 
@@ -129,6 +173,7 @@ const RequestBookPage: React.FC = () => {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
+              {apiError && <p className="text-sm text-red-500 mb-4">{apiError}</p>}
               <InputField
                 label="Your Name"
                 id="name"
@@ -137,7 +182,6 @@ const RequestBookPage: React.FC = () => {
                 error={errors.name}
                 placeholder="Enter your name"
               />
-
               <InputField
                 label="Your Email"
                 id="email"
@@ -146,7 +190,6 @@ const RequestBookPage: React.FC = () => {
                 error={errors.email}
                 placeholder="Enter your email"
               />
-
               <InputField
                 label="Mobile"
                 id="mobile"
@@ -154,7 +197,6 @@ const RequestBookPage: React.FC = () => {
                 onChange={handleChange}
                 placeholder="Enter your mobile number"
               />
-
               <InputField
                 label="Book Title"
                 id="bookTitle"
@@ -163,7 +205,6 @@ const RequestBookPage: React.FC = () => {
                 error={errors.bookTitle}
                 placeholder="Enter the book title"
               />
-
               <InputField
                 label="Publisher"
                 id="publisher"
@@ -171,7 +212,6 @@ const RequestBookPage: React.FC = () => {
                 onChange={handleChange}
                 placeholder="Publisher name"
               />
-
               <InputField
                 label="Author"
                 id="author"
@@ -180,7 +220,6 @@ const RequestBookPage: React.FC = () => {
                 error={errors.author}
                 placeholder="Author name"
               />
-
               <InputField
                 label="Class"
                 id="className"
@@ -188,7 +227,6 @@ const RequestBookPage: React.FC = () => {
                 onChange={handleChange}
                 placeholder="e.g. 10th, 12th"
               />
-
               <div>
                 <label
                   htmlFor="message"
@@ -204,7 +242,6 @@ const RequestBookPage: React.FC = () => {
                   onChange={(e) => handleChange("message", e.target.value)}
                 />
               </div>
-
               <button
                 type="submit"
                 className="w-full bg-orange-600 text-white rounded-full py-2 font-semibold hover:bg-orange-700 focus:ring-2 focus:ring-orange-500 transition transform hover:scale-105"
@@ -229,9 +266,9 @@ const InputField = ({
   placeholder,
 }: {
   label: string;
-  id: string;
+  id: keyof FormData; // Fixed to match handleChange parameter
   value: string;
-  onChange: (field: string, value: string) => void;
+  onChange: (field: keyof FormData, value: string) => void;
   error?: string;
   placeholder?: string;
 }) => (

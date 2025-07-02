@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import Link from "next/link";
 import Image from "next/image";
@@ -9,25 +9,13 @@ import { useState, useEffect } from "react";
 interface Category {
   _id: string;
   name: string;
-  books: string[];
 }
 
-interface Book {
-  _id: string;
-  bookName: string;
-  title: string;
-  price: number;
-  imageUrl: string;
-  subCategory: string;
-  viewCount: number;
-}
-
-export default function Header({ onSearch }: { onSearch: (results: Book[]) => void }) {
+export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<{ _id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -35,13 +23,11 @@ export default function Header({ onSearch }: { onSearch: (results: Book[]) => vo
         const response = await fetch('http://localhost:5000/api/bookstore/categories');
         if (!response.ok) throw new Error('Failed to fetch categories');
         const data = await response.json();
-        const validCategories = data.filter((cat: any) => cat.books.length > 0 || cat.name === "Request Your Book").map((cat: any) => ({
-          _id: cat._id,
-          name: cat.name,
-          books: cat.books,
-        }));
+        // Filter out categories with empty books arrays and map to relevant fields
+        const validCategories = data.filter((cat: any) => cat.books.length > 0 || cat.name === "Request Your Book").map((cat: any) => ({ _id: cat._id, name: cat.name }));
+        // Ensure "Request Your Book" is always included as a static category
         if (!validCategories.some((cat: Category) => cat.name === "Request Your Book")) {
-          validCategories.push({ _id: "static-request", name: "Request Your Book", books: [] });
+          validCategories.push({ _id: "static-request", name: "Request Your Book" });
         }
         setCategories(validCategories);
       } catch (err) {
@@ -54,29 +40,6 @@ export default function Header({ onSearch }: { onSearch: (results: Book[]) => vo
 
     fetchCategories();
   }, []);
-
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
-
-    try {
-      const allBooks: Book[] = [];
-      for (const category of categories) {
-        const response = await fetch(`http://localhost:5000/api/bookstore/categories/${category.name.replace(/ /g, '-')}`);
-        if (response.ok) {
-          const data = await response.json();
-          allBooks.push(...data.books);
-        }
-      }
-      const filteredBooks = allBooks.filter(book =>
-        book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        book.bookName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        book.subCategory.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      onSearch(filteredBooks);
-    } catch (err) {
-      console.error('Search error:', err);
-    }
-  };
 
   return (
     <div className="bg-white text-black font-sans">
@@ -95,15 +58,13 @@ export default function Header({ onSearch }: { onSearch: (results: Book[]) => vo
           <div className="relative max-w-xl ml-4 hidden sm:block">
             <input
               type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search for The Intelligent Investor"
-              className="p-4 rounded border border-gray-300 w-72 sm:w-96 md:w-150 pr-10 text-sm sm:text-base"
+              className="p-2 rounded border border-gray-300 w-64 sm:w-80 md:w-96 pr-10 text-sm sm:text-base"
             />
             <FontAwesomeIcon
               icon={faSearch}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
-              onClick={handleSearch}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+              onClick={() => alert("Search functionality to be implemented")}
             />
           </div>
         </div>

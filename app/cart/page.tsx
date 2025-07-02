@@ -1,5 +1,5 @@
-"use client";
 
+"use client";
 import Header from "../components/header/page";
 import Footer from "../components/footer/page";
 import Link from "next/link";
@@ -7,22 +7,24 @@ import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUser, faShoppingCart } from "@fortawesome/free-solid-svg-icons";
+import { faShoppingCart } from "@fortawesome/free-solid-svg-icons";
+
+interface CartItem {
+  _id: string;
+  name: string;
+  price: number;
+  imageUrl: string;
+  condition: string;
+  discountedPrice: number;
+  quantity: number;
+}
 
 const CartPage: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-
-  // State to manage cart items (books)
-  const [cartItems, setCartItems] = useState<any[]>([]);
-
-  // State to manage address form visibility
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [showAddressForm, setShowAddressForm] = useState(false);
-
-  // State to manage payment form visibility
   const [showPaymentForm, setShowPaymentForm] = useState(false);
-
-  // State to manage address input
   const [address, setAddress] = useState({
     street: "",
     city: "",
@@ -31,79 +33,71 @@ const CartPage: React.FC = () => {
     country: "",
   });
 
-  // Load cart items from localStorage and handle new item from search params on mount
   useEffect(() => {
     const storedItems = JSON.parse(localStorage.getItem("cart") || "[]");
     setCartItems(storedItems);
 
-    // Handle new item passed via search params from Overview
     const id = searchParams.get("_id");
-    const title = searchParams.get("title");
+    const name = searchParams.get("name");
     const price = searchParams.get("price");
     const imageUrl = searchParams.get("imageUrl");
     const condition = searchParams.get("condition");
     const discountedPrice = searchParams.get("discountedPrice");
 
-    if (id && title && price && !storedItems.some((item: any) => item._id === id)) {
-      // Add new item only if it doesn't exist to prevent duplicates on refresh
-      const newItem = {
+    if (id && name && price && !storedItems.some((item: CartItem) => item._id === id)) {
+      const newItem: CartItem = {
         _id: id,
-        title,
+        name,
         price: parseFloat(price),
         imageUrl: imageUrl || "",
         condition: condition || "NEW - ORIGINAL PRICE",
         discountedPrice: discountedPrice ? parseFloat(discountedPrice) : 0,
-        quantity: 1, // Default quantity is 1
+        quantity: 1,
       };
       const updatedCart = [...storedItems, newItem];
       setCartItems(updatedCart);
       localStorage.setItem("cart", JSON.stringify(updatedCart));
+      console.log("Added new item to cart:", newItem);
     }
-    console.log("Loaded cart items:", storedItems); // Debug loaded items
   }, [searchParams]);
 
-  // Calculate total price
-  const getTotal = () => {
-    return cartItems.reduce(
-      (total: number, item: any) => total + (item.price || 0) * (item.quantity || 1),
-      0
-    );
+  const getEffectivePrice = (item: CartItem) => {
+    return item.condition === "OLD - 30% OFF" && item.discountedPrice > 0 ? item.discountedPrice : item.price;
   };
 
-  // Update quantity
+  const getTotal = () => {
+    return cartItems.reduce((total, item) => total + getEffectivePrice(item) * (item.quantity || 1), 0);
+  };
+
   const updateQuantity = (id: string, newQuantity: number) => {
-    const updatedCart = cartItems.map((item: any) =>
+    const updatedCart = cartItems.map((item) =>
       item._id === id ? { ...item, quantity: Math.max(1, newQuantity) } : item
     );
     setCartItems(updatedCart);
     localStorage.setItem("cart", JSON.stringify(updatedCart));
+    console.log("Updated quantity for item:", id, "to", newQuantity);
   };
 
-  // Remove item
   const removeItem = (id: string) => {
-    console.log("Attempting to remove item with id:", id); // Debug id to remove
-    console.log("Current cart before removal:", cartItems); // Debug current cart
-    const updatedCart = cartItems.filter((item: any) => item._id !== id); // Use _id for consistency
-    console.log("Cart after removal:", updatedCart); // Debug cart after removal
+    console.log("Removing item with id:", id);
+    const updatedCart = cartItems.filter((item) => item._id !== id);
     setCartItems(updatedCart);
     localStorage.setItem("cart", JSON.stringify(updatedCart));
+    console.log("Cart after removal:", updatedCart);
   };
 
-  // Handle address input change
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setAddress((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle address form submission
   const handleAddressSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log("Submitted address:", address);
     setShowAddressForm(false);
-    setShowPaymentForm(true); // Show payment form after address submission
+    setShowPaymentForm(true);
   };
 
-  // Payment form configuration
   const paymentForm = useForm({
     defaultValues: {
       paymentMethod: "",
@@ -117,27 +111,10 @@ const CartPage: React.FC = () => {
     },
   });
 
-  // Handle payment form submission
   const onPaymentSubmit = (data: any) => {
     console.log("Payment details submitted:", data);
-    // Simulate saving order and redirect to orders page
     const cartItems = JSON.parse(localStorage.getItem("cart") || "[]");
-
-    interface CartItem {
-      _id: string;
-      title: string;
-      price: number;
-      quantity: number;
-      imageUrl?: string;
-      condition?: string;
-      discountedPrice?: number;
-    }
-
-    interface OrderItem extends CartItem {
-      status: string;
-    }
-
-    const orderItems: OrderItem[] = cartItems.map((item: CartItem) => ({
+    const orderItems = cartItems.map((item: CartItem) => ({
       ...item,
       status: ["Delivered", "Shipping", "On the Way", "Out for Delivery"][Math.floor(Math.random() * 4)],
     }));
@@ -148,7 +125,6 @@ const CartPage: React.FC = () => {
     router.push("/orders");
   };
 
-  // Handle UPI verification (placeholder)
   const handleUpiVerify = () => {
     const upiId = paymentForm.getValues("upiId");
     console.log("Verifying UPI ID:", upiId);
@@ -173,28 +149,32 @@ const CartPage: React.FC = () => {
         ) : (
           <>
             <div className="space-y-6">
-              {cartItems.map((item: any) => (
+              {cartItems.map((item) => (
                 <div
                   key={item._id}
                   className="flex items-center justify-between bg-white p-4 rounded-lg shadow-md"
                 >
                   <img
-                    src={item.imageUrl} // No fallback image
-                    alt={item.title}
+                    src={item.imageUrl}
+                    alt={item.name}
                     className="w-24 h-32 object-cover rounded-md"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none"; // Hide if image fails
+                      (e.target as HTMLImageElement).src = "/placeholder-image.jpg"; // Fallback image
                     }}
                   />
                   <div className="flex-1 ml-4">
-                    <h3 className="text-lg font-semibold">{item.title}</h3>
-                    <p className="text-orange-500 font-bold mt-1">
-                      ₹
-                      {item.condition === "OLD - 35% OFF" && item.discountedPrice > 0
-                        ? item.discountedPrice
-                        : item.price}
-                    </p>
-                    <p className="text-sm text-gray-600">Condition: {item.condition || "NEW - ORIGINAL PRICE"}</p>
+                    <h3 className="text-lg font-semibold">{item.name}</h3>
+                    <div className="flex items-center space-x-2">
+                      {item.condition === "OLD - 30% OFF" && item.discountedPrice > 0 ? (
+                        <>
+                          <span className="text-sm text-gray-500 line-through">₹{item.price.toFixed(2)}</span>
+                          <span className="text-orange-500 font-bold">₹{item.discountedPrice.toFixed(2)}</span>
+                        </>
+                      ) : (
+                        <span className="text-orange-500 font-bold">₹{item.price.toFixed(2)}</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-600">Condition: {item.condition}</p>
                   </div>
                   <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-2">

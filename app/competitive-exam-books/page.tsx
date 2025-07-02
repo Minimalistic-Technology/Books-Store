@@ -1,11 +1,24 @@
-'use client';
 
-import Header from "../components/header/page";
+"use client";
+import dynamic from "next/dynamic";
 import Footer from "../components/footer/page";
 import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faThLarge, faList } from "@fortawesome/free-solid-svg-icons";
 import { useState, useEffect } from "react";
+import Link from "next/link";
+
+// Dynamically import Header with SSR disabled to avoid hydration mismatch
+const Header = dynamic(() => import("../components/header/page"), { ssr: false });
+
+interface Book {
+  _id: string;
+  title: string;
+  price: number;
+  imageUrl: string;
+  subCategory: string;
+  viewCount: number;
+}
 
 export default function CompetitiveExamBooks() {
   const categories = [
@@ -30,27 +43,28 @@ export default function CompetitiveExamBooks() {
     "Class 9",
   ];
 
-  const [books, setBooks] = useState<any[]>([]);
+  const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]); // Empty by default
-  const [priceRange, setPriceRange] = useState<string>("");
-  const [status, setStatus] = useState<string>("");
-  const [booksToShow, setBooksToShow] = useState<number>(0); // Start with 0, update after fetch
-  const [sortOption, setSortOption] = useState<string>("default");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [priceRange, setPriceRange] = useState("");
+  const [status, setStatus] = useState("");
+  const [booksToShow, setBooksToShow] = useState(0);
+  const [sortOption, setSortOption] = useState("default");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   useEffect(() => {
     const fetchBooks = async () => {
       try {
         const response = await fetch('http://localhost:5000/api/bookstore/categories/Competitive-Exam-Books');
-        if (!response.ok) throw new Error('Failed to fetch books');
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         const data = await response.json();
-        console.log('Fetched books:', data.books); // Debug log
+        console.log('Fetched books:', data.books);
         setBooks(data.books || []);
         setBooksToShow(data.books.length || 0);
       } catch (err) {
         setError('Error loading books. Please try again later.');
-        console.error(err);
+        console.error('Fetch error:', err);
       } finally {
         setLoading(false);
       }
@@ -118,26 +132,13 @@ export default function CompetitiveExamBooks() {
     setSortOption(e.target.value);
   };
 
+  const handleViewToggle = (mode: "grid" | "list") => {
+    setViewMode(mode);
+  };
+
   useEffect(() => {
     setBooksToShow(books.length);
   }, [selectedCategories, priceRange, status, sortOption]);
-
-  interface Book {
-    _id: string;
-    bookName: string;
-    title: string;
-    price: number;
-    imageUrl: string;
-    subCategory: string;
-    viewCount: number;
-  }
-
-  type ViewMode = "grid" | "list";
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
-
-  const handleViewToggle = (mode: ViewMode) => {
-    setViewMode(mode);
-  };
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -273,23 +274,30 @@ export default function CompetitiveExamBooks() {
                 style={{ maxHeight: viewMode === "list" ? "600px" : "auto", overflowY: viewMode === "list" ? "auto" : "visible" }}
               >
                 {filteredBooks.map((book) => (
-                  <div
-                    key={book._id}
-                    className={`border rounded-lg overflow-hidden shadow-md ${viewMode === "list" ? "w-full max-w-2xl mx-auto flex" : ""}`}
-                  >
-                    <Image
-                      src={book.imageUrl}
-                      alt={book.title}
-                      width={150}
-                      height={169}
-                      className="w-full h-auto object-cover"
-                    />
-                    <div className="p-2 text-center lg:text-left">
-                      <p className="text-sm text-gray-800">{book.title}</p>
-                      <p className="text-orange-500 font-bold mt-1">₹{book.price}.00</p>
-                      <p className="text-gray-600 text-xs mt-1">{mapSubCategory(book.subCategory)}</p>
+                  <Link href={`/overview1/${book._id}?category=Competitive-Exam-Books`} key={book._id} passHref>
+                    <div
+                      className={`border rounded-lg overflow-hidden shadow-md ${viewMode === "list" ? "w-full max-w-2xl mx-auto flex" : ""} cursor-pointer hover:shadow-lg transition-shadow duration-300`}
+                    >
+                      {book.imageUrl ? (
+                        <Image
+                          src={book.imageUrl}
+                          alt={book.title}
+                          width={150}
+                          height={169}
+                          className="w-full h-auto object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-[169px] flex items-center justify-center bg-gray-100">
+                          <p className="text-gray-500 text-sm">No image available</p>
+                        </div>
+                      )}
+                      <div className="p-2 text-center lg:text-left">
+                        <p className="text-sm text-gray-800">{book.title}</p>
+                        <p className="text-orange-500 font-bold mt-1">₹{book.price}.00</p>
+                        <p className="text-gray-600 text-xs mt-1">{mapSubCategory(book.subCategory)}</p>
+                      </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}

@@ -33,11 +33,11 @@ export default function Home() {
         onSearch={(results, query) => handleSearch(results, query)}
         If Header only passes results, you may need to update Header as well.
       */}
-      <Header onSearch={handleSearch} />
+      <Header  />
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Header */}
-      <Header onSearch={handleSearch} />
+      <Header  />
 
       {/* Main Content (Hero Section) */}
       <main className="container mx-auto p-4 flex-grow">

@@ -1,8 +1,10 @@
+// app/layout.tsx
+import type { Metadata } from "next";
 import "./globals.css";
 
-export const metadata = {
-  title: "Minimalistic Book Center",
-  description: "A minimalistic platform for book lovers",
+export const metadata: Metadata = {
+  title: "Books Store Admin",
+  description: "Admin panel for Books Store",
 };
 
 export default function RootLayout({
@@ -12,7 +14,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="flex h-screen bg-gray-100 overflow-hidden">
+        {children}
+      </body>
     </html>
   );
 }

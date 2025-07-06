@@ -1,4 +1,3 @@
-
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -19,7 +18,11 @@
 
 /* Global defaults */
 body {
+  margin: 0;
   font-family: var(--font-body);
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -29,4 +32,23 @@ h1, h2, h3, h4, h5, h6 {
 .search-icon {
   font-size: 1.2rem !important; /* Adjust as needed */
   transition: none !important; /* Disable transitions on load if necessary */
+}
+.banner {
+  @apply fixed top-0 left-0 w-full bg-yellow-500 text-white p-4 text-center z-50;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Optional: Hide inactive banners */
+.banner.inactive {
+  @apply hidden;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+/* Target the admin layout for full width on client */
+.admin-layout {
+  width: 100vw; /* Fallback for non-Tailwind environments */
 }

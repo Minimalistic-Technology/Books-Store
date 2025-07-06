@@ -10,7 +10,12 @@ module.exports = {
       'www.schoolchamp.net',
       'm.media-amazon.com',
       'via.placeholder.com',
-      'picsum.photos'
+      'picsum.photos',
+      'images.unsplash.com',
+      'plus.unsplash.com',
+      'unsplash.com',
+      '',
+      '',
     ],
   },
   async rewrites() {

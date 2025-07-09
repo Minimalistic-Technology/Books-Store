@@ -1,3 +1,4 @@
+// app/admin/site-settings/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -24,13 +25,12 @@ export default function SiteSettings() {
 
   const handleSave = (updatedSettings: SiteSettings) => {
     setSettings(updatedSettings);
-    // In a real app, you'd save to an API here
     console.log("Settings saved:", updatedSettings);
   };
 
   return (
-    <div className="space-y-6 w-full h-full">
-      <h1 className="text-3xl font-bold">Site Settings - Books Store</h1>
+    <div className="space-y-8 p-4 animate__fadeIn">
+      <h1 className="text-4xl font-bold text-yellow-900">Site Settings - Books Store</h1>
       <SiteSettingsForm settings={settings} onSave={handleSave} />
     </div>
   );

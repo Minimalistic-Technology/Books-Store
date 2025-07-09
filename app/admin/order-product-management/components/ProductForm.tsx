@@ -1,3 +1,4 @@
+// components/ProductForm.tsx
 "use client";
 
 import { useState } from "react";
@@ -32,12 +33,12 @@ export default function ProductForm({ product, onClose, onSave }: ProductFormPro
   };
 
   return (
-    <div className="fixed inset-0 bg-[#fff3cd] bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md overflow-y-auto" style={{ maxHeight: "80vh" }}>
-        <h2 className="text-2xl font-bold mb-4 text-gray-800">
+    <div className="fixed inset-0 bg-yellow-500 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
+      <div className="card p-6 max-w-md w-full animate__zoomIn">
+        <h2 className="text-2xl font-semibold mb-4 text-yellow-900">
           {product ? "Edit Product" : "Add New Product"}
         </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700">Product Name</label>
             <input
@@ -45,7 +46,7 @@ export default function ProductForm({ product, onClose, onSave }: ProductFormPro
               name="name"
               value={formData.name}
               onChange={handleChange}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
               required
             />
           </div>
@@ -57,7 +58,7 @@ export default function ProductForm({ product, onClose, onSave }: ProductFormPro
               value={formData.price}
               onChange={handleChange}
               step="0.01"
-              className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
               required
             />
           </div>
@@ -68,7 +69,7 @@ export default function ProductForm({ product, onClose, onSave }: ProductFormPro
               name="inventory"
               value={formData.inventory}
               onChange={handleChange}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
               required
             />
           </div>
@@ -78,7 +79,7 @@ export default function ProductForm({ product, onClose, onSave }: ProductFormPro
               name="description"
               value={formData.description}
               onChange={handleChange}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-20 resize-y"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 h-24 resize-y"
               required
             />
           </div>
@@ -86,13 +87,13 @@ export default function ProductForm({ product, onClose, onSave }: ProductFormPro
             <button
               type="button"
               onClick={onClose}
-              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+              className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-all"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              className="btn-primary px-4 py-2 rounded-lg hover:bg-teal-700 transition-all"
             >
               Save
             </button>

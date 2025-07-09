@@ -1,3 +1,4 @@
+// components/CommentReviewForm.tsx
 "use client";
 
 import { useState } from "react";
@@ -66,9 +67,9 @@ export default function CommentReviewForm({ item, onClose, onSave }: CommentRevi
   };
 
   return (
-    <div className="fixed inset-0 bg-[#fff3cd] bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-lg overflow-y-auto" style={{ maxHeight: "80vh" }}>
-        <h2 className="text-2xl font-bold mb-4 text-gray-800">
+    <div className="fixed inset-0 bg-yellow-500 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
+      <div className="card p-6 max-w-lg w-full animate__zoomIn">
+        <h2 className="text-2xl font-semibold mb-4 text-yellow-900">
           {item ? "Moderate Comment/Review" : "Add Comment/Review"}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -79,7 +80,7 @@ export default function CommentReviewForm({ item, onClose, onSave }: CommentRevi
               value={formData.author}
               onChange={handleChange}
               placeholder="Author Name"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
               required
             />
             <input
@@ -88,25 +89,25 @@ export default function CommentReviewForm({ item, onClose, onSave }: CommentRevi
               value={formData.bookName}
               onChange={handleChange}
               placeholder="Book Name"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
               required
             />
-            {/* <textarea
+            <textarea
               name="content"
               value={formData.content}
               onChange={handleChange}
               placeholder="Comment/Review Content"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-40 resize-y"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 h-40 resize-y"
               required
-            /> */}
-            <div className="flex items-center space-x-4">
+            />
+            <div className="flex items-center space-x-6">
               <label className="flex items-center">
                 <input
                   type="checkbox"
                   name="isApproved"
                   checked={formData.isApproved}
                   onChange={handleChange}
-                  className="mr-2"
+                  className="mr-2 h-5 w-5 text-teal-600 focus:ring-teal-500 border-gray-300 rounded transition-all"
                 />
                 Approve
               </label>
@@ -116,7 +117,7 @@ export default function CommentReviewForm({ item, onClose, onSave }: CommentRevi
                   name="isSpam"
                   checked={formData.isSpam}
                   onChange={handleChange}
-                  className="mr-2"
+                  className="mr-2 h-5 w-5 text-red-600 focus:ring-red-500 border-gray-300 rounded transition-all"
                 />
                 Mark as Spam
               </label>
@@ -127,27 +128,27 @@ export default function CommentReviewForm({ item, onClose, onSave }: CommentRevi
               value={formData.seoTitle}
               onChange={handleChange}
               placeholder="SEO Title (e.g., Book Review Comment)"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
             <textarea
               name="seoDescription"
               value={formData.seoDescription}
               onChange={handleChange}
               placeholder="SEO Description (e.g., User review for book)"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-20 resize-y"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 h-20 resize-y"
             />
           </div>
           <div className="flex justify-end space-x-4">
             <button
               type="button"
               onClick={onClose}
-              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+              className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-all"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              className="btn-primary px-4 py-2 rounded-lg hover:bg-teal-700 transition-all"
             >
               Save
             </button>

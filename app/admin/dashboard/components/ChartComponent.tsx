@@ -1,3 +1,4 @@
+// components/ChartComponent.tsx
 "use client";
 
 import { Line } from "react-chartjs-2";
@@ -19,20 +20,23 @@ interface ChartComponentProps {
 
 export default function ChartComponent({ data }: ChartComponentProps) {
   return (
-    <Line
-      data={data}
-      options={{
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { position: "top" },
-          title: { display: true, text: "Daily & Monthly Trends" },
-        },
-        scales: {
-          y: { beginAtZero: true, title: { display: true, text: "Value" } },
-          x: { title: { display: true, text: "Date" } },
-        },
-      }}
-    />
+    <div className="w-full h-full">
+      <Line
+        data={data}
+        options={{
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: "top", labels: { font: { family: "Lora" } } },
+            title: { display: true, text: "Daily & Monthly Trends", font: { family: "Lora", size: 18 } },
+          },
+          scales: {
+            y: { beginAtZero: true, title: { display: true, text: "Value", font: { family: "Open Sans" } } },
+            x: { title: { display: true, text: "Date", font: { family: "Open Sans" } } },
+          },
+        }}
+        className="w-full h-full"
+      />
+    </div>
   );
 }

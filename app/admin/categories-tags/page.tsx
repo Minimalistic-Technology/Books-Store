@@ -1,3 +1,4 @@
+// app/admin/categories-tags/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -8,7 +9,7 @@ import CategoryTagList from "./components/CategoryTagList";
 export interface CategoryTag {
   id: string;
   name: string;
-  type: "category" | "tag"; // Differentiate between category and tag
+  type: "category" | "tag";
   seoTitle: string;
   seoDescription: string;
 }
@@ -40,30 +41,26 @@ export default function CategoriesTags() {
     seoDescription: string;
   }) => {
     const newItem: CategoryTag = {
-      id: data.id || Date.now().toString(), // Generate unique ID if new
+      id: data.id || Date.now().toString(),
       name: data.name,
       type: data.type,
       seoTitle: data.seoTitle,
       seoDescription: data.seoDescription,
     };
     if (selectedItem) {
-      // Edit existing item
-      setItems((prev) =>
-        prev.map((item) => (item.id === selectedItem.id ? newItem : item))
-      );
+      setItems((prev) => prev.map((item) => (item.id === selectedItem.id ? newItem : item)));
     } else {
-      // Add new item
       setItems((prev) => [...prev, newItem]);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Categories & Tags - Books Store</h1>
+    <div className="space-y-8 p-4 animate__fadeIn">
+      <h1 className="text-4xl font-bold text-yellow-900">Categories & Tags - Books Store</h1>
       <div className="flex justify-end">
         <button
           onClick={handleCreate}
-          className="bg-teal-500 text-white px-4 py-2 rounded hover:bg-teal-600"
+          className="btn-primary px-4 py-2 rounded-lg hover:bg-teal-700 transition-all"
         >
           Create New Category/Tag
         </button>

@@ -1,12 +1,20 @@
+// components/OrderForm.tsx
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { Order } from "../types";
 
-type OrderFormProps = {
-  order?: { id?: string; customerName?: string; totalAmount?: number; status?: string; createdAt?: string };
+interface OrderFormProps {
+  order?: Order;
   onClose: () => void;
-  onSave: (data: { id?: string; customerName: string; totalAmount: number; status: string; createdAt?: string }) => void;
-};
+  onSave: (data: {
+    id?: string;
+    customerName: string;
+    totalAmount: number;
+    status: string;
+    createdAt?: string;
+  }) => void;
+}
 
 export default function OrderForm({ order, onClose, onSave }: OrderFormProps) {
   const [formData, setFormData] = useState({
@@ -17,7 +25,9 @@ export default function OrderForm({ order, onClose, onSave }: OrderFormProps) {
     createdAt: order?.createdAt || new Date().toISOString(),
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -25,73 +35,63 @@ export default function OrderForm({ order, onClose, onSave }: OrderFormProps) {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(formData);
   };
 
   return (
-    <div className="fixed inset-0 bg-[#fff3cd] bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md overflow-y-auto" style={{ maxHeight: "80vh" }}>
-        <h2 className="text-2xl font-bold mb-4 text-gray-800">
+    <div className="fixed inset-0 bg-yellow-500 bg-opacity-50 flex justify-center items-center z-50">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white p-6 rounded-lg space-y-4 w-full max-w-md shadow-lg"
+      >
+        <h2 className="text-xl font-bold text-gray-800">
           {order ? "Edit Order" : "Add New Order"}
         </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Customer Name</label>
-            <input
-              type="text"
-              name="customerName"
-              value={formData.customerName}
-              onChange={handleChange}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Total Amount ($)</label>
-            <input
-              type="number"
-              name="totalAmount"
-              value={formData.totalAmount}
-              onChange={handleChange}
-              step="0.01"
-              className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Status</label>
-            <select
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="Pending">Pending</option>
-              <option value="Processing">Processing</option>
-              <option value="Shipped">Shipped</option>
-              <option value="Delivered">Delivered</option>
-              <option value="Cancelled">Cancelled</option>
-            </select>
-          </div>
-          <div className="flex justify-end space-x-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-            >
-              Save
-            </button>
-          </div>
-        </form>
-      </div>
+        <input
+          type="text"
+          name="customerName"
+          value={formData.customerName}
+          onChange={handleChange}
+          placeholder="Customer Name"
+          className="w-full border rounded p-2"
+          required
+        />
+        <input
+          type="number"
+          name="totalAmount"
+          value={formData.totalAmount}
+          onChange={handleChange}
+          placeholder="Total Amount"
+          className="w-full border rounded p-2"
+          required
+        />
+        <select
+          name="status"
+          value={formData.status}
+          onChange={handleChange}
+          className="w-full border rounded p-2"
+        >
+          <option>Pending</option>
+          <option>Processing</option>
+          <option>Shipped</option>
+          <option>Delivered</option>
+          <option>Cancelled</option>
+        </select>
+        <div className="flex justify-between">
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-gray-600 hover:underline"
+          >
+            Cancel
+          </button>
+          <button type="submit" className="btn-primary">
+            Save Order
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

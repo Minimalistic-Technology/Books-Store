@@ -1,3 +1,4 @@
+// components/ContentForm.tsx
 "use client";
 
 import { useState, useRef } from "react";
@@ -92,9 +93,9 @@ export default function ContentForm({ content, onClose, onSave }: ContentFormPro
   };
 
   return (
-    <div className="fixed inset-0 bg-[#fff3cd] bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl overflow-y-auto" style={{ maxHeight: "80vh" }}>
-        <h2 className="text-2xl font-bold mb-4 text-gray-800">
+    <div className="fixed inset-0 bg-yellow-500 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
+      <div className="card p-6 max-w-2xl w-full animate__zoomIn">
+        <h2 className="text-2xl font-semibold mb-4 text-yellow-900">
           {content ? "Edit Content" : "Create Content"}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -105,7 +106,7 @@ export default function ContentForm({ content, onClose, onSave }: ContentFormPro
               value={formData.title}
               onChange={handleChange}
               placeholder="Title"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
               required
             />
             <textarea
@@ -113,7 +114,7 @@ export default function ContentForm({ content, onClose, onSave }: ContentFormPro
               value={formData.content}
               onChange={handleChange}
               placeholder="Content (Rich text support placeholder)"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-40 resize-y"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 h-40 resize-y"
               required
             />
             <input
@@ -122,7 +123,7 @@ export default function ContentForm({ content, onClose, onSave }: ContentFormPro
               value={formData.category}
               onChange={handleChange}
               placeholder="Category"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
             <input
               type="text"
@@ -130,7 +131,7 @@ export default function ContentForm({ content, onClose, onSave }: ContentFormPro
               value={formData.tags}
               onChange={handleChange}
               placeholder="Tags (comma-separated)"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
             <input
               type="text"
@@ -138,18 +139,18 @@ export default function ContentForm({ content, onClose, onSave }: ContentFormPro
               value={formData.seoTitle}
               onChange={handleChange}
               placeholder="SEO Title"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
             <textarea
               name="seoDescription"
               value={formData.seoDescription}
               onChange={handleChange}
               placeholder="SEO Description"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-20 resize-y"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 h-20 resize-y"
             />
           </div>
           <div
-            className="border-2 border-dashed border-gray-400 p-6 rounded-lg text-center bg-white hover:border-blue-500 transition-colors"
+            className="border-2 border-dashed border-gray-400 p-6 rounded-lg text-center bg-white hover:border-teal-500 transition-colors"
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onClick={() => fileInputRef.current?.click()}
@@ -169,7 +170,7 @@ export default function ContentForm({ content, onClose, onSave }: ContentFormPro
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              className="mt-2 bg-teal-500 text-white px-4 py-2 rounded hover:bg-teal-600 transition-all"
             >
               Choose File
             </button>
@@ -178,13 +179,13 @@ export default function ContentForm({ content, onClose, onSave }: ContentFormPro
             <button
               type="button"
               onClick={onClose}
-              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+              className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-all"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              className="btn-primary px-4 py-2 rounded-lg hover:bg-teal-700 transition-all"
             >
               Save
             </button>

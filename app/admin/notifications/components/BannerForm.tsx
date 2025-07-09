@@ -1,3 +1,4 @@
+// components/BannerForm.tsx
 "use client";
 
 import { useState } from "react";
@@ -25,14 +26,14 @@ export default function BannerForm({ onAddBanner }: BannerFormProps) {
   };
 
   return (
-    <div className="bg-blue-200 p-6 rounded-lg shadow">
-      <h2 className="text-xl font-semibold mb-4">Create New Banner</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="card p-6 animate__fadeIn">
+      <h2 className="text-2xl font-semibold mb-4 text-yellow-900">Create New Banner</h2>
+      <form onSubmit={handleSubmit} className="space-y-6">
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Enter banner message..."
-          className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 h-24"
+          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 h-32 resize-y"
           required
         />
         <div>
@@ -41,7 +42,7 @@ export default function BannerForm({ onAddBanner }: BannerFormProps) {
             type="datetime-local"
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
-            className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
             required
           />
         </div>
@@ -51,13 +52,13 @@ export default function BannerForm({ onAddBanner }: BannerFormProps) {
             type="datetime-local"
             value={endTime}
             onChange={(e) => setEndTime(e.target.value)}
-            className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
             required
           />
         </div>
         <button
           type="submit"
-          className="bg-teal-500 text-white px-4 py-2 rounded hover:bg-green-600"
+          className="btn-primary w-full px-4 py-2 rounded-lg hover:bg-teal-700 transition-all"
         >
           Create Banner
         </button>

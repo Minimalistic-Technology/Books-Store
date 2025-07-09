@@ -1,3 +1,4 @@
+// components/CategoryTagForm.tsx
 "use client";
 
 import { useState, useRef } from "react";
@@ -47,9 +48,9 @@ export default function CategoryTagForm({ item, onClose, onSave }: CategoryTagFo
   };
 
   return (
-    <div className="fixed inset-0 bg-[#fff3cd] bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-lg overflow-y-auto" style={{ maxHeight: "80vh" }}>
-        <h2 className="text-2xl font-bold mb-4 text-gray-800">
+    <div className="fixed inset-0 bg-yellow-500 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
+      <div className="card p-6 max-w-lg w-full animate__zoomIn">
+        <h2 className="text-2xl font-semibold mb-4 text-yellow-900">
           {item ? "Edit Category/Tag" : "Create Category/Tag"}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -60,14 +61,14 @@ export default function CategoryTagForm({ item, onClose, onSave }: CategoryTagFo
               value={formData.name}
               onChange={handleChange}
               placeholder="Name (e.g., Fiction, Review)"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
               required
             />
             <select
               name="type"
               value={formData.type}
               onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
               <option value="category">Category</option>
               <option value="tag">Tag</option>
@@ -78,27 +79,27 @@ export default function CategoryTagForm({ item, onClose, onSave }: CategoryTagFo
               value={formData.seoTitle}
               onChange={handleChange}
               placeholder="SEO Title (e.g., Fiction Books 2025)"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
             <textarea
               name="seoDescription"
               value={formData.seoDescription}
               onChange={handleChange}
               placeholder="SEO Description (e.g., Explore Fiction Books 2025)"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-20 resize-y"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 h-20 resize-y"
             />
           </div>
           <div className="flex justify-end space-x-4">
             <button
               type="button"
               onClick={onClose}
-              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+              className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-all"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              className="btn-primary px-4 py-2 rounded-lg hover:bg-teal-700 transition-all"
             >
               Save
             </button>

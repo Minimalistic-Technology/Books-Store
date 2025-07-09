@@ -1,3 +1,4 @@
+// app/admin/import-export/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -37,15 +38,15 @@ export default function ImportExportManagement() {
   };
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Import/Export - Books Store</h1>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Export Data</h2>
+    <div className="space-y-8 p-4 animate__fadeInUp">
+      <h1 className="text-4xl font-extrabold text-yellow-900">Import/Export - Books Store</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="card">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Export Data</h2>
           <ExportForm onExport={handleExport} />
         </div>
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Import Bulk Data</h2>
+        <div className="card">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Import Bulk Data</h2>
           <ImportForm onImport={handleImport} />
         </div>
       </div>

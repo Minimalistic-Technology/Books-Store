@@ -1,7 +1,7 @@
+// app/admin/layout.tsx
 "use client";
 
 import Sidebar from "../components/Sidebar";
-import "../../app/globals.css";
 import { DashboardContext, useDashboard } from "../admin/dashboard/page";
 import { useMemo } from "react";
 
@@ -16,10 +16,12 @@ export default function AdminLayout({
 
   return (
     <DashboardContext.Provider value={contextValue}>
-      <div className="flex flex-row h-screen w-screen bg-gray-100 overflow-hidden">
+      <div className="page-container flex flex-row h-screen bg-yellow-50 overflow-auto">
         <Sidebar />
-        <div className="flex-1 flex flex-col min-h-0 bg-green-100">
-          <main className="flex-1 p-6 overflow-auto w-full">{children}</main>
+        <div className="flex-1 flex flex-col min-h-0">
+          <main className="flex-1 p-6 overflow-auto w-full animate__fadeIn">
+            {children}
+          </main>
         </div>
       </div>
     </DashboardContext.Provider>

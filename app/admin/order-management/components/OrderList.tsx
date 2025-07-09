@@ -1,3 +1,4 @@
+// components/OrderList.tsx
 "use client";
 
 import { useState } from "react";
@@ -13,20 +14,20 @@ export default function OrderList({ orders, onUpdateOrder }: OrderListProps) {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   return (
-    <div className="bg-blue-200 p-4 rounded-lg shadow">
-      <h2 className="text-xl font-semibold mb-4">Orders</h2>
+    <div className="card p-6 animate__fadeIn">
+      <h2 className="text-2xl font-semibold mb-4 text-yellow-900">Orders</h2>
       {orders.length === 0 ? (
-        <p className="text-gray-500">No orders found.</p>
+        <p className="text-gray-500 text-center">No orders found.</p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="space-y-4">
           {orders.map((order) => (
-            <li key={order.id} className="border-b py-2 flex justify-between items-center">
-              <span>
+            <li key={order.id} className="border p-4 rounded-lg bg-white shadow-md flex justify-between items-center animate__fadeInUp">
+              <span className="text-gray-800">
                 {order.customerName} - ${order.totalAmount.toFixed(2)} ({order.status}) - {new Date(order.createdAt).toLocaleDateString()}
               </span>
               <button
                 onClick={() => setSelectedOrder(order)}
-                className="bg-teal-500 text-white px-2 py-1 rounded hover:bg-teal-600"
+                className="bg-teal-500 text-white px-3 py-1 rounded-lg hover:bg-teal-600 transition-all"
               >
                 View
               </button>

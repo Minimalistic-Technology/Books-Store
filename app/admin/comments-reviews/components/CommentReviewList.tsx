@@ -1,3 +1,4 @@
+// components/CommentReviewList.tsx
 "use client";
 
 import type { CommentReview } from "../page";
@@ -10,27 +11,27 @@ type CommentReviewListProps = {
 
 export default function CommentReviewList({ onEdit, onDelete, items }: CommentReviewListProps) {
   return (
-    <div className="bg-blue-200 p-4 rounded-lg shadow">
-      <h2 className="text-xl font-semibold mb-4">Comments & Reviews List</h2>
-      <ul className="space-y-2">
+    <div className="card p-6 animate__fadeIn">
+      <h2 className="text-2xl font-semibold mb-4 text-yellow-900">Comments & Reviews List</h2>
+      <ul className="space-y-4">
         {items.map((item) => (
-          <li key={item.id} className="border-b py-2 flex justify-between items-center">
-            <span>
+          <li key={item.id} className="border p-4 rounded-lg bg-white shadow-md flex justify-between items-center animate__fadeInUp">
+            <span className="text-gray-800">
               {item.author} - {item.content.substring(0, 20)}
               {item.content.length > 20 ? "..." : ""}
-              {item.isSpam && " (Spam)"}
-              {!item.isApproved && " (Pending)"}
+              {item.isSpam && <span className="text-red-500 ml-2">(Spam)</span>}
+              {!item.isApproved && <span className="text-yellow-500 ml-2">(Pending)</span>}
             </span>
             <div>
               <button
                 onClick={() => onEdit(item)}
-                className="bg-yellow-500 text-white px-2 py-1 rounded mr-2 hover:bg-yellow-600"
+                className="bg-yellow-500 text-white px-3 py-1 rounded-lg mr-2 hover:bg-yellow-600 transition-all"
               >
                 Moderate
               </button>
               <button
                 onClick={() => onDelete(item.id)}
-                className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition-all"
               >
                 Delete
               </button>

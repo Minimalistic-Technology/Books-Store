@@ -1,10 +1,11 @@
+/* Updated globals.css */
 @import "tailwindcss";
 @import "tw-animate-css";
 
 /* Global font variables */
 :root {
-  --font-heading: 'Georgia, serif';
-  --font-body: 'Arial, sans-serif';
+  --font-heading: 'Libre Baskerville', sans-serif;
+  --font-body: 'Arial', sans-serif;
 }
 
 /* Apply fonts via Tailwind theme */
@@ -19,8 +20,9 @@
 /* Global defaults */
 body {
   margin: 0;
+  padding: 0;
   font-family: var(--font-body);
-  min-height: 100%;
+  min-height: 100vh;
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -30,25 +32,47 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .search-icon {
-  font-size: 1.2rem !important; /* Adjust as needed */
-  transition: none !important; /* Disable transitions on load if necessary */
+  font-size: 1.2rem !important;
+  transition: none !important;
 }
+
 .banner {
   @apply fixed top-0 left-0 w-full bg-yellow-500 text-white p-4 text-center z-50;
   transition: all 0.3s ease-in-out;
 }
 
-/* Optional: Hide inactive banners */
 .banner.inactive {
   @apply hidden;
 }
 
-body {
-  margin: 0;
-  padding: 0;
+/* Admin-specific styles */
+.admin-layout {
+  @apply w-full min-h-screen bg-yellow-50;
 }
 
-/* Target the admin layout for full width on client */
-.admin-layout {
-  width: 100vw; /* Fallback for non-Tailwind environments */
+.page-container {
+  @apply w-full min-h-screen;
+}
+
+main {
+  @apply w-full px-4 sm:px-6 md:px-8 lg:px-12 py-6;
+}
+
+@media (min-width: 1536px) {
+  .page-container {
+    @apply max-w-7xl mx-auto;
+  }
+}
+
+/* Optional: Add beautification utilities */
+.card {
+  @apply bg-white rounded-lg shadow-md p-4;
+}
+
+.btn-primary {
+  @apply bg-teal-600 text-white font-semibold rounded-md py-2 px-4 hover:bg-teal-700 transition-all;
+}
+
+.btn-disabled {
+  @apply bg-gray-400 text-white font-semibold rounded-md py-2 px-4 cursor-not-allowed;
 }

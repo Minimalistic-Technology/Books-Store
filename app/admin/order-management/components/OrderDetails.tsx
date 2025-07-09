@@ -1,8 +1,9 @@
+// components/OrderDetails.tsx
 "use client";
 
 import { useState } from "react";
 import { Order } from "../page";
-import { saveAs } from "file-saver"; // For exporting invoice (install via npm install file-saver)
+import { saveAs } from "file-saver"; // For exporting invoice
 
 type OrderDetailsProps = {
   order: Order;
@@ -17,7 +18,7 @@ export default function OrderDetails({ order, onClose, onUpdateOrder }: OrderDet
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newStatus = e.target.value as Order["status"];
     setStatus(newStatus);
-    const updatedOrder: Order = { ...order, status: newStatus as Order["status"] };
+    const updatedOrder: Order = { ...order, status: newStatus };
     onUpdateOrder(updatedOrder);
   };
 
@@ -43,19 +44,19 @@ export default function OrderDetails({ order, onClose, onUpdateOrder }: OrderDet
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-xl font-semibold mb-4">Order Details - #{order.id}</h2>
-        <div className="space-y-4">
-          <p><strong>Customer:</strong> {order.customerName}</p>
-          <p><strong>Amount:</strong> ${order.totalAmount.toFixed(2)}</p>
-          <p><strong>Date:</strong> {new Date(order.createdAt).toLocaleDateString()}</p>
+    <div className="fixed inset-0 bg-yellow-500 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
+      <div className="card p-6 max-w-md w-full animate__zoomIn">
+        <h2 className="text-2xl font-semibold mb-4 text-yellow-900">Order Details - #{order.id}</h2>
+        <div className="space-y-6">
+          <p className="text-gray-800"><strong>Customer:</strong> {order.customerName}</p>
+          <p className="text-gray-800"><strong>Amount:</strong> ${order.totalAmount.toFixed(2)}</p>
+          <p className="text-gray-800"><strong>Date:</strong> {new Date(order.createdAt).toLocaleDateString()}</p>
           <div>
             <label className="block text-sm font-medium text-gray-700">Status</label>
             <select
               value={status}
               onChange={handleStatusChange}
-              className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
               <option value="Pending">Pending</option>
               <option value="Processing">Processing</option>
@@ -63,33 +64,35 @@ export default function OrderDetails({ order, onClose, onUpdateOrder }: OrderDet
               <option value="Delivered">Delivered</option>
             </select>
           </div>
-          <button
-            onClick={() => setIsRefundProcessing(true)}
-            className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 mr-2"
-            disabled={order.status === "Cancelled" || order.status === "Delivered"}
-          >
-            Process Refund
-          </button>
-          <button
-            onClick={() => {
-              setIsRefundProcessing(false);
-              handleRefundCancel();
-            }}
-            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-            disabled={order.status === "Cancelled"}
-          >
-            Cancel Order
-          </button>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <button
+              onClick={() => setIsRefundProcessing(true)}
+              className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-all disabled:opacity-50"
+              disabled={order.status === "Cancelled" || order.status === "Delivered"}
+            >
+              Process Refund
+            </button>
+            <button
+              onClick={() => {
+                setIsRefundProcessing(false);
+                handleRefundCancel();
+              }}
+              className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-all disabled:opacity-50"
+              disabled={order.status === "Cancelled"}
+            >
+              Cancel Order
+            </button>
+          </div>
           <button
             onClick={generateInvoice}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mt-4"
+            className="btn-primary w-full mt-4 px-4 py-2 rounded-lg hover:bg-teal-700 transition-all"
           >
             Generate/Export Invoice
           </button>
         </div>
         <button
           onClick={onClose}
-          className="mt-6 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+          className="mt-6 w-full bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-all"
         >
           Close
         </button>

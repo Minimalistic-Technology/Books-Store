@@ -1,3 +1,4 @@
+// app/admin/comments-reviews/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -9,17 +10,16 @@ export interface CommentReview {
   id: string;
   content: string;
   author: string;
-  bookName: string; // Reference to the content it belongs to
+  bookName: string;
   isApproved: boolean;
   isSpam: boolean;
-  createdAt: string; // ISO date string
+  createdAt: string;
   seoTitle: string;
   seoDescription: string;
 }
 
 export default function CommentsReviews() {
   const [items, setItems] = useState<CommentReview[]>([
-    // Initial mock data
     {
       id: "1",
       content: "Great book, highly recommend!",
@@ -72,7 +72,7 @@ export default function CommentsReviews() {
     seoDescription: string;
   }) => {
     const newItem: CommentReview = {
-      id: data.id || Date.now().toString(), // Generate unique ID if new
+      id: data.id || Date.now().toString(),
       content: data.content,
       author: data.author,
       bookName: data.bookName,
@@ -83,37 +83,33 @@ export default function CommentsReviews() {
       seoDescription: data.seoDescription,
     };
     if (selectedItem) {
-      // Edit existing item
-      setItems((prev) =>
-        prev.map((item) => (item.id === selectedItem.id ? newItem : item))
-      );
+      setItems((prev) => prev.map((item) => (item.id === selectedItem.id ? newItem : item)));
     } else {
-      // Add new item
       setItems((prev) => [...prev, newItem]);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Comments & Reviews - Books Store</h1>
+    <div className="space-y-8 p-4 animate__fadeIn">
+      <h1 className="text-4xl font-bold text-yellow-900">Comments & Reviews - Books Store</h1>
       <div className="flex justify-end">
-      
+        <button
+          onClick={handleCreate}
+          className="btn-primary px-4 py-2 rounded-lg hover:bg-teal-700 transition-all"
+        >
+          Add Comment
+        </button>
       </div>
-      <CommentReviewList
-      onEdit={handleEdit}
-      onDelete={handleDelete}
-      items={items}
-      />
+      <CommentReviewList onEdit={handleEdit} onDelete={handleDelete} items={items} />
       {isModerating && (
-      <CommentReviewForm
-        item={selectedItem ?? undefined}
-        onClose={() => {
-        setSelectedItem(null);
-        setIsModerating(false);
-        }}
-        onSave={handleSave}
-        // Make sure CommentReviewForm expects bookName, not postId
-      />
+        <CommentReviewForm
+          item={selectedItem ?? undefined}
+          onClose={() => {
+            setSelectedItem(null);
+            setIsModerating(false);
+          }}
+          onSave={handleSave}
+        />
       )}
     </div>
   );

@@ -1,3 +1,4 @@
+// app/admin/order-management/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -16,7 +17,6 @@ export default function OrderManagement() {
   const [filterStatus, setFilterStatus] = useState<string>("All");
   const [searchTerm, setSearchTerm] = useState<string>("");
 
-  // Initialize orders with dynamic dates on client side to avoid hydration mismatch
   useEffect(() => {
     setOrders([
       { id: "1", customerName: "John Doe", totalAmount: 50.00, status: "Pending", createdAt: new Date().toISOString() },
@@ -24,7 +24,7 @@ export default function OrderManagement() {
       { id: "3", customerName: "Alice Johnson", totalAmount: 30.00, status: "Delivered", createdAt: new Date().toISOString() },
       { id: "4", customerName: "Bob Brown", totalAmount: 120.00, status: "Processing", createdAt: new Date().toISOString() },
     ]);
-  }, []); // Empty dependency array ensures this runs once on client mount
+  }, []);
 
   const filteredOrders = orders.filter((order) => {
     const matchesStatus = filterStatus === "All" || order.status === filterStatus;
@@ -33,13 +33,13 @@ export default function OrderManagement() {
   });
 
   return (
-    <div className="space-y-6 w-full h-full">
-      <h1 className="text-3xl font-bold">Order Management - Books Store</h1>
+    <div className="space-y-8 p-4 animate__fadeIn">
+      <h1 className="text-4xl font-bold text-yellow-900">Order Management - Books Store</h1>
       <div className="flex flex-col md:flex-row gap-4 w-full">
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 w-full md:w-auto"
+          className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 w-full md:w-auto"
         >
           <option value="All">All Statuses</option>
           <option value="Pending">Pending</option>
@@ -53,7 +53,7 @@ export default function OrderManagement() {
           placeholder="Search by customer name..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 w-full"
+          className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 w-full"
         />
       </div>
       <OrderList orders={filteredOrders} onUpdateOrder={(updatedOrder) => {

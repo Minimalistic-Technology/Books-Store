@@ -1,3 +1,4 @@
+// app/admin/notifications/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -15,22 +16,23 @@ export interface Banner {
 export default function Notifications() {
   const [banners, setBanners] = useState<Banner[]>([]);
 
-  // Initialize banners with dynamic dates on client side to avoid hydration mismatch
   useEffect(() => {
     setBanners([
       { id: "1", message: "Welcome to our Summer Sale!", startTime: new Date().toISOString(), endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), isActive: true },
     ]);
-  }, []); // Empty dependency array ensures this runs once on client mount
+  }, []);
 
   const addBanner = (banner: Banner) => {
     setBanners([...banners, { ...banner, id: Date.now().toString(), isActive: true }]);
   };
 
   return (
-    <div className="space-y-6 w-full h-full">
-      <h1 className="text-3xl font-bold">Notifications/Banners - Books Store</h1>
-      <BannerForm onAddBanner={addBanner} />
-      <BannerList banners={banners} onUpdateBanners={setBanners} />
+    <div className="space-y-8 p-4 animate__fadeIn">
+      <h1 className="text-4xl font-extrabold text-yellow-900">Notifications/Banners - Books Store</h1>
+      <div className="space-y-6">
+        <BannerForm onAddBanner={addBanner} />
+        <BannerList banners={banners} onUpdateBanners={setBanners} />
+      </div>
     </div>
   );
 }

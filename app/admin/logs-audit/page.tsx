@@ -1,3 +1,4 @@
+// app/admin/logs-audit/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -46,20 +47,20 @@ export default function LogsAuditManagement() {
   ]);
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Logs & Audit Trail - Books Store</h1>
+    <div className="space-y-8 p-4 animate__fadeIn">
+      <h1 className="text-4xl font-extrabold text-yellow-900">Logs & Audit Trail - Books Store</h1>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Email Logs</h2>
+        <div className="card">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Email Logs</h2>
           <EmailLogList logs={emailLogs} />
         </div>
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Audit Trail</h2>
+        <div className="card">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Audit Trail</h2>
           <AuditTrailList logs={auditTrail} />
         </div>
       </div>
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Error Logs (Backend Monitoring)</h2>
+      <div className="card">
+        <h2 className="text-2xl font-semibold text-gray-800 mb-4">Error Logs (Backend Monitoring)</h2>
         <ErrorLogList logs={errorLogs} />
       </div>
     </div>

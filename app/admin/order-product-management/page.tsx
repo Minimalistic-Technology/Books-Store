@@ -1,3 +1,4 @@
+// app/admin/order-product-management/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -14,6 +15,7 @@ export interface Order {
   status: "Pending" | "Processing" | "Shipped" | "Delivered" | "Cancelled";
   createdAt: string; // ISO date string
 }
+
 
 export interface Product {
   id: string;
@@ -90,29 +92,29 @@ export default function OrderProductManagement() {
   };
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Order & Product Management - Books Store</h1>
+    <div className="space-y-8 p-4 animate__fadeIn">
+      <h1 className="text-4xl font-bold text-yellow-900">Order & Product Management - Books Store</h1>
       <div className="flex justify-end space-x-4">
         <button
           onClick={() => setIsOrderFormOpen(true)}
-          className="bg-teal-500 text-white px-4 py-2 rounded hover:bg-teal-600"
+          className="btn-primary px-4 py-2 rounded-lg hover:bg-teal-700 transition-all"
         >
           Add New Order
         </button>
         <button
           onClick={() => setIsProductFormOpen(true)}
-          className="bg-teal-500 text-white px-4 py-2 rounded hover:bg-teal-600"
+          className="btn-primary px-4 py-2 rounded-lg hover:bg-teal-700 transition-all"
         >
           Add New Product
         </button>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
-          <h2 className="text-xl font-semibold mb-4">Orders</h2>
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Orders</h2>
           <OrderList orders={orders} onEdit={handleEditOrder} onDelete={handleDeleteOrder} />
         </div>
         <div>
-          <h2 className="text-xl font-semibold mb-4">Products</h2>
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Products</h2>
           <ProductList products={products} onEdit={handleEditProduct} onDelete={handleDeleteProduct} />
         </div>
       </div>

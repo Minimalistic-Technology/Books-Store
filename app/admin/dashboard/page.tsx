@@ -1,3 +1,4 @@
+// app/admin/dashboard/page.tsx
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
@@ -45,16 +46,14 @@ export default function Dashboard() {
     datasets: [],
   });
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    // Initialize from localStorage once
     return localStorage.getItem("isLoggedIn") === "true" || false;
   });
 
   useEffect(() => {
-    // Generate random data on mount
     const generateRandomData = () => {
-      const randomUserCount = Math.floor(Math.random() * 1000) + 100; // 100 to 1099
-      const randomSales = Math.floor(Math.random() * 10000) + 1000; // 1000 to 10999
-      const randomActiveUsers = Math.floor(Math.random() * 200) + 50; // 50 to 249
+      const randomUserCount = Math.floor(Math.random() * 1000) + 100;
+      const randomSales = Math.floor(Math.random() * 10000) + 1000;
+      const randomActiveUsers = Math.floor(Math.random() * 200) + 50;
 
       setMetrics({
         userCount: randomUserCount,
@@ -65,10 +64,10 @@ export default function Dashboard() {
       const labels = Array.from({ length: 31 }, (_, i) => `Jul ${i + 1}`);
       const salesTrend = Array.from({ length: 31 }, () =>
         Math.floor(Math.random() * 200) + 10
-      ); // 10 to 209
+      );
       const activeUsersTrend = Array.from({ length: 31 }, () =>
         Math.floor(Math.random() * 200) + 50
-      ); // 50 to 249
+      );
 
       setChartData({
         labels,
@@ -90,7 +89,7 @@ export default function Dashboard() {
     };
 
     generateRandomData();
-  }, []); // Empty dependency array ensures this runs only once on mount
+  }, []);
 
   const handleLogout = () => {
     setIsLoggedIn(false);
@@ -104,26 +103,26 @@ export default function Dashboard() {
 
   return (
     <DashboardContext.Provider value={{ isLoggedIn, handleLogout }}>
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Dashboard - Books Store</h1>
+      <div className="space-y-8 p-4 animate__fadeIn">
+        <h1 className="text-4xl font-bold text-yellow-900">Dashboard - Books Store</h1>
         {!isLoggedIn ? (
-          <div className="bg-blue-200 p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4">Login</h2>
+          <div className="card bg-blue-200 p-6 rounded-lg shadow-lg">
+            <h2 className="text-2xl font-semibold mb-4 text-yellow-900">Login</h2>
             <form className="space-y-4">
               <input
                 type="text"
                 placeholder="Username"
-                className="w-full p-2 border rounded"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
               <input
                 type="password"
                 placeholder="Password"
-                className="w-full p-2 border rounded"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
               <button
                 type="button"
                 onClick={handleLogin}
-                className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+                className="w-full bg-teal-500 text-white p-3 rounded-lg hover:bg-teal-600 transition-all"
               >
                 Login
               </button>
@@ -131,25 +130,25 @@ export default function Dashboard() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <MetricsCard title="User Count" value={metrics.userCount} />
               <MetricsCard title="Sales" value={metrics.sales} />
               <MetricsCard title="Active Users" value={metrics.activeUsers} />
             </div>
-            <div className="bg-blue-200 p-4 rounded-lg shadow" style={{ maxHeight: "400px", overflowY: "auto" }}>
-              <h2 className="text-xl font-semibold">Daily/Monthly Trends</h2>
+            <div className="card bg-blue-200 p-6 rounded-lg shadow-lg" style={{ maxHeight: "400px", overflowY: "auto" }}>
+              <h2 className="text-2xl font-semibold mb-4 text-yellow-900">Daily/Monthly Trends</h2>
               <div style={{ height: "300px" }}>
                 <ChartComponent data={chartData} />
               </div>
             </div>
-            <div className="bg-blue-200 p-4 rounded-lg shadow">
-              <h2 className="text-xl font-semibold">Quick Links to Major Modules</h2>
-              <ul className="list-disc pl-5">
-                <li><a href="/admin/content-management" className="text-blue-500 hover:underline">Content Management</a></li>
+            <div className="card bg-blue-200 p-6 rounded-lg shadow-lg">
+              <h2 className="text-2xl font-semibold mb-4 text-yellow-900">Quick Links to Major Modules</h2>
+              <ul className="list-disc pl-5 space-y-2">
+                <li><a href="/admin/content-management" className="text-teal-500 hover:underline">Content Management</a></li>
                 <li>
                   <a
                     href="/admin/order-product-management"
-                    className="text-blue-500 cursor-not-allowed pointer-events-none"
+                    className="text-gray-500 cursor-not-allowed pointer-events-none"
                     onClick={(e) => e.preventDefault()}
                     aria-disabled="true"
                     tabIndex={-1}
@@ -162,7 +161,7 @@ export default function Dashboard() {
             <div className="text-right">
               <button
                 onClick={handleLogout}
-                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-all"
               >
                 Logout
               </button>

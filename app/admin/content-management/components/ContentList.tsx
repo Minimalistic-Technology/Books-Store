@@ -1,3 +1,4 @@
+// components/ContentList.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -10,24 +11,23 @@ type ContentListProps = {
 };
 
 export default function ContentList({ onEdit, onDelete, contents }: ContentListProps) {
-  // No need for useEffect with props; use passed contents directly
   return (
-    <div className="bg-blue-200 p-4 rounded-lg shadow">
-      <h2 className="text-xl font-semibold mb-4">Content List</h2>
-      <ul className="space-y-2">
+    <div className="card p-6 animate__fadeIn">
+      <h2 className="text-2xl font-semibold mb-4 text-yellow-900">Content List</h2>
+      <ul className="space-y-4">
         {contents.map((item) => (
-          <li key={item.id} className="border-b py-2 flex justify-between items-center">
-            <span>{item.title} ({item.category || "Uncategorized"})</span>
+          <li key={item.id} className="border p-4 rounded-lg bg-white shadow-md flex justify-between items-center animate__fadeInUp">
+            <span className="text-gray-800">{item.title} ({item.category || "Uncategorized"})</span>
             <div>
               <button
                 onClick={() => onEdit(item)}
-                className="bg-yellow-500 text-white px-2 py-1 rounded mr-2 hover:bg-yellow-600"
+                className="bg-yellow-500 text-white px-3 py-1 rounded-lg mr-2 hover:bg-yellow-600 transition-all"
               >
                 Edit
               </button>
               <button
                 onClick={() => onDelete(item.id)}
-                className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition-all"
               >
                 Delete
               </button>

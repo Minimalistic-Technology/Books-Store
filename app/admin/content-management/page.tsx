@@ -1,3 +1,4 @@
+// app/admin/content-management/page.tsx
 'use client'
 import { useState } from "react";
 import ContentForm from "./components/ContentForm";
@@ -7,7 +8,7 @@ import ContentList from "./components/ContentList";
 export interface Content {
   id: string;
   title: string;
-  body: string; // Note: 'body' is used here, but 'content' in FormData; adjust as needed
+  body: string;
   category?: string;
   tags?: string;
   seoTitle?: string;
@@ -45,9 +46,9 @@ export default function ContentManagement() {
     media: File | null;
   }) => {
     const newContent: Content = {
-      id: data.id || Date.now().toString(), // Generate unique ID if new
+      id: data.id || Date.now().toString(),
       title: data.title,
-      body: data.content, // Map 'content' to 'body' as per Content interface
+      body: data.content,
       category: data.category,
       tags: data.tags,
       seoTitle: data.seoTitle,
@@ -55,23 +56,21 @@ export default function ContentManagement() {
       media: data.media,
     };
     if (selectedContent) {
-      // Edit existing content
       setContents((prev) =>
         prev.map((item) => (item.id === selectedContent.id ? newContent : item))
       );
     } else {
-      // Add new content
       setContents((prev) => [...prev, newContent]);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Content Management - Books Store</h1>
+    <div className="space-y-8 p-4 animate__fadeIn">
+      <h1 className="text-4xl font-bold text-yellow-900">Content Management - Books Store</h1>
       <div className="flex justify-end">
         <button
           onClick={handleCreate}
-          className="bg-teal-500 text-white px-4 py-2 rounded hover:bg-teal-600"
+          className="btn-primary px-4 py-2 rounded-lg hover:bg-teal-700 transition-all"
         >
           Create New Content
         </button>

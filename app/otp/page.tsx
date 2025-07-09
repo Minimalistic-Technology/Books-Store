@@ -81,7 +81,7 @@ const BookStoreOtpPage: React.FC = () => {
   });
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-b from-white to-gray-50 font-serif">
+    <div className="flex flex-col min-h-screen w-full bg-gradient-to-b from-white to-gray-50 font-serif">
       {/* Main Content */}
       <div className="flex flex-col md:flex-row flex-1">
         {/* Left Section: OTP Form */}

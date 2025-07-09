@@ -43,7 +43,7 @@ const BookStoreSignupPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-white font-serif text-gray-900">
+    <div className="flex flex-col min-h-screen w-full bg-white font-serif text-gray-900">
       <div className="flex flex-col items-center justify-center flex-1 px-4 py-10">
         {/* Logo and Book Icon */}
         <div className="flex flex-col items-center mb-6">

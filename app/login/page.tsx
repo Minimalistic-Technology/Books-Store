@@ -73,7 +73,7 @@ const BookStoreLoginPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-white font-serif text-gray-900">
+    <div className="flex flex-col min-h-screen w-full bg-white font-serif text-gray-900">
 
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
         <div className="mb-4 text-center">

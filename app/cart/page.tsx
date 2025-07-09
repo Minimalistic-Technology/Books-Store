@@ -132,7 +132,7 @@ const CartPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 text-stone-900 font-serif">
+    <div className="min-h-screen w-full bg-stone-50 text-stone-900 font-serif">
       <Header />
       <main className="max-w-6xl mx-auto py-10 px-4">
         <nav className="flex items-center text-sm text-gray-500 mb-4">

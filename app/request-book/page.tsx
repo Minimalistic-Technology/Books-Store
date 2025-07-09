@@ -124,7 +124,7 @@ const RequestBookPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-white font-serif relative">
+    <div className="flex flex-col min-h-screen w-full bg-white font-serif relative">
       {/* Orange Icons */}
       <div className="absolute top-10 left-10 text-orange-600 opacity-20 animate-pulse">
         <FontAwesomeIcon icon={faBookOpen} size="3x" />

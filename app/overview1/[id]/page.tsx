@@ -265,7 +265,7 @@ export default function Overview() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen w-full flex flex-col bg-white">
       <Header />
       <main className="flex-grow px-6 sm:px-8 md:px-12 py-6">
         <div className="flex flex-col lg:flex-row items-start">

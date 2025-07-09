@@ -3,9 +3,7 @@ import HeroSection from "./components/herosection/page";
 
 export default function Home() {
   return (
-  
-    <div>
-      
+    <div className="w-full min-h-screen bg-yellow-100">
       <HeroSection />
       <Footer />
     </div>

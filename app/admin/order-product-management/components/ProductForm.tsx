@@ -2,9 +2,10 @@
 "use client";
 
 import { useState } from "react";
+import { Product } from "../types";
 
 type ProductFormProps = {
-  product?: { id?: string; name?: string; price?: number; inventory?: number; description?: string; createdAt?: string };
+  product?: Product;
   onClose: () => void;
   onSave: (data: { id?: string; name: string; price: number; inventory: number; description: string; createdAt?: string }) => void;
 };
@@ -18,6 +19,7 @@ export default function ProductForm({ product, onClose, onSave }: ProductFormPro
     description: product?.description || "",
     createdAt: product?.createdAt || new Date().toISOString(),
   });
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -25,63 +27,91 @@ export default function ProductForm({ product, onClose, onSave }: ProductFormPro
       ...prev,
       [name]: name === "price" || name === "inventory" ? parseFloat(value) || 0 : value,
     }));
+    setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    onSave(formData);
+    const newErrors: { [key: string]: string } = {};
+    if (!formData.name.trim()) newErrors.name = "Name is required";
+    if (formData.price <= 0) newErrors.price = "Price must be greater than 0";
+    if (formData.inventory < 0) newErrors.inventory = "Inventory cannot be negative";
+    if (!formData.description.trim()) newErrors.description = "Description is required";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    onSave({
+      id: formData.id,
+      name: formData.name,
+      price: formData.price,
+      inventory: formData.inventory,
+      description: formData.description,
+      createdAt: formData.createdAt,
+    });
+    onClose();
   };
 
   return (
     <div className="fixed inset-0 bg-yellow-500 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
-      <div className="card p-6 max-w-md w-full animate__zoomIn">
+      <div className="card p-6 max-w-lg w-full animate__zoomIn" style={{ maxHeight: "90vh", overflowY: "auto" }}>
         <h2 className="text-2xl font-semibold mb-4 text-yellow-900">
           {product ? "Edit Product" : "Add New Product"}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Product Name</label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Price ($)</label>
-            <input
-              type="number"
-              name="price"
-              value={formData.price}
-              onChange={handleChange}
-              step="0.01"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Inventory</label>
-            <input
-              type="number"
-              name="inventory"
-              value={formData.inventory}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Description</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 h-24 resize-y"
-              required
-            />
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="Product Name"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                required
+              />
+              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+            </div>
+            <div>
+              <input
+                type="number"
+                name="price"
+                value={formData.price || ""}
+                onChange={handleChange}
+                placeholder="Price"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                required
+                step="0.01"
+                min="0.01"
+              />
+              {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
+            </div>
+            <div>
+              <input
+                type="number"
+                name="inventory"
+                value={formData.inventory || ""}
+                onChange={handleChange}
+                placeholder="Inventory"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                required
+                min="0"
+              />
+              {errors.inventory && <p className="text-red-500 text-sm mt-1">{errors.inventory}</p>}
+            </div>
+            <div>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Description"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 h-20 resize-y"
+                required
+              />
+              {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
+            </div>
           </div>
           <div className="flex justify-end space-x-4">
             <button

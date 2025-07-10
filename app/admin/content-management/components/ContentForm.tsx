@@ -1,4 +1,3 @@
-// components/ContentForm.tsx
 "use client";
 
 import { useState, useRef } from "react";
@@ -48,12 +47,14 @@ export default function ContentForm({ content, onClose, onSave }: ContentFormPro
     seoDescription: content?.seoDescription || "",
     media: content?.media || null,
   });
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(content?.media instanceof File ? URL.createObjectURL(content.media) : null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: "" })); // Clear error when user starts typing
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,6 +67,19 @@ export default function ContentForm({ content, onClose, onSave }: ContentFormPro
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const newErrors: { [key: string]: string } = {};
+    if (!formData.title.trim()) newErrors.title = "Title is required";
+    if (!formData.content.trim()) newErrors.content = "Content is required";
+    if (!formData.category.trim()) newErrors.category = "Category is required";
+    if (!formData.tags.trim()) newErrors.tags = "Tags are required";
+    if (!formData.seoTitle.trim()) newErrors.seoTitle = "SEO Title is required";
+    if (!formData.seoDescription.trim()) newErrors.seoDescription = "SEO Description is required";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
     onSave({
       id: formData.id,
       title: formData.title,
@@ -94,60 +108,82 @@ export default function ContentForm({ content, onClose, onSave }: ContentFormPro
 
   return (
     <div className="fixed inset-0 bg-yellow-500 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
-      <div className="card p-6 max-w-2xl w-full animate__zoomIn">
+      <div className="card p-6 max-w-2xl w-full animate__zoomIn" style={{ maxHeight: "90vh", overflowY: "auto" }}>
         <h2 className="text-2xl font-semibold mb-4 text-yellow-900">
           {content ? "Edit Content" : "Create Content"}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 gap-4">
-            <input
-              type="text"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              placeholder="Title"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-              required
-            />
-            <textarea
-              name="content"
-              value={formData.content}
-              onChange={handleChange}
-              placeholder="Content (Rich text support placeholder)"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 h-40 resize-y"
-              required
-            />
-            <input
-              type="text"
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              placeholder="Category"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-            <input
-              type="text"
-              name="tags"
-              value={formData.tags}
-              onChange={handleChange}
-              placeholder="Tags (comma-separated)"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-            <input
-              type="text"
-              name="seoTitle"
-              value={formData.seoTitle}
-              onChange={handleChange}
-              placeholder="SEO Title"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-            <textarea
-              name="seoDescription"
-              value={formData.seoDescription}
-              onChange={handleChange}
-              placeholder="SEO Description"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 h-20 resize-y"
-            />
+            <div>
+              <input
+                type="text"
+                name="title"
+                value={formData.title}
+                onChange={handleChange}
+                placeholder="Title"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                required
+              />
+              {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
+            </div>
+            <div>
+              <textarea
+                name="content"
+                value={formData.content}
+                onChange={handleChange}
+                placeholder="Content (Rich text support placeholder)"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 h-40 resize-y"
+                required
+              />
+              {errors.content && <p className="text-red-500 text-sm mt-1">{errors.content}</p>}
+            </div>
+            <div>
+              <input
+                type="text"
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+                placeholder="Category"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                required
+              />
+              {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
+            </div>
+            <div>
+              <input
+                type="text"
+                name="tags"
+                value={formData.tags}
+                onChange={handleChange}
+                placeholder="Tags (comma-separated)"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                required
+              />
+              {errors.tags && <p className="text-red-500 text-sm mt-1">{errors.tags}</p>}
+            </div>
+            <div>
+              <input
+                type="text"
+                name="seoTitle"
+                value={formData.seoTitle}
+                onChange={handleChange}
+                placeholder="SEO Title"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                required
+              />
+              {errors.seoTitle && <p className="text-red-500 text-sm mt-1">{errors.seoTitle}</p>}
+            </div>
+            <div>
+              <textarea
+                name="seoDescription"
+                value={formData.seoDescription}
+                onChange={handleChange}
+                placeholder="SEO Description"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 h-20 resize-y"
+                required
+              />
+              {errors.seoDescription && <p className="text-red-500 text-sm mt-1">{errors.seoDescription}</p>}
+            </div>
           </div>
           <div
             className="border-2 border-dashed border-gray-400 p-6 rounded-lg text-center bg-white hover:border-teal-500 transition-colors"

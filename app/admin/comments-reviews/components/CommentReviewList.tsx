@@ -17,10 +17,7 @@ export default function CommentReviewList({ onEdit, onDelete, items }: CommentRe
         {items.map((item) => (
           <li key={item.id} className="border p-4 rounded-lg bg-white shadow-md flex justify-between items-center animate__fadeInUp">
             <span className="text-gray-800">
-              {item.author} - {item.content.substring(0, 20)}
-              {item.content.length > 20 ? "..." : ""}
-              {item.isSpam && <span className="text-red-500 ml-2">(Spam)</span>}
-              {!item.isApproved && <span className="text-yellow-500 ml-2">(Pending)</span>}
+              {item.author} - {item.bookName} ({item.isApproved ? "Approved" : "Pending"})
             </span>
             <div>
               <button

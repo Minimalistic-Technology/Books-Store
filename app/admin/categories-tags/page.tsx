@@ -1,4 +1,3 @@
-// app/admin/categories-tags/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -21,7 +20,7 @@ export default function CategoriesTags() {
 
   const handleEdit = (item: CategoryTag) => {
     setSelectedItem(item);
-    setIsCreating(false);
+    setIsCreating(true);
   };
 
   const handleCreate = () => {
@@ -52,6 +51,13 @@ export default function CategoriesTags() {
     } else {
       setItems((prev) => [...prev, newItem]);
     }
+    setIsCreating(false);
+    setSelectedItem(null);
+  };
+
+  const handleClose = () => {
+    setIsCreating(false);
+    setSelectedItem(null);
   };
 
   return (
@@ -66,25 +72,32 @@ export default function CategoriesTags() {
         </button>
       </div>
       <CategoryTagList onEdit={handleEdit} onDelete={handleDelete} items={items} />
-      {(isCreating || selectedItem) && (
-        <CategoryTagForm
-          item={
-            selectedItem
-              ? {
-                  id: selectedItem.id,
-                  name: selectedItem.name,
-                  type: selectedItem.type,
-                  seoTitle: selectedItem.seoTitle,
-                  seoDescription: selectedItem.seoDescription,
-                }
-              : undefined
-          }
-          onClose={() => {
-            setSelectedItem(null);
-            setIsCreating(false);
-          }}
-          onSave={handleSave}
-        />
+      {isCreating && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
+          <div className="card bg-white p-6 rounded-lg shadow-lg max-w-lg w-full relative animate__zoomIn">
+            <button
+              onClick={handleClose}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+            >
+              ×
+            </button>
+            <CategoryTagForm
+              item={
+                selectedItem
+                  ? {
+                      id: selectedItem.id,
+                      name: selectedItem.name,
+                      type: selectedItem.type,
+                      seoTitle: selectedItem.seoTitle,
+                      seoDescription: selectedItem.seoDescription,
+                    }
+                  : undefined
+              }
+              onClose={handleClose}
+              onSave={handleSave}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

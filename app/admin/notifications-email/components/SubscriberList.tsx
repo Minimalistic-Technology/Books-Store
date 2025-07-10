@@ -18,10 +18,10 @@ export default function SubscriberList({ subscribers, onDelete, onToggleActive }
             <span className="text-gray-800">
               {sub.name} ({sub.email}) {sub.isActive ? "(Active)" : "(Inactive)"}
             </span>
-            <div>
+            <div className="flex space-x-2">
               <button
                 onClick={() => onToggleActive(sub.id)}
-                className={`px-3 py-1 rounded mr-2 ${
+                className={`px-3 py-1 rounded ${
                   sub.isActive ? "bg-teal-500 hover:bg-teal-600" : "bg-gray-500 hover:bg-gray-600"
                 } text-white transition-all`}
               >

@@ -16,7 +16,6 @@ export interface Order {
   createdAt: string; // ISO date string
 }
 
-
 export interface Product {
   id: string;
   name: string;
@@ -28,12 +27,16 @@ export interface Product {
 
 export default function OrderProductManagement() {
   const [orders, setOrders] = useState<Order[]>([
-    { id: "1", customerName: "John Doe", totalAmount: 50.00, status: "Pending", createdAt: new Date().toISOString() },
-    { id: "2", customerName: "Jane Smith", totalAmount: 75.00, status: "Shipped", createdAt: new Date().toISOString() },
+    { id: "1", customerName: "John Doe", totalAmount: 50.00, status: "Pending", createdAt: new Date("2025-07-01T10:00:00Z").toISOString() },
+    { id: "2", customerName: "Jane Smith", totalAmount: 75.00, status: "Shipped", createdAt: new Date("2025-07-02T14:30:00Z").toISOString() },
+    { id: "3", customerName: "Mike Wilson", totalAmount: 120.00, status: "Processing", createdAt: new Date("2025-07-03T09:15:00Z").toISOString() },
+    { id: "4", customerName: "Sarah Lee", totalAmount: 30.00, status: "Delivered", createdAt: new Date("2025-07-04T16:45:00Z").toISOString() },
   ]);
   const [products, setProducts] = useState<Product[]>([
-    { id: "1", name: "Book 1", price: 20.00, inventory: 100, description: "A great read", createdAt: new Date().toISOString() },
-    { id: "2", name: "Book 2", price: 25.00, inventory: 50, description: "Another good book", createdAt: new Date().toISOString() },
+    { id: "1", name: "Book 1", price: 20.00, inventory: 100, description: "A great read", createdAt: new Date("2025-07-01T10:00:00Z").toISOString() },
+    { id: "2", name: "Book 2", price: 25.00, inventory: 50, description: "Another good book", createdAt: new Date("2025-07-02T14:30:00Z").toISOString() },
+    { id: "3", name: "Book 3", price: 15.00, inventory: 200, description: "Best seller of the year", createdAt: new Date("2025-07-03T09:15:00Z").toISOString() },
+    { id: "4", name: "Book 4", price: 35.00, inventory: 75, description: "Classic literature", createdAt: new Date("2025-07-04T16:45:00Z").toISOString() },
   ]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -119,24 +122,50 @@ export default function OrderProductManagement() {
         </div>
       </div>
       {isOrderFormOpen && (
-        <OrderForm
-          order={selectedOrder ?? undefined}
-          onClose={() => {
-            setSelectedOrder(null);
-            setIsOrderFormOpen(false);
-          }}
-          onSave={handleSaveOrder}
-        />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
+          <div className="card bg-white p-6 rounded-lg shadow-lg max-w-lg w-full relative animate__zoomIn">
+            <button
+              onClick={() => {
+                setSelectedOrder(null);
+                setIsOrderFormOpen(false);
+              }}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+            >
+              ×
+            </button>
+            <OrderForm
+              order={selectedOrder ?? undefined}
+              onClose={() => {
+                setSelectedOrder(null);
+                setIsOrderFormOpen(false);
+              }}
+              onSave={handleSaveOrder}
+            />
+          </div>
+        </div>
       )}
       {isProductFormOpen && (
-        <ProductForm
-          product={selectedProduct ?? undefined}
-          onClose={() => {
-            setSelectedProduct(null);
-            setIsProductFormOpen(false);
-          }}
-          onSave={handleSaveProduct}
-        />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
+          <div className="card bg-white p-6 rounded-lg shadow-lg max-w-lg w-full relative animate__zoomIn">
+            <button
+              onClick={() => {
+                setSelectedProduct(null);
+                setIsProductFormOpen(false);
+              }}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+            >
+              ×
+            </button>
+            <ProductForm
+              product={selectedProduct ?? undefined}
+              onClose={() => {
+                setSelectedProduct(null);
+                setIsProductFormOpen(false);
+              }}
+              onSave={handleSaveProduct}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

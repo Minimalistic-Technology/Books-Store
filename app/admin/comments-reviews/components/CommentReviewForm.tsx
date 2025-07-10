@@ -41,6 +41,7 @@ export default function CommentReviewForm({ item, onClose, onSave }: CommentRevi
     seoTitle: item?.seoTitle || "",
     seoDescription: item?.seoDescription || "",
   });
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -48,10 +49,23 @@ export default function CommentReviewForm({ item, onClose, onSave }: CommentRevi
       ...prev,
       [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
     }));
+    setErrors((prev) => ({ ...prev, [name]: "" })); // Clear error when user starts typing
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const newErrors: { [key: string]: string } = {};
+    if (!formData.content.trim()) newErrors.content = "Content is required";
+    if (!formData.author.trim()) newErrors.author = "Author is required";
+    if (!formData.bookName.trim()) newErrors.bookName = "Book Name is required";
+    if (!formData.seoTitle.trim()) newErrors.seoTitle = "SEO Title is required";
+    if (!formData.seoDescription.trim()) newErrors.seoDescription = "SEO Description is required";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
     onSave({
       id: formData.id,
       content: formData.content,
@@ -68,38 +82,47 @@ export default function CommentReviewForm({ item, onClose, onSave }: CommentRevi
 
   return (
     <div className="fixed inset-0 bg-yellow-500 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
-      <div className="card p-6 max-w-lg w-full animate__zoomIn">
+      <div className="card p-6 max-w-lg w-full animate__zoomIn" style={{ maxHeight: "90vh", overflowY: "auto" }}>
         <h2 className="text-2xl font-semibold mb-4 text-yellow-900">
           {item ? "Moderate Comment/Review" : "Add Comment/Review"}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 gap-4">
-            <input
-              type="text"
-              name="author"
-              value={formData.author}
-              onChange={handleChange}
-              placeholder="Author Name"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-              required
-            />
-            <input
-              type="text"
-              name="bookName"
-              value={formData.bookName}
-              onChange={handleChange}
-              placeholder="Book Name"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-              required
-            />
-            <textarea
-              name="content"
-              value={formData.content}
-              onChange={handleChange}
-              placeholder="Comment/Review Content"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 h-40 resize-y"
-              required
-            />
+            <div>
+              <input
+                type="text"
+                name="author"
+                value={formData.author}
+                onChange={handleChange}
+                placeholder="Author Name"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                required
+              />
+              {errors.author && <p className="text-red-500 text-sm mt-1">{errors.author}</p>}
+            </div>
+            <div>
+              <input
+                type="text"
+                name="bookName"
+                value={formData.bookName}
+                onChange={handleChange}
+                placeholder="Book Name"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                required
+              />
+              {errors.bookName && <p className="text-red-500 text-sm mt-1">{errors.bookName}</p>}
+            </div>
+            <div>
+              <textarea
+                name="content"
+                value={formData.content}
+                onChange={handleChange}
+                placeholder="Comment/Review Content"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 h-40 resize-y"
+                required
+              />
+              {errors.content && <p className="text-red-500 text-sm mt-1">{errors.content}</p>}
+            </div>
             <div className="flex items-center space-x-6">
               <label className="flex items-center">
                 <input
@@ -122,21 +145,29 @@ export default function CommentReviewForm({ item, onClose, onSave }: CommentRevi
                 Mark as Spam
               </label>
             </div>
-            <input
-              type="text"
-              name="seoTitle"
-              value={formData.seoTitle}
-              onChange={handleChange}
-              placeholder="SEO Title (e.g., Book Review Comment)"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-            <textarea
-              name="seoDescription"
-              value={formData.seoDescription}
-              onChange={handleChange}
-              placeholder="SEO Description (e.g., User review for book)"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 h-20 resize-y"
-            />
+            <div>
+              <input
+                type="text"
+                name="seoTitle"
+                value={formData.seoTitle}
+                onChange={handleChange}
+                placeholder="SEO Title (e.g., Book Review Comment)"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                required
+              />
+              {errors.seoTitle && <p className="text-red-500 text-sm mt-1">{errors.seoTitle}</p>}
+            </div>
+            <div>
+              <textarea
+                name="seoDescription"
+                value={formData.seoDescription}
+                onChange={handleChange}
+                placeholder="SEO Description (e.g., User review for book)"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 h-20 resize-y"
+                required
+              />
+              {errors.seoDescription && <p className="text-red-500 text-sm mt-1">{errors.seoDescription}</p>}
+            </div>
           </div>
           <div className="flex justify-end space-x-4">
             <button

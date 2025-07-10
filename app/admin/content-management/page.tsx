@@ -1,4 +1,3 @@
-// app/admin/content-management/page.tsx
 'use client'
 import { useState } from "react";
 import ContentForm from "./components/ContentForm";
@@ -23,7 +22,7 @@ export default function ContentManagement() {
 
   const handleEdit = (content: Content) => {
     setSelectedContent(content);
-    setIsCreating(false);
+    setIsCreating(true);
   };
 
   const handleCreate = () => {
@@ -62,6 +61,13 @@ export default function ContentManagement() {
     } else {
       setContents((prev) => [...prev, newContent]);
     }
+    setIsCreating(false);
+    setSelectedContent(null);
+  };
+
+  const handleClose = () => {
+    setIsCreating(false);
+    setSelectedContent(null);
   };
 
   return (
@@ -76,28 +82,35 @@ export default function ContentManagement() {
         </button>
       </div>
       <ContentList onEdit={handleEdit} onDelete={handleDelete} contents={contents} />
-      {(isCreating || selectedContent) && (
-        <ContentForm
-          content={
-            selectedContent
-              ? {
-                  id: selectedContent.id,
-                  title: selectedContent.title,
-                  content: selectedContent.body,
-                  category: selectedContent.category || "",
-                  tags: selectedContent.tags || "",
-                  seoTitle: selectedContent.seoTitle || "",
-                  seoDescription: selectedContent.seoDescription || "",
-                  media: selectedContent.media || null,
-                }
-              : undefined
-          }
-          onClose={() => {
-            setSelectedContent(null);
-            setIsCreating(false);
-          }}
-          onSave={handleSave}
-        />
+      {isCreating && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
+          <div className="card bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full relative animate__zoomIn">
+            <button
+              onClick={handleClose}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+            >
+              &times;
+            </button>
+            <ContentForm
+              content={
+                selectedContent
+                  ? {
+                      id: selectedContent.id,
+                      title: selectedContent.title,
+                      content: selectedContent.body,
+                      category: selectedContent.category || "",
+                      tags: selectedContent.tags || "",
+                      seoTitle: selectedContent.seoTitle || "",
+                      seoDescription: selectedContent.seoDescription || "",
+                      media: selectedContent.media || null,
+                    }
+                  : undefined
+              }
+              onClose={handleClose}
+              onSave={handleSave}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

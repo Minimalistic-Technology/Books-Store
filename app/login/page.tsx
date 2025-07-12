@@ -36,7 +36,7 @@ const BookStoreLoginPage: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const loginResponse = await fetch('http://localhost:5000/auth/login', {
+      const loginResponse = await fetch('http://localhost:5000/api/v1/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: trimmedEmail, password: trimmedPassword }),

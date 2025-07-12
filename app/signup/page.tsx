@@ -54,7 +54,6 @@ const BookStoreSignupPage: React.FC = () => {
             height={64}
             className="mb-2"
           />
-          
         </div>
 
         {/* Heading */}

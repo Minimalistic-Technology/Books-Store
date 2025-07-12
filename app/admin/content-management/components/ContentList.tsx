@@ -11,6 +11,18 @@ type ContentListProps = {
 };
 
 export default function ContentList({ onEdit, onDelete, contents }: ContentListProps) {
+  const handleDelete = async (id: string) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/bookstore/admincontent/${id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error("Failed to delete content");
+      onDelete(id); // Call parent onDelete after successful API call
+    } catch (error) {
+      console.error("Error deleting content:", error);
+    }
+  };
+
   return (
     <div className="card p-6 animate__fadeIn">
       <h2 className="text-2xl font-semibold mb-4 text-yellow-900">Content List</h2>
@@ -26,7 +38,7 @@ export default function ContentList({ onEdit, onDelete, contents }: ContentListP
                 Edit
               </button>
               <button
-                onClick={() => onDelete(item.id)}
+                onClick={() => handleDelete(item.id)}
                 className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition-all"
               >
                 Delete

@@ -4,6 +4,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import MetricsCard from "./components/MetricsCard";
 import ChartComponent from "./components/ChartComponent";
+import { useRouter } from "next/navigation";
 
 // Create Context
 const DashboardContext = createContext<{
@@ -48,18 +49,29 @@ export default function Dashboard() {
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
     return localStorage.getItem("isLoggedIn") === "true" || false;
   });
+  const router = useRouter();
 
   useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/users");
+        const data = await response.json();
+        setMetrics((prev) => ({ ...prev, userCount: data.length }));
+      } catch (error) {
+        console.error("Failed to fetch users:", error);
+        setMetrics((prev) => ({ ...prev, userCount: 0 }));
+      }
+    };
+
     const generateRandomData = () => {
-      const randomUserCount = Math.floor(Math.random() * 1000) + 100;
       const randomSales = Math.floor(Math.random() * 10000) + 1000;
       const randomActiveUsers = Math.floor(Math.random() * 200) + 50;
 
-      setMetrics({
-        userCount: randomUserCount,
+      setMetrics((prev) => ({
+        ...prev,
         sales: randomSales,
         activeUsers: randomActiveUsers,
-      });
+      }));
 
       const labels = Array.from({ length: 31 }, (_, i) => `Jul ${i + 1}`);
       const salesTrend = Array.from({ length: 31 }, () =>
@@ -88,6 +100,7 @@ export default function Dashboard() {
       });
     };
 
+    fetchUsers();
     generateRandomData();
   }, []);
 
@@ -99,6 +112,10 @@ export default function Dashboard() {
   const handleLogin = () => {
     setIsLoggedIn(true);
     localStorage.setItem("isLoggedIn", "true");
+  };
+
+  const handleUserCountClick = () => {
+    router.push("/admin/users");
   };
 
   return (
@@ -131,7 +148,7 @@ export default function Dashboard() {
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <MetricsCard title="User Count" value={metrics.userCount} />
+              <MetricsCard title="User Count" value={metrics.userCount} onClick={handleUserCountClick} />
               <MetricsCard title="Sales" value={metrics.sales} />
               <MetricsCard title="Active Users" value={metrics.activeUsers} />
             </div>

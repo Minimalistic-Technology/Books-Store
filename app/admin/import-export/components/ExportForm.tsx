@@ -1,62 +1,115 @@
 // components/ExportForm.tsx
 "use client";
 
-import { useState } from "react";
-import { ExportData } from "../page";
-import * as XLSX from "xlsx"; // Add to package.json: npm install xlsx
+import { useState, useEffect } from "react";
 
-interface ExportFormProps {
-  onExport: (data: ExportData) => void;
+export interface User {
+  username: string;
+  email: string;
 }
 
+type ExportFormProps = {
+  onExport: (data: { type: "users" | "products"; format: "csv" | "excel" }) => void;
+};
+
 export default function ExportForm({ onExport }: ExportFormProps) {
-  const [exportData, setExportData] = useState<ExportData>({ type: "users", format: "csv" });
-  const [error, setError] = useState<string | null>(null);
+  const [exportData, setExportData] = useState<{ type: "users" | "products"; format: "csv" | "excel" }>({ type: "users", format: "csv" });
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const form = e.target as HTMLFormElement;
-    const type = (form.elements.namedItem("type") as HTMLSelectElement).value as "users" | "products";
-    const format = (form.elements.namedItem("format") as HTMLSelectElement).value as "csv" | "excel";
-
-    // Mock data (replace with actual data from your backend)
-    let exportDataArray: any[] = [];
-    if (type === "users") {
-      exportDataArray = [{ username: "user1" }, { username: "user2" }]; // Only username field
-    } else if (type === "products") {
-      exportDataArray = [
-        { name: "Book1", price: 10, stock: 100 },
-        { name: "Book2", price: 15, stock: 50 },
-      ]; // Suggested fields
-    }
-
-    if (exportDataArray.length > 0) {
-      const worksheet = XLSX.utils.json_to_sheet(exportDataArray);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-
-      const fileName = `export_${type}.${format}`;
-      if (format === "csv") {
-        XLSX.writeFile(workbook, fileName, { bookType: "csv" });
-      } else if (format === "excel") {
-        XLSX.writeFile(workbook, fileName, { bookType: "xlsx", bookSST: true });
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch("http://localhost:5000/api/users");
+        const data = await response.json();
+        setUsers(data);
+      } catch (error) {
+        console.error("Failed to fetch users:", error);
+      } finally {
+        setLoading(false);
       }
-      onExport({ type, format });
-      setError(null);
-    } else {
-      setError("No data available for export.");
+    };
+
+    fetchUsers();
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setExportData((prev) => {
+      if (name === "type") {
+        return { ...prev, [name]: value as "users" | "products" };
+      } else if (name === "format") {
+        return { ...prev, [name]: value as "csv" | "excel" };
+      }
+      return prev;
+    });
+  };
+
+  const handleExport = () => {
+    onExport(exportData);
+    if (exportData.type === "users" && users.length > 0) {
+      let exportContent = "";
+
+      if (exportData.format === "csv") {
+        // CSV format
+        const headers = ["Username", "Email"];
+        exportContent = [
+          headers.join(","),
+          ...users.map((user) =>
+            [
+              `"${user.username}"`,
+              `"${user.email}"`,
+            ].join(",")
+          ),
+        ].join("\n");
+        const blob = new Blob([exportContent], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        if (link.download !== undefined) {
+          const url = URL.createObjectURL(blob);
+          link.setAttribute("href", url);
+          link.setAttribute("download", `users_${new Date().toISOString().split("T")[0]}.csv`);
+          link.style.visibility = "hidden";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+      } else if (exportData.format === "excel") {
+        // Simple Excel (TSV) format as a basic approximation
+        const headers = ["Username", "Email"];
+        exportContent = [
+          headers.join("\t"),
+          ...users.map((user) =>
+            [
+              user.username,
+              user.email,
+            ].join("\t")
+          ),
+        ].join("\n");
+        const blob = new Blob([exportContent], { type: "text/tab-separated-values;charset=utf-8;" });
+        const link = document.createElement("a");
+        if (link.download !== undefined) {
+          const url = URL.createObjectURL(blob);
+          link.setAttribute("href", url);
+          link.setAttribute("download", `users_${new Date().toISOString().split("T")[0]}.xls`);
+          link.style.visibility = "hidden";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+      }
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700">Data Type</label>
         <select
           name="type"
           value={exportData.type}
-          onChange={(e) => setExportData({ ...exportData, type: e.target.value as "users" | "products" })}
-          className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-teal-500"
+          onChange={handleChange}
+          className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
         >
           <option value="users">Users</option>
           <option value="products">Products</option>
@@ -67,21 +120,20 @@ export default function ExportForm({ onExport }: ExportFormProps) {
         <select
           name="format"
           value={exportData.format}
-          onChange={(e) => setExportData({ ...exportData, format: e.target.value as "csv" | "excel" })}
-          className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-teal-500"
+          onChange={handleChange}
+          className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
         >
           <option value="csv">CSV</option>
           <option value="excel">Excel</option>
         </select>
       </div>
       <button
-        type="submit"
-        className={`btn-primary w-full ${error ? "opacity-50 cursor-not-allowed" : ""}`}
-        disabled={!!error}
+        onClick={handleExport}
+        disabled={loading || (exportData.type === "users" && users.length === 0)}
+        className="w-full bg-teal-500 text-white p-3 rounded-lg hover:bg-teal-600 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed"
       >
-        Export
+        {loading ? "Loading..." : "Export Data"}
       </button>
-      {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
-    </form>
+    </div>
   );
 }

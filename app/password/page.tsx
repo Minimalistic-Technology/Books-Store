@@ -88,7 +88,7 @@ const BookStorePasswordPage: React.FC = () => {
 
     if (!hasErrors) {
       try {
-        const response = await fetch('http://localhost:5000/auth/signup', {
+        const response = await fetch('http://localhost:5000/api/v1/auth/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -100,11 +100,7 @@ const BookStorePasswordPage: React.FC = () => {
 
         const data = await response.json();
         if (!response.ok) {
-          setErrors((prev) => ({
-            ...prev,
-            apiError: data.message || 'Signup failed. Please try again.',
-          }));
-          return;
+          throw new Error(data.message || 'Signup failed. Please try again.');
         }
 
         alert('Account created successfully! Please log in.');
@@ -112,7 +108,7 @@ const BookStorePasswordPage: React.FC = () => {
       } catch (error) {
         setErrors((prev) => ({
           ...prev,
-          apiError: 'An error occurred during signup. Please try again.',
+          apiError: (error as Error).message || 'An error occurred during signup. Please try again.',
         }));
       }
     }
@@ -260,4 +256,3 @@ const BookStorePasswordPage: React.FC = () => {
 };
 
 export default BookStorePasswordPage;
-

@@ -1,4 +1,4 @@
-// components/ContentForm.tsx
+//ContentForm.tsx
 "use client";
 
 import { useState, useRef } from "react";
@@ -52,10 +52,10 @@ export default function ContentForm({ content, onClose, onSave }: ContentFormPro
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(content?.media instanceof File ? URL.createObjectURL(content.media) : null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    setErrors((prev) => ({ ...prev, [name]: "" }));
+    setErrors((prev) => ({ ...prev, [name]: "" })); // Clear error when user starts typing
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,7 +66,7 @@ export default function ContentForm({ content, onClose, onSave }: ContentFormPro
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const newErrors: { [key: string]: string } = {};
     if (!formData.title.trim()) newErrors.title = "Title is required";
@@ -81,51 +81,17 @@ export default function ContentForm({ content, onClose, onSave }: ContentFormPro
       return;
     }
 
-    const dataToSave = {
+    onSave({
       id: formData.id,
       title: formData.title,
       content: formData.content,
       category: formData.category,
-      tags: formData.tags, // Send as string, no split
+      tags: formData.tags,
       seoTitle: formData.seoTitle,
       seoDescription: formData.seoDescription,
       media: formData.media,
-    };
-
-    try {
-      let response;
-      if (formData.id) {
-        response = await fetch(`http://localhost:5000/api/bookstore/admincontent/${formData.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(dataToSave),
-        });
-      } else {
-        response = await fetch("http://localhost:5000/api/bookstore/admincontent", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(dataToSave),
-        });
-      }
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to save content");
-      }
-      const savedData = await response.json();
-      onSave({
-        id: savedData._id || formData.id || Date.now().toString(),
-        title: formData.title,
-        content: formData.content,
-        category: formData.category,
-        tags: formData.tags,
-        seoTitle: formData.seoTitle,
-        seoDescription: formData.seoDescription,
-        media: formData.media,
-      });
-    } catch (error: any) {
-      console.error("Error saving content:", error);
-      setErrors({ general: error.message || "Failed to save content. Please try again." });
-    }
+    });
+    onClose();
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -173,22 +139,15 @@ export default function ContentForm({ content, onClose, onSave }: ContentFormPro
               {errors.content && <p className="text-red-500 text-sm mt-1">{errors.content}</p>}
             </div>
             <div>
-              <select
+              <input
+                type="text"
                 name="category"
                 value={formData.category}
                 onChange={handleChange}
+                placeholder="Category"
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                 required
-              >
-                <option value="" disabled>Select a category</option>
-                <option value="Competitive-Exam-Books">Competitive-Exam-Books</option>
-                <option value="School-Books">School-Books</option>
-                <option value="College-Books">College-Books</option>
-                <option value="Ref-Books-Guides">Ref-Books-Guides</option>
-                <option value="Entrance-Exam-Books">Entrance-Exam-Books</option>
-                <option value="Stationary">Stationary</option>
-                <option value="Non-Academics">Non-Academics</option>
-              </select>
+              />
               {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
             </div>
             <div>
@@ -228,7 +187,7 @@ export default function ContentForm({ content, onClose, onSave }: ContentFormPro
             </div>
           </div>
           <div
-            className="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center bg-white hover:border-teal-500 transition-colors"
+            className="border-2 border-dashed border-gray-400 p-6 rounded-lg text-center bg-white hover:border-teal-500 transition-colors"
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onClick={() => fileInputRef.current?.click()}
@@ -253,7 +212,6 @@ export default function ContentForm({ content, onClose, onSave }: ContentFormPro
               Choose File
             </button>
           </div>
-          {errors.general && <p className="text-red-500 text-sm mt-1">{errors.general}</p>}
           <div className="flex justify-end space-x-4">
             <button
               type="button"

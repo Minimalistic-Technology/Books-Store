@@ -1,4 +1,4 @@
-// components/CategoryTagForm.tsx
+//CategoryTagForm
 "use client";
 
 import { useState, useRef } from "react";
@@ -37,7 +37,7 @@ export default function CategoryTagForm({ item, onClose, onSave }: CategoryTagFo
     setErrors((prev) => ({ ...prev, [name]: "" })); // Clear error when user starts typing
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const newErrors: { [key: string]: string } = {};
     if (!formData.name.trim()) newErrors.name = "Name is required";
@@ -50,45 +50,14 @@ export default function CategoryTagForm({ item, onClose, onSave }: CategoryTagFo
       return;
     }
 
-    const dataToSave = {
+    onSave({
       id: formData.id,
       name: formData.name,
       type: formData.type as "category" | "tag",
       seoTitle: formData.seoTitle,
       seoDescription: formData.seoDescription,
-    };
-
-    try {
-      let response;
-      if (formData.id) {
-        response = await fetch(`http://localhost:5000/api/bookstore/admincategory/${formData.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(dataToSave),
-        });
-      } else {
-        response = await fetch("http://localhost:5000/api/bookstore/admincategory", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(dataToSave),
-        });
-      }
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to save category/tag");
-      }
-      const savedData = await response.json();
-      onSave({
-        id: savedData._id || formData.id || Date.now().toString(),
-        name: formData.name,
-        type: formData.type as "category" | "tag",
-        seoTitle: formData.seoTitle,
-        seoDescription: formData.seoDescription,
-      });
-    } catch (error: any) {
-      console.error("Error saving category/tag:", error);
-      setErrors({ general: error.message || "Failed to save category/tag. Please try again." });
-    }
+    });
+    onClose();
   };
 
   return (
@@ -148,7 +117,6 @@ export default function CategoryTagForm({ item, onClose, onSave }: CategoryTagFo
               {errors.seoDescription && <p className="text-red-500 text-sm mt-1">{errors.seoDescription}</p>}
             </div>
           </div>
-          {errors.general && <p className="text-red-500 text-sm mt-1">{errors.general}</p>}
           <div className="flex justify-end space-x-4">
             <button
               type="button"

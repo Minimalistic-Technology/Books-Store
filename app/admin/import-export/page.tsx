@@ -22,7 +22,7 @@ export default function ImportExportManagement() {
 
   const handleExport = (data: ExportData) => {
     setExportData(data);
-    // Handle export logic here (moved to ExportForm)
+    console.log("Exporting:", data);
   };
 
   const handleImport = (data: ImportData) => {

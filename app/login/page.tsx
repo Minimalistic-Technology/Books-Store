@@ -26,20 +26,26 @@ const BookStoreLoginPage: React.FC = () => {
     e.preventDefault();
     setError('');
 
-    const trimmedEmail = email.trim();
-    const trimmedPassword = password.trim();
+    const inputEmail = email.trim().toLowerCase();
+    const inputPassword = password;
 
-    if (!trimmedEmail || !trimmedPassword) {
+    if (!inputEmail || !inputPassword) {
       setError('Please enter both email and password.');
+      console.log('Login failed: Missing email or password', { email: inputEmail, password: inputPassword ? '[provided]' : '[missing]' });
       return;
     }
+
+    const requestTime = new Date().toISOString();
+    console.log('Raw input:', { email, password });
+    console.log('Login request payload:', { email: inputEmail, password: inputPassword });
+    console.log('Request timestamp:', requestTime);
 
     setIsLoading(true);
     try {
       const loginResponse = await fetch('http://localhost:5000/api/v1/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: trimmedEmail, password: trimmedPassword }),
+        body: JSON.stringify({ email: inputEmail, password: inputPassword }),
       });
 
       const responseText = await loginResponse.text();
@@ -47,26 +53,39 @@ const BookStoreLoginPage: React.FC = () => {
 
       try {
         loginData = JSON.parse(responseText);
+        console.log('Login response:', loginData);
       } catch {
         setError('Server returned an invalid response. Please try again.');
+        console.error('Invalid JSON response:', responseText);
         return;
       }
 
       if (!loginResponse.ok) {
-        setError(loginData.error || 'Login failed. Please check your credentials.');
+        const errorMessage = loginData.error || 'Login failed. Please check your credentials.';
+        console.log('Login failed with status:', loginResponse.status, 'Error:', errorMessage, 'Timestamp:', requestTime);
+        if (errorMessage === 'Incorrect password') {
+          setError('Incorrect password. Please try again, reset your password, or sign up again.');
+        } else if (errorMessage === 'User not found') {
+          setError('User not found. Please sign up or check your email.');
+        } else {
+          setError(errorMessage);
+        }
         return;
       }
 
       if (!loginData.accessToken) {
         setError('No access token received from server.');
+        console.log('No access token in response:', loginData);
         return;
       }
 
       localStorage.setItem('accessToken', loginData.accessToken);
       localStorage.setItem('isLoggedIn', 'true');
+      console.log('Login successful, redirecting to /');
       router.push('/');
     } catch (error) {
       setError('Unable to connect to the server. Please try again later.');
+      console.error('Login request error:', error, 'Timestamp:', requestTime);
     } finally {
       setIsLoading(false);
     }
@@ -74,19 +93,17 @@ const BookStoreLoginPage: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen w-full bg-white font-serif text-gray-900">
-
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
         <div className="mb-4 text-center">
           <div className="flex flex-col items-center mb-6">
-                    <Image
-                      src="/images/logo.png"
-                      alt="Harsh Book Store Logo"
-                      width={64}
-                      height={64}
-                      className="mb-2"
-                    />
-                    
-                  </div>
+            <Image
+              src="/images/logo.png"
+              alt="Harsh Book Store Logo"
+              width={64}
+              height={64}
+              className="mb-2"
+            />
+          </div>
           <h1 className="text-3xl font-bold mt-2">Welcome Back</h1>
           <p className="text-sm text-gray-600 mt-1">
             Log in to{' '}
@@ -106,7 +123,6 @@ const BookStoreLoginPage: React.FC = () => {
             </p>
           )}
 
-          {/* Email */}
           <div>
             <label htmlFor="email" className="block text-sm font-medium">
               Email
@@ -122,7 +138,6 @@ const BookStoreLoginPage: React.FC = () => {
             />
           </div>
 
-          {/* Password */}
           <div className="relative">
             <label htmlFor="password" className="block text-sm font-medium">
               Password
@@ -146,7 +161,6 @@ const BookStoreLoginPage: React.FC = () => {
             </button>
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-md py-2 transition-all disabled:opacity-50"
@@ -155,7 +169,6 @@ const BookStoreLoginPage: React.FC = () => {
             {isLoading ? 'Logging in...' : 'Log in'}
           </button>
 
-          {/* Links */}
           <div className="text-center text-sm mt-2">
             <Link href="/forgot-credentials" className="text-teal-600 hover:underline">
               Forgot username or password?

@@ -1,7 +1,7 @@
-// components/ExportForm.tsx
 "use client";
 
 import { useState, useEffect } from "react";
+import { Product } from "../../order-product-management/page"; // Adjusted path
 
 export interface User {
   username: string;
@@ -15,6 +15,7 @@ type ExportFormProps = {
 export default function ExportForm({ onExport }: ExportFormProps) {
   const [exportData, setExportData] = useState<{ type: "users" | "products"; format: "csv" | "excel" }>({ type: "users", format: "csv" });
   const [users, setUsers] = useState<User[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -26,12 +27,31 @@ export default function ExportForm({ onExport }: ExportFormProps) {
         setUsers(data);
       } catch (error) {
         console.error("Failed to fetch users:", error);
+      }
+    };
+
+    const fetchProducts = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch("http://localhost:5000/api/bookstore/productroutes/products");
+        const data = await response.json();
+        setProducts(data.map((item: any) => ({
+          id: item._id,
+          name: item.productName,
+          price: item.price,
+          inventory: item.inventory,
+          description: item.description,
+          createdAt: item.createdAt,
+        })));
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchUsers();
+    fetchProducts();
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -52,7 +72,6 @@ export default function ExportForm({ onExport }: ExportFormProps) {
       let exportContent = "";
 
       if (exportData.format === "csv") {
-        // CSV format
         const headers = ["Username", "Email"];
         exportContent = [
           headers.join(","),
@@ -75,7 +94,6 @@ export default function ExportForm({ onExport }: ExportFormProps) {
           document.body.removeChild(link);
         }
       } else if (exportData.format === "excel") {
-        // Simple Excel (TSV) format as a basic approximation
         const headers = ["Username", "Email"];
         exportContent = [
           headers.join("\t"),
@@ -92,6 +110,58 @@ export default function ExportForm({ onExport }: ExportFormProps) {
           const url = URL.createObjectURL(blob);
           link.setAttribute("href", url);
           link.setAttribute("download", `users_${new Date().toISOString().split("T")[0]}.xls`);
+          link.style.visibility = "hidden";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+      }
+    } else if (exportData.type === "products" && products.length > 0) {
+      let exportContent = "";
+
+      if (exportData.format === "csv") {
+        const headers = ["Product Name", "Price", "Inventory (Quantity)", "Description"];
+        exportContent = [
+          headers.join(","),
+          ...products.map((product) =>
+            [
+              `"${product.name}"`,
+              `"${product.price}"`,
+              `"${product.inventory}"`,
+              `"${product.description}"`,
+            ].join(",")
+          ),
+        ].join("\n");
+        const blob = new Blob([exportContent], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        if (link.download !== undefined) {
+          const url = URL.createObjectURL(blob);
+          link.setAttribute("href", url);
+          link.setAttribute("download", `products_${new Date().toISOString().split("T")[0]}.csv`);
+          link.style.visibility = "hidden";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+      } else if (exportData.format === "excel") {
+        const headers = ["Product Name", "Price", "Inventory (Quantity)", "Description"];
+        exportContent = [
+          headers.join("\t"),
+          ...products.map((product) =>
+            [
+              product.name,
+              product.price,
+              product.inventory,
+              product.description,
+            ].join("\t")
+          ),
+        ].join("\n");
+        const blob = new Blob([exportContent], { type: "text/tab-separated-values;charset=utf-8;" });
+        const link = document.createElement("a");
+        if (link.download !== undefined) {
+          const url = URL.createObjectURL(blob);
+          link.setAttribute("href", url);
+          link.setAttribute("download", `products_${new Date().toISOString().split("T")[0]}.xls`);
           link.style.visibility = "hidden";
           document.body.appendChild(link);
           link.click();
@@ -129,7 +199,7 @@ export default function ExportForm({ onExport }: ExportFormProps) {
       </div>
       <button
         onClick={handleExport}
-        disabled={loading || (exportData.type === "users" && users.length === 0)}
+        disabled={loading || (exportData.type === "users" && users.length === 0) || (exportData.type === "products" && products.length === 0)}
         className="w-full bg-teal-500 text-white p-3 rounded-lg hover:bg-teal-600 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed"
       >
         {loading ? "Loading..." : "Export Data"}

@@ -1,8 +1,7 @@
-// components/ProductForm.tsx
 "use client";
 
 import { useState } from "react";
-import { Product } from "../types";
+import { Product } from "../page";
 
 type ProductFormProps = {
   product?: Product;
@@ -30,7 +29,7 @@ export default function ProductForm({ product, onClose, onSave }: ProductFormPro
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const newErrors: { [key: string]: string } = {};
     if (!formData.name.trim()) newErrors.name = "Name is required";
@@ -43,19 +42,59 @@ export default function ProductForm({ product, onClose, onSave }: ProductFormPro
       return;
     }
 
-    onSave({
-      id: formData.id,
-      name: formData.name,
-      price: formData.price,
-      inventory: formData.inventory,
-      description: formData.description,
-      createdAt: formData.createdAt,
-    });
+    try {
+      let response;
+      console.log("Sending data:", {
+        productName: formData.name,
+        price: formData.price,
+        inventory: formData.inventory,
+        description: formData.description,
+        createdAt: formData.createdAt,
+      });
+      if (product?.id) {
+        response = await fetch(`http://localhost:5000/api/bookstore/productroutes/products/${product.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            productName: formData.name,
+            price: formData.price,
+            inventory: formData.inventory,
+            description: formData.description,
+            createdAt: formData.createdAt,
+          }),
+        });
+      } else {
+        response = await fetch("http://localhost:5000/api/bookstore/productroutes/products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            productName: formData.name,
+            price: formData.price,
+            inventory: formData.inventory,
+            description: formData.description,
+            createdAt: formData.createdAt,
+          }),
+        });
+      }
+      if (!response.ok) throw new Error((await response.json()).message || "Failed to save product");
+      const savedData = await response.json();
+      onSave({
+        id: savedData._id || product?.id,
+        name: formData.name,
+        price: formData.price,
+        inventory: formData.inventory,
+        description: formData.description,
+        createdAt: formData.createdAt,
+      });
+    } catch (error) {
+      console.error("Error saving product:", error);
+      setErrors((prev) => ({ ...prev, apiError: (error as Error).message }));
+    }
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 bg-yellow-500 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
+    <div className="fixed inset-0 bg-yellow-50 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
       <div className="card p-6 max-w-lg w-full animate__zoomIn" style={{ maxHeight: "90vh", overflowY: "auto" }}>
         <h2 className="text-2xl font-semibold mb-4 text-yellow-900">
           {product ? "Edit Product" : "Add New Product"}
@@ -128,6 +167,7 @@ export default function ProductForm({ product, onClose, onSave }: ProductFormPro
               Save
             </button>
           </div>
+          {errors.apiError && <p className="text-red-500 text-sm mt-2">{errors.apiError}</p>}
         </form>
       </div>
     </div>

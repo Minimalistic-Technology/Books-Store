@@ -92,7 +92,7 @@ const BookStorePasswordPage: React.FC = () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            username: fullName.trim().toLowerCase(),
+            name: fullName.trim().toLowerCase(), // Changed from 'username' to 'name'
             email,
             password,
           }),

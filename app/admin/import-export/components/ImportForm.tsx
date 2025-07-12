@@ -1,11 +1,12 @@
-// components/ImportForm.tsx
 "use client";
 
 import { useState } from "react";
 import { ImportData } from "../page";
+import { Product } from "../../order-product-management/page";
+import { User } from "./ExportForm";
 
 interface ImportFormProps {
-  onImport: (data: ImportData) => void;
+  onImport: (data: { type: "users" | "products"; file: File | null; parsedData: User[] | Product[] | null }) => void;
 }
 
 export default function ImportForm({ onImport }: ImportFormProps) {
@@ -24,8 +25,57 @@ export default function ImportForm({ onImport }: ImportFormProps) {
 
     const form = e.target as HTMLFormElement;
     const type = (form.elements.namedItem("type") as HTMLSelectElement).value as "users" | "products";
-    onImport({ type, file: selectedFile });
-    setError(null); // Clear error on successful submission
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      let parsedData: User[] | Product[] | null = null;
+
+      try {
+        const lines = text.split("\n").filter(line => line.trim());
+        const headers = lines[0].split(/[,|\t]/).map(header => header.trim().toLowerCase());
+        const dataLines = lines.slice(1);
+
+        if (type === "users") {
+          if (!headers.includes("username") || !headers.includes("email")) {
+            throw new Error("CSV must contain 'Username' and 'Email' columns.");
+          }
+          parsedData = dataLines.map(line => {
+            const values = line.split(/[,|\t]/).map(value => value.trim().replace(/^"|"$/g, ''));
+            return {
+              username: values[headers.indexOf("username")],
+              email: values[headers.indexOf("email")],
+            };
+          }).filter(user => user.username && user.email);
+        } else if (type === "products") {
+          if (!headers.includes("product name") || !headers.includes("price") || !headers.includes("inventory (quantity)") || !headers.includes("description")) {
+            throw new Error("CSV must contain 'Product Name', 'Price', 'Inventory (Quantity)', and 'Description' columns.");
+          }
+          parsedData = dataLines.map(line => {
+            const values = line.split(/[,|\t]/).map(value => value.trim().replace(/^"|"$/g, ''));
+            return {
+              id: "",
+              name: values[headers.indexOf("product name")],
+              price: parseFloat(values[headers.indexOf("price")]) || 0,
+              inventory: parseInt(values[headers.indexOf("inventory (quantity)")], 10) || 0,
+              description: values[headers.indexOf("description")],
+              createdAt: new Date().toISOString(),
+            };
+          }).filter(product => product.name && product.price >= 0 && product.inventory >= 0 && product.description);
+        }
+
+        if (!parsedData || parsedData.length === 0) {
+          throw new Error("No valid data found in the file.");
+        }
+
+        onImport({ type, file: selectedFile, parsedData });
+        setError(null);
+      } catch (err) {
+        setError((err as Error).message || "Failed to parse file.");
+      }
+    };
+
+    reader.readAsText(selectedFile);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

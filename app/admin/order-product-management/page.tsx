@@ -1,19 +1,18 @@
-// app/admin/order-product-management/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import OrderList from "./components/OrderList";
 import ProductList from "./components/ProductList";
 import OrderForm from "./components/OrderForm";
 import ProductForm from "./components/ProductForm";
 
-// Define interfaces
+// Interfaces
 export interface Order {
   id: string;
   customerName: string;
   totalAmount: number;
   status: "Pending" | "Processing" | "Shipped" | "Delivered" | "Cancelled";
-  createdAt: string; // ISO date string
+  createdAt: string;
 }
 
 export interface Product {
@@ -22,26 +21,60 @@ export interface Product {
   price: number;
   inventory: number;
   description: string;
-  createdAt: string; // ISO date string
+  createdAt: string;
 }
 
+// Named export for updating products
+export const updateProducts = (newProducts: Product[], setProducts: React.Dispatch<React.SetStateAction<Product[]>>) => {
+  setProducts((prev) => [...prev, ...newProducts]);
+};
+
+// Default export for the component
 export default function OrderProductManagement() {
-  const [orders, setOrders] = useState<Order[]>([
-    { id: "1", customerName: "John Doe", totalAmount: 50.00, status: "Pending", createdAt: new Date("2025-07-01T10:00:00Z").toISOString() },
-    { id: "2", customerName: "Jane Smith", totalAmount: 75.00, status: "Shipped", createdAt: new Date("2025-07-02T14:30:00Z").toISOString() },
-    { id: "3", customerName: "Mike Wilson", totalAmount: 120.00, status: "Processing", createdAt: new Date("2025-07-03T09:15:00Z").toISOString() },
-    { id: "4", customerName: "Sarah Lee", totalAmount: 30.00, status: "Delivered", createdAt: new Date("2025-07-04T16:45:00Z").toISOString() },
-  ]);
-  const [products, setProducts] = useState<Product[]>([
-    { id: "1", name: "Book 1", price: 20.00, inventory: 100, description: "A great read", createdAt: new Date("2025-07-01T10:00:00Z").toISOString() },
-    { id: "2", name: "Book 2", price: 25.00, inventory: 50, description: "Another good book", createdAt: new Date("2025-07-02T14:30:00Z").toISOString() },
-    { id: "3", name: "Book 3", price: 15.00, inventory: 200, description: "Best seller of the year", createdAt: new Date("2025-07-03T09:15:00Z").toISOString() },
-    { id: "4", name: "Book 4", price: 35.00, inventory: 75, description: "Classic literature", createdAt: new Date("2025-07-04T16:45:00Z").toISOString() },
-  ]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isOrderFormOpen, setIsOrderFormOpen] = useState(false);
   const [isProductFormOpen, setIsProductFormOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/bookstore/orderroutes/orders");
+        const data = await response.json();
+        setOrders(data.map((item: any) => ({
+          id: item._id,
+          customerName: item.customerName,
+          totalAmount: item.totalAmount,
+          status: item.status,
+          createdAt: item.createdAt,
+        })));
+      } catch (error) {
+        console.error("Failed to fetch orders:", error);
+      }
+    };
+
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/bookstore/productroutes/products");
+        const data = await response.json();
+        setProducts(data.map((item: any) => ({
+          id: item._id,
+          name: item.productName,
+          price: item.price,
+          inventory: item.inventory,
+          description: item.description,
+          createdAt: item.createdAt,
+        })));
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
+      }
+    };
+
+    fetchOrders();
+    fetchProducts();
+  }, []);
 
   const handleEditOrder = (order: Order) => {
     setSelectedOrder(order);
@@ -71,7 +104,7 @@ export default function OrderProductManagement() {
 
   const handleSaveProduct = (data: { id?: string; name: string; price: number; inventory: number; description: string; createdAt?: string }) => {
     const newProduct: Product = {
-      id: data.id || Date.now().toString(),
+      id: data.id || "",
       name: data.name,
       price: data.price,
       inventory: data.inventory,

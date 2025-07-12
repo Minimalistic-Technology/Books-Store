@@ -1,53 +1,74 @@
-// components/BannerList.tsx
 "use client";
 
-import { useEffect, useState } from "react";
 import { Banner } from "../page";
 
-type BannerListProps = {
+interface BannerListProps {
   banners: Banner[];
   onUpdateBanners: (banners: Banner[]) => void;
-};
+}
 
 export default function BannerList({ banners, onUpdateBanners }: BannerListProps) {
-  const [localBanners, setLocalBanners] = useState(banners);
+  const handleToggleActive = async (id: string, currentActive: boolean) => {
+    const updatedBanners = banners.map((banner) =>
+      banner.id === id ? { ...banner, isActive: !currentActive } : banner
+    );
+    onUpdateBanners(updatedBanners);
 
-  useEffect(() => {
-    setLocalBanners(banners);
-  }, [banners]);
-
-  useEffect(() => {
-    const updatedBanners = localBanners.map((banner) => ({
-      ...banner,
-      isActive: new Date(banner.startTime) <= new Date() && new Date(banner.endTime) >= new Date(),
-    }));
-    if (JSON.stringify(updatedBanners) !== JSON.stringify(localBanners)) {
-      setLocalBanners(updatedBanners);
-      onUpdateBanners(updatedBanners);
+    try {
+      await fetch(`http://localhost:5000/api/bookstore/bannerRoutes/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !currentActive }),
+      });
+    } catch (error) {
+      console.error("Error updating banner status:", error);
+      onUpdateBanners(banners); // Revert on failure
     }
-  }, [localBanners, onUpdateBanners]);
+  };
+
+  const handleDelete = async (id: string) => {
+    const updatedBanners = banners.filter((banner) => banner.id !== id);
+    onUpdateBanners(updatedBanners);
+
+    try {
+      await fetch(`http://localhost:5000/api/bookstore/bannerRoutes/${id}`, {
+        method: "DELETE",
+      });
+    } catch (error) {
+      console.error("Error deleting banner:", error);
+      onUpdateBanners(banners); // Revert on failure
+    }
+  };
 
   return (
     <div className="card p-6 animate__fadeIn">
-      <h2 className="text-2xl font-semibold mb-4 text-yellow-900">Active Banners</h2>
-      {localBanners.length === 0 ? (
-        <p className="text-gray-500 text-center">No banners created yet.</p>
-      ) : (
-        <ul className="space-y-4">
-          {localBanners.map((banner) => (
-            <li key={banner.id} className="border p-4 rounded-lg bg-white shadow-md animate__fadeInUp">
-              <p className="font-medium text-lg text-gray-800">{banner.message}</p>
+      <h2 className="text-2xl font-semibold mb-4 text-yellow-900">Banner List</h2>
+      <ul className="space-y-4">
+        {banners.map((banner) => (
+          <li key={banner.id} className="border p-4 rounded-lg bg-white shadow-md flex justify-between items-center">
+            <div>
+              <p className="text-gray-800">{banner.message}</p>
               <p className="text-sm text-gray-600">
-                Active: {banner.isActive ? (
-                  <span className="text-green-500">Yes</span>
-                ) : (
-                  <span className="text-red-500">No</span>
-                )} (Start: {new Date(banner.startTime).toLocaleString()}, End: {new Date(banner.endTime).toLocaleString()})
+                {new Date(banner.startTime).toLocaleString()} - {new Date(banner.endTime).toLocaleString()}
               </p>
-            </li>
-          ))}
-        </ul>
-      )}
+            </div>
+            <div className="space-x-2">
+              <button
+                onClick={() => handleToggleActive(banner.id, banner.isActive)}
+                className={`px-3 py-1 rounded ${banner.isActive ? "bg-red-500" : "bg-green-500"} text-white`}
+              >
+                {banner.isActive ? "Deactivate" : "Activate"}
+              </button>
+              <button
+                onClick={() => handleDelete(banner.id)}
+                className="bg-red-500 text-white px-3 py-1 rounded"
+              >
+                Delete
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

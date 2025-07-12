@@ -1,4 +1,3 @@
-// components/OrderForm.tsx
 "use client";
 
 import { useState } from "react";
@@ -29,7 +28,7 @@ export default function OrderForm({ order, onClose, onSave }: OrderFormProps) {
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const newErrors: { [key: string]: string } = {};
     if (!formData.customerName.trim()) newErrors.customerName = "Customer Name is required";
@@ -41,18 +40,48 @@ export default function OrderForm({ order, onClose, onSave }: OrderFormProps) {
       return;
     }
 
-    onSave({
-      id: formData.id,
-      customerName: formData.customerName,
-      totalAmount: formData.totalAmount,
-      status: formData.status,
-      createdAt: formData.createdAt,
-    });
+    try {
+      let response;
+      if (formData.id) {
+        response = await fetch(`http://localhost:5000/api/bookstore/orderroutes/orders/${formData.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            customerName: formData.customerName,
+            totalAmount: formData.totalAmount,
+            status: formData.status,
+            createdAt: formData.createdAt,
+          }),
+        });
+      } else {
+        response = await fetch("http://localhost:5000/api/bookstore/orderroutes/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            customerName: formData.customerName,
+            totalAmount: formData.totalAmount,
+            status: formData.status,
+            createdAt: formData.createdAt,
+          }),
+        });
+      }
+      if (!response.ok) throw new Error("Failed to save order");
+      const savedData = await response.json();
+      onSave({
+        id: savedData._id || formData.id || Date.now().toString(),
+        customerName: formData.customerName,
+        totalAmount: formData.totalAmount,
+        status: formData.status,
+        createdAt: formData.createdAt,
+      });
+    } catch (error) {
+      console.error("Error saving order:", error);
+    }
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 bg-yellow-500 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
+    <div className="fixed inset-0 bg-yellow-50 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
       <div className="card p-6 max-w-lg w-full animate__zoomIn" style={{ maxHeight: "90vh", overflowY: "auto" }}>
         <h2 className="text-2xl font-semibold mb-4 text-yellow-900">
           {order ? "Edit Order" : "Add New Order"}

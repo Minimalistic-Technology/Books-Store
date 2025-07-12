@@ -1,4 +1,3 @@
-// app/admin/notifications/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -8,8 +7,8 @@ import BannerList from "./components/BannerList";
 export interface Banner {
   id: string;
   message: string;
-  startTime: string; // ISO date string
-  endTime: string;   // ISO date string
+  startTime: string;
+  endTime: string;
   isActive: boolean;
 }
 
@@ -17,13 +16,26 @@ export default function Notifications() {
   const [banners, setBanners] = useState<Banner[]>([]);
 
   useEffect(() => {
-    setBanners([
-      { id: "1", message: "Welcome to our Summer Sale!", startTime: new Date().toISOString(), endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), isActive: true },
-    ]);
+    const fetchBanners = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/bookstore/bannerRoutes");
+        const data = await response.json();
+        setBanners(data.map((item: any) => ({
+          id: item._id,
+          message: item.message,
+          startTime: item.startTime,
+          endTime: item.endTime,
+          isActive: item.isActive,
+        })));
+      } catch (error) {
+        console.error("Failed to fetch banners:", error);
+      }
+    };
+    fetchBanners();
   }, []);
 
   const addBanner = (banner: Banner) => {
-    setBanners([...banners, { ...banner, id: Date.now().toString(), isActive: true }]);
+    setBanners([...banners, banner]);
   };
 
   return (

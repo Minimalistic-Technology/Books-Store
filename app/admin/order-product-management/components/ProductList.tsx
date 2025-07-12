@@ -1,4 +1,3 @@
-// components/ProductList.tsx
 "use client";
 
 import type { Product } from "../page";
@@ -10,6 +9,18 @@ type ProductListProps = {
 };
 
 export default function ProductList({ products, onEdit, onDelete }: ProductListProps) {
+  const handleDelete = async (id: string) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/bookstore/productroutes/products/${id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error("Failed to delete product");
+      onDelete(id);
+    } catch (error) {
+      console.error("Error deleting product:", error);
+    }
+  };
+
   return (
     <div className="card p-6 animate__fadeIn">
       <ul className="space-y-4">
@@ -26,7 +37,7 @@ export default function ProductList({ products, onEdit, onDelete }: ProductListP
                 Edit
               </button>
               <button
-                onClick={() => onDelete(product.id)}
+                onClick={() => handleDelete(product.id)}
                 className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition-all"
               >
                 Delete

@@ -15,7 +15,7 @@ export default function AdminLayout({
   const contextValue = useMemo(() => ({ isLoggedIn, handleLogout }), [isLoggedIn, handleLogout]);
 
   return (
-    <DashboardContext.Provider value={contextValue}>
+    // <DashboardContext.Provider value={contextValue}>
       <div className="page-container flex flex-row h-screen bg-yellow-50 overflow-auto">
         <Sidebar />
         <div className="flex-1 flex flex-col min-h-0">
@@ -24,6 +24,6 @@ export default function AdminLayout({
           </main>
         </div>
       </div>
-    </DashboardContext.Provider>
+    // </DashboardContext.Provider>
   );
 }

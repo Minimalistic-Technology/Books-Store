@@ -44,7 +44,7 @@ export default function OrderDetails({ order, onClose, onUpdateOrder }: OrderDet
   };
 
   return (
-    <div className="fixed inset-0 bg-yellow-500 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
+    <div className="fixed inset-0 bg-yellow-50 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
       <div className="card p-6 max-w-md w-full animate__zoomIn">
         <h2 className="text-2xl font-semibold mb-4 text-yellow-900">Order Details - #{order.id}</h2>
         <div className="space-y-6">

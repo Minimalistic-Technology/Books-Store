@@ -1,4 +1,3 @@
-// components/OrderList.tsx
 "use client";
 
 import type { Order } from "../page";
@@ -10,6 +9,18 @@ type OrderListProps = {
 };
 
 export default function OrderList({ orders, onEdit, onDelete }: OrderListProps) {
+  const handleDelete = async (id: string) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/bookstore/orderroutes/orders/${id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error("Failed to delete order");
+      onDelete(id);
+    } catch (error) {
+      console.error("Error deleting order:", error);
+    }
+  };
+
   return (
     <div className="card p-6 animate__fadeIn">
       <ul className="space-y-4">
@@ -26,7 +37,7 @@ export default function OrderList({ orders, onEdit, onDelete }: OrderListProps) 
                 Edit Status
               </button>
               <button
-                onClick={() => onDelete(order.id)}
+                onClick={() => handleDelete(order.id)}
                 className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition-all"
               >
                 Delete

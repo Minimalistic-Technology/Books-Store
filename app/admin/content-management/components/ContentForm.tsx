@@ -142,7 +142,7 @@ export default function ContentForm({ content, onClose, onSave }: ContentFormPro
   };
 
   return (
-    <div className="fixed inset-0 bg-yellow-500 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
+    <div className="fixed inset-0 bg-yellow-50 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
       <div className="card p-6 max-w-2xl w-full animate__zoomIn" style={{ maxHeight: "90vh", overflowY: "auto" }}>
         <h2 className="text-2xl font-semibold mb-4 text-yellow-900">
           {content ? "Edit Content" : "Create Content"}

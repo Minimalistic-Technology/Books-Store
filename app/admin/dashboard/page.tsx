@@ -1,4 +1,3 @@
-// app/admin/dashboard/page.tsx
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
@@ -10,9 +9,17 @@ import { useRouter } from "next/navigation";
 const DashboardContext = createContext<{
   isLoggedIn: boolean;
   handleLogout: () => void;
+  setMetrics: React.Dispatch<
+    React.SetStateAction<{
+      userCount: number;
+      sales: number;
+      activeUsers: number;
+    }>
+  >;
 }>({
   isLoggedIn: false,
   handleLogout: () => {},
+  setMetrics: () => {},
 });
 
 export { DashboardContext };
@@ -21,7 +28,9 @@ export { DashboardContext };
 export function useDashboard() {
   const context = useContext(DashboardContext);
   if (!context) {
-    throw new Error("useDashboard must be used within a DashboardContext.Provider");
+    throw new Error(
+      "useDashboard must be used within a DashboardContext.Provider"
+    );
   }
   return context;
 }
@@ -74,11 +83,13 @@ export default function Dashboard() {
       }));
 
       const labels = Array.from({ length: 31 }, (_, i) => `Jul ${i + 1}`);
-      const salesTrend = Array.from({ length: 31 }, () =>
-        Math.floor(Math.random() * 200) + 10
+      const salesTrend = Array.from(
+        { length: 31 },
+        () => Math.floor(Math.random() * 200) + 10
       );
-      const activeUsersTrend = Array.from({ length: 31 }, () =>
-        Math.floor(Math.random() * 200) + 50
+      const activeUsersTrend = Array.from(
+        { length: 31 },
+        () => Math.floor(Math.random() * 200) + 50
       );
 
       setChartData({
@@ -119,12 +130,16 @@ export default function Dashboard() {
   };
 
   return (
-    <DashboardContext.Provider value={{ isLoggedIn, handleLogout }}>
+    <DashboardContext.Provider value={{ isLoggedIn, handleLogout, setMetrics }}>
       <div className="space-y-8 p-4 animate__fadeIn">
-        <h1 className="text-4xl font-bold text-yellow-900">Dashboard - Books Store</h1>
+        <h1 className="text-4xl font-bold text-yellow-900">
+          Dashboard - Books Store
+        </h1>
         {!isLoggedIn ? (
           <div className="card bg-blue-200 p-6 rounded-lg shadow-lg">
-            <h2 className="text-2xl font-semibold mb-4 text-yellow-900">Login</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-yellow-900">
+              Login
+            </h2>
             <form className="space-y-4">
               <input
                 type="text"
@@ -148,20 +163,38 @@ export default function Dashboard() {
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <MetricsCard title="User Count" value={metrics.userCount} onClick={handleUserCountClick} />
+              <MetricsCard
+                title="User Count"
+                value={metrics.userCount}
+                onClick={handleUserCountClick}
+              />
               <MetricsCard title="Sales" value={metrics.sales} />
               <MetricsCard title="Active Users" value={metrics.activeUsers} />
             </div>
-            <div className="card bg-blue-200 p-6 rounded-lg shadow-lg" style={{ maxHeight: "400px", overflowY: "auto" }}>
-              <h2 className="text-2xl font-semibold mb-4 text-yellow-900">Daily/Monthly Trends</h2>
+            <div
+              className="card bg-blue-200 p-6 rounded-lg shadow-lg"
+              style={{ maxHeight: "400px", overflowY: "auto" }}
+            >
+              <h2 className="text-2xl font-semibold mb-4 text-yellow-900">
+                Daily/Monthly Trends
+              </h2>
               <div style={{ height: "300px" }}>
                 <ChartComponent data={chartData} />
               </div>
             </div>
             <div className="card bg-blue-200 p-6 rounded-lg shadow-lg">
-              <h2 className="text-2xl font-semibold mb-4 text-yellow-900">Quick Links to Major Modules</h2>
+              <h2 className="text-2xl font-semibold mb-4 text-yellow-900">
+                Quick Links to Major Modules
+              </h2>
               <ul className="list-disc pl-5 space-y-2">
-                <li><a href="/admin/content-management" className="text-teal-500 hover:underline">Content Management</a></li>
+                <li>
+                  <a
+                    href="/admin/content-management"
+                    className="text-teal-500 hover:underline"
+                  >
+                    Content Management
+                  </a>
+                </li>
                 <li>
                   <a
                     href="/admin/order-product-management"

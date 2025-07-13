@@ -1,4 +1,3 @@
-// components/CommentReviewForm.tsx
 "use client";
 
 import { useState } from "react";
@@ -8,24 +7,20 @@ type CommentReviewFormProps = {
     id?: string;
     content?: string;
     author?: string;
-    bookName?: string;
-    isApproved?: boolean;
-    isSpam?: boolean;
+    email?: string;
+    rating?: number;
     createdAt?: string;
-    seoTitle?: string;
-    seoDescription?: string;
+    status?: 'pending' | 'approved' | 'disapproved';
   };
   onClose: () => void;
   onSave: (data: {
     id?: string;
     content: string;
     author: string;
-    bookName: string;
-    isApproved: boolean;
-    isSpam: boolean;
+    email: string;
+    rating: number;
     createdAt?: string;
-    seoTitle: string;
-    seoDescription: string;
+    status?: 'pending' | 'approved' | 'disapproved';
   }) => void;
 };
 
@@ -34,12 +29,10 @@ export default function CommentReviewForm({ item, onClose, onSave }: CommentRevi
     id: item?.id || "",
     content: item?.content || "",
     author: item?.author || "",
-    bookName: item?.bookName || "",
-    isApproved: item?.isApproved || false,
-    isSpam: item?.isSpam || false,
+    email: item?.email || "",
+    rating: item?.rating || 1,
     createdAt: item?.createdAt || new Date().toISOString(),
-    seoTitle: item?.seoTitle || "",
-    seoDescription: item?.seoDescription || "",
+    status: item?.status || "pending",
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -47,9 +40,9 @@ export default function CommentReviewForm({ item, onClose, onSave }: CommentRevi
     const { name, value, type } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
+      [name]: type === "number" ? parseInt(value) || 1 : value,
     }));
-    setErrors((prev) => ({ ...prev, [name]: "" })); // Clear error when user starts typing
+    setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -57,9 +50,9 @@ export default function CommentReviewForm({ item, onClose, onSave }: CommentRevi
     const newErrors: { [key: string]: string } = {};
     if (!formData.content.trim()) newErrors.content = "Content is required";
     if (!formData.author.trim()) newErrors.author = "Author is required";
-    if (!formData.bookName.trim()) newErrors.bookName = "Book Name is required";
-    if (!formData.seoTitle.trim()) newErrors.seoTitle = "SEO Title is required";
-    if (!formData.seoDescription.trim()) newErrors.seoDescription = "SEO Description is required";
+    if (!formData.email.trim()) newErrors.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = "Invalid email format";
+    if (!formData.rating || formData.rating < 1 || formData.rating > 5) newErrors.rating = "Rating must be between 1 and 5";
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -70,21 +63,18 @@ export default function CommentReviewForm({ item, onClose, onSave }: CommentRevi
       id: formData.id,
       content: formData.content,
       author: formData.author,
-      bookName: formData.bookName,
-      isApproved: formData.isApproved,
-      isSpam: formData.isSpam,
+      email: formData.email,
+      rating: formData.rating,
       createdAt: formData.createdAt,
-      seoTitle: formData.seoTitle,
-      seoDescription: formData.seoDescription,
+      status: formData.status as 'pending' | 'approved' | 'disapproved',
     });
-    onClose();
   };
 
   return (
     <div className="fixed inset-0 bg-yellow-50 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
       <div className="card p-6 max-w-lg w-full animate__zoomIn" style={{ maxHeight: "90vh", overflowY: "auto" }}>
         <h2 className="text-2xl font-semibold mb-4 text-yellow-900">
-          {item ? "Moderate Comment/Review" : "Add Comment/Review"}
+          {item ? "Edit Comment/Review" : "Add Comment/Review"}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 gap-4">
@@ -102,15 +92,29 @@ export default function CommentReviewForm({ item, onClose, onSave }: CommentRevi
             </div>
             <div>
               <input
-                type="text"
-                name="bookName"
-                value={formData.bookName}
+                type="email"
+                name="email"
+                value={formData.email}
                 onChange={handleChange}
-                placeholder="Book Name"
+                placeholder="Email"
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                 required
               />
-              {errors.bookName && <p className="text-red-500 text-sm mt-1">{errors.bookName}</p>}
+              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+            </div>
+            <div>
+              <input
+                type="number"
+                name="rating"
+                value={formData.rating}
+                onChange={handleChange}
+                placeholder="Rating (1-5)"
+                min="1"
+                max="5"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                required
+              />
+              {errors.rating && <p className="text-red-500 text-sm mt-1">{errors.rating}</p>}
             </div>
             <div>
               <textarea
@@ -123,50 +127,18 @@ export default function CommentReviewForm({ item, onClose, onSave }: CommentRevi
               />
               {errors.content && <p className="text-red-500 text-sm mt-1">{errors.content}</p>}
             </div>
-            <div className="flex items-center space-x-6">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="isApproved"
-                  checked={formData.isApproved}
-                  onChange={handleChange}
-                  className="mr-2 h-5 w-5 text-teal-600 focus:ring-teal-500 border-gray-300 rounded transition-all"
-                />
-                Approve
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="isSpam"
-                  checked={formData.isSpam}
-                  onChange={handleChange}
-                  className="mr-2 h-5 w-5 text-red-600 focus:ring-red-500 border-gray-300 rounded transition-all"
-                />
-                Mark as Spam
-              </label>
-            </div>
             <div>
-              <input
-                type="text"
-                name="seoTitle"
-                value={formData.seoTitle}
+              <label className="block text-sm font-medium text-gray-700">Status</label>
+              <select
+                name="status"
+                value={formData.status}
                 onChange={handleChange}
-                placeholder="SEO Title (e.g., Book Review Comment)"
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                required
-              />
-              {errors.seoTitle && <p className="text-red-500 text-sm mt-1">{errors.seoTitle}</p>}
-            </div>
-            <div>
-              <textarea
-                name="seoDescription"
-                value={formData.seoDescription}
-                onChange={handleChange}
-                placeholder="SEO Description (e.g., User review for book)"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 h-20 resize-y"
-                required
-              />
-              {errors.seoDescription && <p className="text-red-500 text-sm mt-1">{errors.seoDescription}</p>}
+              >
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="disapproved">Disapproved</option>
+              </select>
             </div>
           </div>
           <div className="flex justify-end space-x-4">

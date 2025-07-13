@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Product } from "../page";
+import type { Product } from "../types";
 
 type ProductFormProps = {
   product?: Product;
@@ -44,13 +44,6 @@ export default function ProductForm({ product, onClose, onSave }: ProductFormPro
 
     try {
       let response;
-      console.log("Sending data:", {
-        productName: formData.name,
-        price: formData.price,
-        inventory: formData.inventory,
-        description: formData.description,
-        createdAt: formData.createdAt,
-      });
       if (product?.id) {
         response = await fetch(`http://localhost:5000/api/bookstore/productroutes/products/${product.id}`, {
           method: "PUT",

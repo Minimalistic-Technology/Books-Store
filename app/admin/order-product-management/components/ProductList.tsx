@@ -1,6 +1,6 @@
 "use client";
 
-import type { Product } from "../page";
+import type { Product } from "../types";
 
 type ProductListProps = {
   products: Product[];
@@ -29,10 +29,10 @@ export default function ProductList({ products, onEdit, onDelete }: ProductListP
             <span className="text-gray-800">
               {product.name} - ${product.price.toFixed(2)} (Inventory: {product.inventory})
             </span>
-            <div>
+            <div className="flex space-x-2"> {/* Added flex with space-x-2 for side-by-side buttons */}
               <button
                 onClick={() => onEdit(product)}
-                className="bg-yellow-500 text-white px-3 py-1 rounded-lg mr-2 hover:bg-yellow-600 transition-all"
+                className="bg-yellow-500 text-white px-3 py-1 rounded-lg hover:bg-yellow-600 transition-all"
               >
                 Edit
               </button>

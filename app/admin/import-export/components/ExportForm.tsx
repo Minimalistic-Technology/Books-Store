@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Product } from "../../order-product-management/page"; // Adjusted path
+import type { Product } from "../../order-product-management/types"; // Adjusted path
 
 export interface User {
   username: string;

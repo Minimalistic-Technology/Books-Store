@@ -9,27 +9,48 @@ import { useState, useEffect } from "react";
 interface Category {
   _id: string;
   name: string;
+  type: "category" | "tag";
 }
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [categories, setCategories] = useState<{ _id: string; name: string }[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Predefined categories
+  const predefinedCategories: Category[] = [
+    { _id: "static-competitive", name: "Competitive-Exam-Books", type: "category" },
+    { _id: "static-school", name: "School-Books", type: "category" },
+    { _id: "static-college", name: "College-Books", type: "category" },
+    { _id: "static-ref", name: "Ref-Books-Guides", type: "category" },
+    { _id: "static-entrance", name: "Entrance-Exam-Books", type: "category" },
+    { _id: "static-stationary", name: "Stationary", type: "category" },
+    { _id: "static-non-academics", name: "Non-Academics", type: "category" },
+  ];
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/bookstore/categories');
+        const response = await fetch('http://localhost:5000/api/bookstore/admincategory');
         if (!response.ok) throw new Error('Failed to fetch categories');
         const data = await response.json();
-        // Filter out categories with empty books arrays and map to relevant fields
-        const validCategories = data.filter((cat: any) => cat.books.length > 0 || cat.name === "Request Your Book").map((cat: any) => ({ _id: cat._id, name: cat.name }));
-        // Ensure "Request Your Book" is always included as a static category
-        if (!validCategories.some((cat: Category) => cat.name === "Request Your Book")) {
-          validCategories.push({ _id: "static-request", name: "Request Your Book" });
+        // Filter for categories only (exclude tags) and map to relevant fields
+        const fetchedCategories = data
+          .filter((cat: any) => cat.type === "category")
+          .map((cat: any) => ({ _id: cat._id, name: cat.name, type: cat.type }));
+        // Combine predefined and fetched categories, avoiding duplicates by name
+        const combinedCategories = [
+          ...predefinedCategories,
+          ...fetchedCategories.filter(
+            (cat: Category) => !predefinedCategories.some((pre) => pre.name === cat.name)
+          ),
+        ];
+        // Ensure "Request Your Book" is always included
+        if (!combinedCategories.some((cat: Category) => cat.name === "Request Your Book")) {
+          combinedCategories.push({ _id: "static-request", name: "Request Your Book", type: "category" });
         }
-        setCategories(validCategories);
+        setCategories(combinedCategories);
       } catch (err) {
         setError('Error loading categories. Please try again later.');
         console.error(err);

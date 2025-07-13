@@ -2,8 +2,9 @@ export interface Order {
   id: string;
   customerName: string;
   totalAmount: number;
-  status: "Pending" | "Processing" | "Shipped" | "Delivered" | "Cancelled";
+  status: "Shipped" | "Delivered" | "Shipping" | "On the Way" | "Out for Delivery";
   createdAt: string;
+  items?: any[]; // Array of order items
 }
 
 export interface Product {

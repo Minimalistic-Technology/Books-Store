@@ -11,10 +11,12 @@ const BookStorePasswordPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [role, setRole] = useState<'User' | 'Admin'>('User');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({
     fullName: '',
     password: '',
+    role: '',
     apiError: '',
   });
   const [isMounted, setIsMounted] = useState(false);
@@ -72,6 +74,7 @@ const BookStorePasswordPage: React.FC = () => {
     const newErrors = {
       fullName: '',
       password: '',
+      role: '',
       apiError: '',
     };
 
@@ -83,18 +86,23 @@ const BookStorePasswordPage: React.FC = () => {
       newErrors.password = 'Password must be at least 8 characters long';
       hasErrors = true;
     }
+    if (!role) {
+      newErrors.role = 'Please select a role';
+      hasErrors = true;
+    }
 
     setErrors(newErrors);
 
     if (!hasErrors) {
       try {
-        const response = await fetch('http://localhost:5000/api/v1/auth/signup', {
+        const response = await fetch('http://localhost:5000/api/auth/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            name: fullName.trim().toLowerCase(), // Changed from 'username' to 'name'
+            username: fullName.trim().toLowerCase(),
             email,
             password,
+            role,
           }),
         });
 
@@ -195,6 +203,25 @@ const BookStorePasswordPage: React.FC = () => {
             </div>
             {errors.password && (
               <p className="text-sm text-red-500 mt-1">{errors.password}</p>
+            )}
+          </div>
+
+          {/* Role Dropdown */}
+          <div className="mb-4">
+            <label htmlFor="role" className="block text-sm font-medium">
+              Role
+            </label>
+            <select
+              id="role"
+              value={role}
+              onChange={(e) => setRole(e.target.value as 'User' | 'Admin')}
+              className="w-full border border-gray-300 rounded-md px-4 py-2 mt-1 text-sm focus:ring-2 focus:ring-teal-500"
+            >
+              <option value="User">User</option>
+              <option value="Admin">Admin</option>
+            </select>
+            {errors.role && (
+              <p className="text-sm text-red-500 mt-1">{errors.role}</p>
             )}
           </div>
 

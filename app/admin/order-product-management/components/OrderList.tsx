@@ -1,6 +1,6 @@
 "use client";
 
-import type { Order } from "../page";
+import type { Order } from "../types";
 
 type OrderListProps = {
   orders: Order[];
@@ -16,6 +16,8 @@ export default function OrderList({ orders, onEdit, onDelete }: OrderListProps) 
       });
       if (!response.ok) throw new Error("Failed to delete order");
       onDelete(id);
+      // Trigger event to notify order-management
+      window.dispatchEvent(new Event("orderUpdated"));
     } catch (error) {
       console.error("Error deleting order:", error);
     }
@@ -27,7 +29,7 @@ export default function OrderList({ orders, onEdit, onDelete }: OrderListProps) 
         {orders.map((order) => (
           <li key={order.id} className="border p-4 rounded-lg bg-white shadow-md flex justify-between items-center animate__fadeInUp">
             <span className="text-gray-800">
-              {order.customerName} - ${order.totalAmount.toFixed(2)} ({order.status})
+              {order.customerName} - ₹{order.totalAmount.toFixed(2)} ({order.status})
             </span>
             <div>
               <button

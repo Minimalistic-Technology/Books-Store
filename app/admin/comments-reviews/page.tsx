@@ -1,7 +1,6 @@
-// app/admin/comments-reviews/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import CommentReviewForm from "./components/CommentReviewForm";
 import CommentReviewList from "./components/CommentReviewList";
 
@@ -10,99 +9,119 @@ export interface CommentReview {
   id: string;
   content: string;
   author: string;
-  bookName: string;
-  isApproved: boolean;
-  isSpam: boolean;
+  email: string;
+  rating: number;
   createdAt: string;
-  seoTitle: string;
-  seoDescription: string;
+  status: 'pending' | 'approved' | 'disapproved'; // Add status field
 }
 
 export default function CommentsReviews() {
-  const [items, setItems] = useState<CommentReview[]>([
-    {
-      id: "1",
-      content: "This book is a masterpiece! The plot twists kept me hooked till the end.",
-      author: "Alice Johnson",
-      bookName: "The Silent Forest",
-      isApproved: true,
-      isSpam: false,
-      createdAt: new Date("2025-07-05T10:00:00Z").toISOString(),
-      seoTitle: "Review: The Silent Forest",
-      seoDescription: "Alice Johnson's review of The Silent Forest book.",
-    },
-    {
-      id: "2",
-      content: "Amazing read, highly recommend to all fantasy lovers!",
-      author: "Bob Smith",
-      bookName: "Dragon's Legacy",
-      isApproved: false,
-      isSpam: false,
-      createdAt: new Date("2025-07-06T14:30:00Z").toISOString(),
-      seoTitle: "Dragon's Legacy Review",
-      seoDescription: "Bob Smith's review of the fantasy novel Dragon's Legacy.",
-    },
-    {
-      id: "3",
-      content: "Buy cheap pills now!!! Click here!!!",
-      author: "UnknownUser123",
-      bookName: "Random Book",
-      isApproved: false,
-      isSpam: true,
-      createdAt: new Date("2025-07-07T09:15:00Z").toISOString(),
-      seoTitle: "Spam Comment",
-      seoDescription: "Potential spam comment detected.",
-    },
-    {
-      id: "4",
-      content: "The characters were well-developed, but the ending felt rushed.",
-      author: "Clara Brown",
-      bookName: "Echoes of Time",
-      isApproved: true,
-      isSpam: false,
-      createdAt: new Date("2025-07-08T16:45:00Z").toISOString(),
-      seoTitle: "Echoes of Time Review",
-      seoDescription: "Clara Brown's critique of Echoes of Time.",
-    },
-  ]);
+  const [items, setItems] = useState<CommentReview[]>([]);
   const [selectedItem, setSelectedItem] = useState<CommentReview | null>(null);
   const [isModerating, setIsModerating] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch reviews from API
+  const fetchReviews = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/api/bookstore/reviews");
+      if (!response.ok) {
+        throw new Error("Failed to fetch reviews");
+      }
+      const data = await response.json();
+      const reviews: CommentReview[] = data.map((review: any) => ({
+        id: review._id,
+        content: review.review,
+        author: review.name,
+        email: review.email,
+        rating: review.rating,
+        createdAt: review.createdAt,
+        status: review.status, // Map the status field
+      }));
+      setItems(reviews);
+      setError(null);
+    } catch (err) {
+      setError("Failed to load reviews. Please try again.");
+      console.error("Error fetching reviews:", err);
+    }
+  };
+
+  // Fetch reviews on mount
+  useEffect(() => {
+    fetchReviews();
+  }, []); // Empty dependency array to run only on mount
 
   const handleEdit = (item: CommentReview) => {
     setSelectedItem(item);
     setIsModerating(true);
   };
 
-  const handleDelete = (id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
+  const handleDelete = async (id: string) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/bookstore/reviews/${id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to delete review");
+      }
+      setItems((prev) => prev.filter((item) => item.id !== id));
+      setError(null);
+    } catch (err) {
+      setError("Failed to delete review. Please try again.");
+      console.error("Error deleting review:", err);
+    }
   };
 
-  const handleSave = (data: {
+  const handleSave = async (data: {
     id?: string;
     content: string;
     author: string;
-    bookName: string;
-    isApproved: boolean;
-    isSpam: boolean;
+    email: string;
+    rating: number;
     createdAt?: string;
-    seoTitle: string;
-    seoDescription: string;
+    status?: 'pending' | 'approved' | 'disapproved';
   }) => {
-    const newItem: CommentReview = {
-      id: data.id || Date.now().toString(),
-      content: data.content,
-      author: data.author,
-      bookName: data.bookName,
-      isApproved: data.isApproved,
-      isSpam: data.isSpam,
-      createdAt: data.createdAt || new Date().toISOString(),
-      seoTitle: data.seoTitle,
-      seoDescription: data.seoDescription,
-    };
-    if (selectedItem) {
-      setItems((prev) => prev.map((item) => (item.id === selectedItem.id ? newItem : item)));
+    try {
+      const reviewData = {
+        review: data.content,
+        name: data.author,
+        email: data.email,
+        rating: data.rating,
+        status: data.status, // Include status in the payload
+      };
+
+      let response;
+      if (data.id) {
+        // Update existing review
+        response = await fetch(`http://localhost:5000/api/bookstore/reviews/${data.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(reviewData),
+        });
+        if (!response.ok) {
+          throw new Error("Failed to update review");
+        }
+      } else {
+        // Create new review
+        response = await fetch("http://localhost:5000/api/bookstore/reviews", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(reviewData),
+        });
+        if (!response.ok) {
+          throw new Error("Failed to create review");
+        }
+      }
+
+      // Fetch reviews to ensure state is in sync with database
+      await fetchReviews();
+      setError(null);
+    } catch (err) {
+      setError(data.id ? "Failed to update review. Please try again." : "Failed to create review. Please try again.");
+      console.error("Error saving review:", err);
     }
-    // Note: For new comments, this should be handled via backend creation, not client-side addition
+    setSelectedItem(null);
+    setIsModerating(false);
   };
 
   const handleClose = () => {
@@ -113,6 +132,17 @@ export default function CommentsReviews() {
   return (
     <div className="space-y-8 p-4 animate__fadeIn">
       <h1 className="text-4xl font-bold text-yellow-900">Comments & Reviews - Books Store</h1>
+      {error && (
+        <div className="bg-red-100 text-red-800 p-3 rounded-lg animate__fadeIn">
+          {error}
+        </div>
+      )}
+      {/* <button
+        onClick={() => setIsModerating(true)}
+        className="bg-teal-500 text-white px-4 py-2 rounded-lg hover:bg-teal-600 transition-all"
+      >
+        Add New Review
+      </button> */}
       <CommentReviewList onEdit={handleEdit} onDelete={handleDelete} items={items} />
       {isModerating && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">

@@ -1,4 +1,3 @@
-// components/OrderList.tsx
 "use client";
 
 import { useState } from "react";

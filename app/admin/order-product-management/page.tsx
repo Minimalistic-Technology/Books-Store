@@ -5,31 +5,13 @@ import OrderList from "./components/OrderList";
 import ProductList from "./components/ProductList";
 import OrderForm from "./components/OrderForm";
 import ProductForm from "./components/ProductForm";
-
-// Interfaces
-export interface Order {
-  id: string;
-  customerName: string;
-  totalAmount: number;
-  status: "Pending" | "Processing" | "Shipped" | "Delivered" | "Cancelled";
-  createdAt: string;
-}
-
-export interface Product {
-  id: string;
-  name: string;
-  price: number;
-  inventory: number;
-  description: string;
-  createdAt: string;
-}
+import { Order, Product } from "./types";
 
 // Named export for updating products
 export const updateProducts = (newProducts: Product[], setProducts: React.Dispatch<React.SetStateAction<Product[]>>) => {
   setProducts((prev) => [...prev, ...newProducts]);
 };
 
-// Default export for the component
 export default function OrderProductManagement() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -42,26 +24,39 @@ export default function OrderProductManagement() {
     const fetchOrders = async () => {
       try {
         const response = await fetch("http://localhost:5000/api/bookstore/orderroutes/orders");
+        if (!response.ok) throw new Error("Failed to fetch orders");
         const data = await response.json();
-        setOrders(data.map((item: any) => ({
-          id: item._id,
-          customerName: item.customerName,
-          totalAmount: item.totalAmount,
-          status: item.status,
-          createdAt: item.createdAt,
+        setOrders(data.orders.map((item: any) => ({
+          id: item.id || item._id,
+          customerName: item.customerName || "Anonymous",
+          totalAmount: item.totalAmount || 0,
+          status: item.status || "Shipped",
+          createdAt: item.createdAt || new Date().toISOString(),
+          items: item.items || [], // Array of order items
         })));
       } catch (error) {
         console.error("Failed to fetch orders:", error);
+        // Fallback to localStorage if API fails
+        const savedOrders = JSON.parse(localStorage.getItem("adminOrders") || "[]");
+        setOrders(savedOrders.map((item: any) => ({
+          id: item._id,
+          customerName: "Anonymous",
+          totalAmount: item.price * item.quantity,
+          status: item.status || "Shipped",
+          createdAt: new Date().toISOString(),
+          items: [item],
+        })));
       }
     };
 
     const fetchProducts = async () => {
       try {
         const response = await fetch("http://localhost:5000/api/bookstore/productroutes/products");
+        if (!response.ok) throw new Error("Failed to fetch products");
         const data = await response.json();
         setProducts(data.map((item: any) => ({
-          id: item._id,
-          name: item.productName,
+          id: item.id || item._id,
+          name: item.name || item.productName,
           price: item.price,
           inventory: item.inventory,
           description: item.description,
@@ -74,6 +69,26 @@ export default function OrderProductManagement() {
 
     fetchOrders();
     fetchProducts();
+
+    // Sync with localStorage updates from cart
+    const syncOrders = () => {
+      const savedOrders = JSON.parse(localStorage.getItem("adminOrders") || "[]");
+      setOrders((prev) => {
+        const updatedOrders = [...prev, ...savedOrders.filter((newOrder: any) => 
+          !prev.some((order) => order.id === newOrder._id)
+        )].map((order) => ({
+          id: order.id || order._id,
+          customerName: "Anonymous",
+          totalAmount: order.items.reduce((sum: number, item: any) => sum + (item.discountedPrice || item.price) * item.quantity, 0),
+          status: order.status || "Shipped",
+          createdAt: order.createdAt || new Date().toISOString(),
+          items: order.items || [order],
+        }));
+        return updatedOrders;
+      });
+    };
+    window.addEventListener("orderUpdated", syncOrders);
+    return () => window.removeEventListener("orderUpdated", syncOrders);
   }, []);
 
   const handleEditOrder = (order: Order) => {
@@ -86,19 +101,28 @@ export default function OrderProductManagement() {
     setIsProductFormOpen(true);
   };
 
-  const handleSaveOrder = (data: { id?: string; customerName: string; totalAmount: number; status: string; createdAt?: string }) => {
+  const handleSaveOrder = (data: { id?: string; customerName: string; totalAmount: number; status: string; createdAt?: string; items?: any[] }) => {
     const newOrder: Order = {
       id: data.id || Date.now().toString(),
       customerName: data.customerName,
       totalAmount: data.totalAmount,
       status: data.status as Order["status"],
       createdAt: data.createdAt || new Date().toISOString(),
+      items: data.items || [],
     };
     if (selectedOrder) {
       setOrders((prev) => prev.map((order) => (order.id === selectedOrder.id ? newOrder : order)));
+      // Update localStorage and notify
+      const allOrders = JSON.parse(localStorage.getItem("adminOrders") || "[]");
+      const updatedOrders = allOrders.map((order: any) => order._id === newOrder.id ? { ...order, status: newOrder.status } : order);
+      localStorage.setItem("adminOrders", JSON.stringify(updatedOrders));
+      const userOrders = JSON.parse(localStorage.getItem("orders") || "[]");
+      const updatedUserOrders = userOrders.map((order: any) => order._id === newOrder.id ? { ...order, status: newOrder.status } : order);
+      localStorage.setItem("orders", JSON.stringify(updatedUserOrders));
     } else {
       setOrders((prev) => [...prev, newOrder]);
     }
+    window.dispatchEvent(new Event("orderUpdated"));
     setIsOrderFormOpen(false);
   };
 
@@ -121,6 +145,11 @@ export default function OrderProductManagement() {
 
   const handleDeleteOrder = (id: string) => {
     setOrders((prev) => prev.filter((order) => order.id !== id));
+    const allOrders = JSON.parse(localStorage.getItem("adminOrders") || "[]");
+    localStorage.setItem("adminOrders", JSON.stringify(allOrders.filter((order: any) => order._id !== id)));
+    const userOrders = JSON.parse(localStorage.getItem("orders") || "[]");
+    localStorage.setItem("orders", JSON.stringify(userOrders.filter((order: any) => order._id !== id)));
+    window.dispatchEvent(new Event("orderUpdated"));
   };
 
   const handleDeleteProduct = (id: string) => {

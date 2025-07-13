@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ImportData } from "../page";
-import { Product } from "../../order-product-management/page";
+import type { Product } from "../../order-product-management/types";
 import { User } from "./ExportForm";
 
 interface ImportFormProps {

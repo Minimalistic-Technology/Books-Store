@@ -1,4 +1,3 @@
-
 "use client";
 import Header from "../components/header/page";
 import Footer from "../components/footer/page";
@@ -11,7 +10,7 @@ import { faShoppingCart } from "@fortawesome/free-solid-svg-icons";
 
 interface CartItem {
   _id: string;
-  name: string;
+  name: string; // Maps to title in orders
   price: number;
   imageUrl: string;
   condition: string;
@@ -116,9 +115,13 @@ const CartPage: React.FC = () => {
     const cartItems = JSON.parse(localStorage.getItem("cart") || "[]");
     const orderItems = cartItems.map((item: CartItem) => ({
       ...item,
-      status: ["Delivered", "Shipping", "On the Way", "Out for Delivery"][Math.floor(Math.random() * 4)],
+      title: item.name, // Map name to title for order display
+      status: "Shipped" as const, // Initial status set to Shipped
     }));
     localStorage.setItem("orders", JSON.stringify(orderItems));
+    // Notify admin panel (simulated via localStorage for now)
+    const adminOrders = JSON.parse(localStorage.getItem("adminOrders") || "[]");
+    localStorage.setItem("adminOrders", JSON.stringify([...adminOrders, ...orderItems]));
     localStorage.removeItem("cart");
     setCartItems([]);
     setShowPaymentForm(false);

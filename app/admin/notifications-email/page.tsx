@@ -4,7 +4,6 @@
 import { useState } from "react";
 import SubscriberList from "./components/SubscriberList";
 import EmailComposer from "./components/EmailComposer";
-import NotificationSettings from "./components/NotificationSettings";
 
 // Define interfaces
 export interface Subscriber {
@@ -61,10 +60,7 @@ export default function NotificationsEmailManagement() {
             onToggleActive={handleToggleActive}
           />
         </div>
-        <div>
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Notification Settings</h2>
-          <NotificationSettings />
-        </div>
+        
       </div>
       {isEmailComposerOpen && (
         <EmailComposer

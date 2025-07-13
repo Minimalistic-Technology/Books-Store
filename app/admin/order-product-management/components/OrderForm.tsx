@@ -1,21 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { Order } from "../types";
+import type { Order } from "../types";
 
 type OrderFormProps = {
   order?: Order;
   onClose: () => void;
-  onSave: (data: { id?: string; customerName: string; totalAmount: number; status: string; createdAt?: string }) => void;
+  onSave: (data: { id?: string; customerName: string; totalAmount: number; status: string; createdAt?: string; items?: any[] }) => void;
 };
 
 export default function OrderForm({ order, onClose, onSave }: OrderFormProps) {
   const [formData, setFormData] = useState({
     id: order?.id || "",
-    customerName: order?.customerName || "",
+    customerName: order?.customerName || "Anonymous",
     totalAmount: order?.totalAmount || 0,
-    status: order?.status || "Pending",
+    status: order?.status || "Shipped",
     createdAt: order?.createdAt || new Date().toISOString(),
+    items: order?.items || [],
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -28,56 +29,20 @@ export default function OrderForm({ order, onClose, onSave }: OrderFormProps) {
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const newErrors: { [key: string]: string } = {};
-    if (!formData.customerName.trim()) newErrors.customerName = "Customer Name is required";
-    if (formData.totalAmount <= 0) newErrors.totalAmount = "Total Amount must be greater than 0";
-    if (!formData.status) newErrors.status = "Status is required";
+    if (!formData.customerName.trim()) newErrors.customerName = "Customer name is required";
+    if (formData.totalAmount <= 0) newErrors.totalAmount = "Total amount must be greater than 0";
+    if (!["Shipped", "Delivered", "Shipping", "On the Way", "Out for Delivery"].includes(formData.status))
+      newErrors.status = "Invalid status";
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
-    try {
-      let response;
-      if (formData.id) {
-        response = await fetch(`http://localhost:5000/api/bookstore/orderroutes/orders/${formData.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            customerName: formData.customerName,
-            totalAmount: formData.totalAmount,
-            status: formData.status,
-            createdAt: formData.createdAt,
-          }),
-        });
-      } else {
-        response = await fetch("http://localhost:5000/api/bookstore/orderroutes/orders", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            customerName: formData.customerName,
-            totalAmount: formData.totalAmount,
-            status: formData.status,
-            createdAt: formData.createdAt,
-          }),
-        });
-      }
-      if (!response.ok) throw new Error("Failed to save order");
-      const savedData = await response.json();
-      onSave({
-        id: savedData._id || formData.id || Date.now().toString(),
-        customerName: formData.customerName,
-        totalAmount: formData.totalAmount,
-        status: formData.status,
-        createdAt: formData.createdAt,
-      });
-    } catch (error) {
-      console.error("Error saving order:", error);
-    }
-    onClose();
+    onSave(formData);
   };
 
   return (
@@ -120,13 +85,12 @@ export default function OrderForm({ order, onClose, onSave }: OrderFormProps) {
                 value={formData.status}
                 onChange={handleChange}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                required
               >
-                <option value="Pending">Pending</option>
-                <option value="Processing">Processing</option>
                 <option value="Shipped">Shipped</option>
                 <option value="Delivered">Delivered</option>
-                <option value="Cancelled">Cancelled</option>
+                <option value="Shipping">Shipping</option>
+                <option value="On the Way">On the Way</option>
+                <option value="Out for Delivery">Out for Delivery</option>
               </select>
               {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status}</p>}
             </div>

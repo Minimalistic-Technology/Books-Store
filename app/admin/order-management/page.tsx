@@ -9,9 +9,7 @@ export interface Order {
   totalAmount: number;
   status: "Pending" | "Processing" | "Shipped" | "Delivered" | "Cancelled";
   createdAt: string;
-  date?: string;
   updatedAt?: string;
-  __v?: number;
 }
 
 export default function OrderManagement() {
@@ -21,47 +19,43 @@ export default function OrderManagement() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch("http://localhost:5000/api/bookstore/orderroutes/orders");
-        if (!response.ok) throw new Error("Network response was not ok");
-        const data = await response.json();
-        console.log("API Response:", data); // Debug the response
-        if (!Array.isArray(data.orders)) {
-          throw new Error("Invalid data format: 'orders' is not an array");
-        }
-        const mappedOrders = data.orders.map((item: any) => ({
-          id: item.id || item._id,
-          customerName: item.customerName,
-          totalAmount: item.totalAmount,
-          status: item.status as Order["status"],
-          createdAt: item.createdAt,
-          date: item.date,
-          updatedAt: item.updatedAt,
-          __v: item.__v,
-        }));
-        setOrders(mappedOrders);
-        setError(null); // Clear error on success
-      } catch (err) {
-        console.error("Error fetching orders:", err);
-        setError("Failed to load orders. Please try again later.");
-      } finally {
-        setLoading(false);
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("http://localhost:5000/api/bookstore/orderroutes/orders");
+      if (!response.ok) throw new Error("Network response was not ok");
+      const data = await response.json();
+      if (!Array.isArray(data.orders)) {
+        throw new Error("Invalid data format: 'orders' is not an array");
       }
-    };
+      const mappedOrders = data.orders.map((item: any) => ({
+        id: item.id || item._id,
+        customerName: item.customerName || "Anonymous",
+        totalAmount: item.totalAmount || 0,
+        status: item.status || "Pending",
+        createdAt: item.createdAt || new Date().toISOString(),
+        updatedAt: item.updatedAt,
+      }));
+      setOrders(mappedOrders);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching orders:", err);
+      setError("Failed to load orders. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchOrders();
 
-    // Listen for order update event from order-product-management
     const handleOrderUpdate = () => {
+      console.log("Order updated event received");
       fetchOrders();
     };
 
     window.addEventListener("orderUpdated", handleOrderUpdate);
 
-    // Cleanup event listener
     return () => window.removeEventListener("orderUpdated", handleOrderUpdate);
   }, []);
 
@@ -71,24 +65,29 @@ export default function OrderManagement() {
     return matchesStatus && matchesSearch;
   });
 
-  const handleUpdateOrder = (updatedOrder: Order) => {
-    setOrders(orders.map(order => order.id === updatedOrder.id ? updatedOrder : order));
-    fetch(`http://localhost:5000/api/bookstore/orderroutes/orders/${updatedOrder.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        customerName: updatedOrder.customerName,
-        totalAmount: updatedOrder.totalAmount,
-        status: updatedOrder.status,
-        createdAt: updatedOrder.createdAt,
-        updatedAt: new Date().toISOString(),
-      }),
-    })
-      .then(response => {
-        if (!response.ok) throw new Error("Failed to update order");
-        return response.json();
-      })
-      .catch(err => console.error("Error updating order:", err));
+  const handleUpdateOrder = async (updatedOrder: Order) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/bookstore/orderroutes/orders/${updatedOrder.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerName: updatedOrder.customerName,
+          totalAmount: updatedOrder.totalAmount,
+          status: updatedOrder.status,
+          createdAt: updatedOrder.createdAt,
+          updatedAt: updatedOrder.updatedAt || new Date().toISOString(),
+        }),
+      });
+      if (!response.ok) throw new Error("Failed to update order");
+      setOrders((prevOrders) =>
+        prevOrders.map((order) => (order.id === updatedOrder.id ? updatedOrder : order))
+      );
+      window.dispatchEvent(new Event("orderUpdated"));
+    } catch (err) {
+      console.error("Error updating order:", err);
+      setError("Failed to update order. Reverting to last known state.");
+      fetchOrders();
+    }
   };
 
   return (

@@ -1,19 +1,18 @@
-// components/CategoryTagList.tsx
 "use client";
 
 import { useState, useEffect } from "react";
-import type { CategoryTag } from "../page";
+import type { Category } from "../page";
 
 type CategoryTagListProps = {
-  onEdit: (item: CategoryTag) => void;
+  onEdit: (item: Category) => void;
   onDelete: (id: string) => void;
-  items: CategoryTag[];
+  items: Category[];
 };
 
 export default function CategoryTagList({ onEdit, onDelete, items }: CategoryTagListProps) {
   const handleDelete = async (id: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/bookstore/admincategory/${id}`, {
+      const response = await fetch(`http://localhost:5000/api/bookstore/book-categories/${id}`, {
         method: "DELETE",
       });
       if (!response.ok) throw new Error("Failed to delete category/tag");

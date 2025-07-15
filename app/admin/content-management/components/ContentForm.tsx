@@ -1,276 +1,370 @@
-// components/ContentForm.tsx
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useEffect } from "react";
 
-type ContentFormProps = {
+interface ContentFormProps {
   content?: {
     id?: string;
-    title?: string;
-    content?: string;
-    category?: string;
-    tags?: string;
-    seoTitle?: string;
-    seoDescription?: string;
-    media?: File | null;
+    title: string;
+    body: string;
+    category: string;
+    subCategory: string;
+    tags: string;
+    seoTitle: string;
+    seoDescription: string;
+    media: File | null;
+    price: number;
+    description: string;
+    estimatedDelivery: string;
+    condition: string;
+    author: string;
+    publisher: string;
+    imageUrl?: string;
   };
   onClose: () => void;
   onSave: (data: {
     id?: string;
     title: string;
-    content: string;
+    body: string;
     category: string;
+    subCategory: string;
     tags: string;
     seoTitle: string;
     seoDescription: string;
     media: File | null;
+    price: number;
+    description: string;
+    estimatedDelivery: string;
+    condition: string;
+    author: string;
+    publisher: string;
+    imageUrl?: string;
   }) => void;
-};
-
-interface FormData {
-  title: string;
-  content: string;
-  category: string;
-  tags: string;
-  seoTitle: string;
-  seoDescription: string;
-  media: File | null;
 }
 
-export default function ContentForm({ content, onClose, onSave }: ContentFormProps) {
+export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     id: content?.id || "",
     title: content?.title || "",
-    content: content?.content || "",
+    body: content?.body || "",
     category: content?.category || "",
+    subCategory: content?.subCategory || "",
     tags: content?.tags || "",
     seoTitle: content?.seoTitle || "",
     seoDescription: content?.seoDescription || "",
     media: content?.media || null,
+    price: content?.price || 0,
+    description: content?.description || "",
+    estimatedDelivery: content?.estimatedDelivery || "",
+    condition: content?.condition || "NEW - ORIGINAL PRICE",
+    author: content?.author || "",
+    publisher: content?.publisher || "",
+    imageUrl: content?.imageUrl || "",
   });
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<string | null>(content?.media instanceof File ? URL.createObjectURL(content.media) : null);
+  const [categories, setCategories] = useState<{ name: string; tags: string[] }[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
+  const [error, setError] = useState<string>("");
+  const [fileName, setFileName] = useState<string>(content?.imageUrl ? content.imageUrl.split('/').pop() || "" : "");
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/bookstore/book-categories");
+        if (!response.ok) throw new Error(`Failed to fetch categories: ${response.statusText}`);
+        const data = await response.json();
+        setCategories(data);
+      } catch (err: any) {
+        console.error("Error fetching categories:", err);
+        setError("Failed to load categories. Please try again.");
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    const fetchTags = async () => {
+      if (!formData.category) {
+        setTags([]);
+        return;
+      }
+      try {
+        const url = `http://localhost:5000/api/bookstore/book-categories/${encodeURIComponent(formData.category)}/tags`;
+        console.log(`Fetching tags from: ${url}`);
+        const response = await fetch(url);
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error(`Tags fetch error: ${JSON.stringify(errorData)}`);
+          throw new Error(errorData.error || `Failed to fetch tags: ${response.statusText}`);
+        }
+        const data = await response.json();
+        console.log(`Tags fetched for ${formData.category}:`, data.tags);
+        setTags(data.tags || []);
+        setError("");
+      } catch (err: any) {
+        console.error("Error fetching tags:", err);
+        setError(`Failed to load tags for ${formData.category}: ${err.message}`);
+        setTags([]);
+      }
+    };
+    fetchTags();
+  }, [formData.category]);
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    setErrors((prev) => ({ ...prev, [name]: "" }));
+    setError("");
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files && e.target.files[0];
-    if (file) {
-      setFormData((prev) => ({ ...prev, media: file }));
-      setPreview(URL.createObjectURL(file));
-    }
+    const file = e.target.files?.[0] || null;
+    setFormData((prev) => ({ ...prev, media: file }));
+    setFileName(file ? file.name : "");
+    setError("");
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newErrors: { [key: string]: string } = {};
-    if (!formData.title.trim()) newErrors.title = "Title is required";
-    if (!formData.content.trim()) newErrors.content = "Content is required";
-    if (!formData.category.trim()) newErrors.category = "Category is required";
-    if (!formData.tags.trim()) newErrors.tags = "Tags are required";
-    if (!formData.seoTitle.trim()) newErrors.seoTitle = "SEO Title is required";
-    if (!formData.seoDescription.trim()) newErrors.seoDescription = "SEO Description is required";
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
-    const dataToSave = {
-      id: formData.id,
-      title: formData.title,
-      content: formData.content,
-      category: formData.category,
-      tags: formData.tags, // Send as string, no split
-      seoTitle: formData.seoTitle,
-      seoDescription: formData.seoDescription,
-      media: formData.media,
-    };
-
+    setIsSubmitting(true);
     try {
-      let response;
-      if (formData.id) {
-        response = await fetch(`http://localhost:5000/api/bookstore/admincontent/${formData.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(dataToSave),
-        });
-      } else {
-        response = await fetch("http://localhost:5000/api/bookstore/admincontent", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(dataToSave),
-        });
+      if (!formData.title || !formData.category || !formData.subCategory || !formData.description || !formData.author || !formData.publisher) {
+        setError("Please fill in all required fields: Title, Category, Subcategory, Description, Author, Publisher");
+        setIsSubmitting(false);
+        return;
       }
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to save content");
+      if (formData.price <= 0) {
+        setError("Price must be greater than 0");
+        setIsSubmitting(false);
+        return;
       }
-      const savedData = await response.json();
-      onSave({
-        id: savedData._id || formData.id || Date.now().toString(),
-        title: formData.title,
-        content: formData.content,
-        category: formData.category,
-        tags: formData.tags,
-        seoTitle: formData.seoTitle,
-        seoDescription: formData.seoDescription,
-        media: formData.media,
+      if (!formData.media && !formData.id && !formData.imageUrl) {
+        setError("Image is required for new books");
+        setIsSubmitting(false);
+        return;
+      }
+      if (!['NEW - ORIGINAL PRICE', 'OLD - 35% OFF', 'BOTH'].includes(formData.condition)) {
+        setError("Invalid condition selected");
+        setIsSubmitting(false);
+        return;
+      }
+      await onSave({
+        ...formData,
+        body: formData.description,
       });
-    } catch (error: any) {
-      console.error("Error saving content:", error);
-      setErrors({ general: error.message || "Failed to save content. Please try again." });
+      setError("");
+      setIsSubmitting(false);
+      onClose();
+    } catch (err: any) {
+      console.error("Error saving content:", err);
+      setError(err.message || "Failed to save content");
+      setIsSubmitting(false);
     }
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (file) {
-      setFormData((prev) => ({ ...prev, media: file }));
-      setPreview(URL.createObjectURL(file));
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
   };
 
   return (
-    <div className="fixed inset-0 bg-yellow-500 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
-      <div className="card p-6 max-w-2xl w-full animate__zoomIn" style={{ maxHeight: "90vh", overflowY: "auto" }}>
-        <h2 className="text-2xl font-semibold mb-4 text-yellow-900">
-          {content ? "Edit Content" : "Create Content"}
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              <input
-                type="text"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                placeholder="Title"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                required
-              />
-              {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
-            </div>
-            <div>
-              <textarea
-                name="content"
-                value={formData.content}
-                onChange={handleChange}
-                placeholder="Content (Rich text support placeholder)"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 h-40 resize-y"
-                required
-              />
-              {errors.content && <p className="text-red-500 text-sm mt-1">{errors.content}</p>}
-            </div>
-            <div>
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                required
-              >
-                <option value="" disabled>Select a category</option>
-                <option value="Competitive-Exam-Books">Competitive-Exam-Books</option>
-                <option value="School-Books">School-Books</option>
-                <option value="College-Books">College-Books</option>
-                <option value="Ref-Books-Guides">Ref-Books-Guides</option>
-                <option value="Entrance-Exam-Books">Entrance-Exam-Books</option>
-                <option value="Stationary">Stationary</option>
-                <option value="Non-Academics">Non-Academics</option>
-              </select>
-              {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
-            </div>
-            <div>
-              <input
-                type="text"
-                name="tags"
-                value={formData.tags}
-                onChange={handleChange}
-                placeholder="Tags (comma-separated)"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                required
-              />
-              {errors.tags && <p className="text-red-500 text-sm mt-1">{errors.tags}</p>}
-            </div>
-            <div>
-              <input
-                type="text"
-                name="seoTitle"
-                value={formData.seoTitle}
-                onChange={handleChange}
-                placeholder="SEO Title"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                required
-              />
-              {errors.seoTitle && <p className="text-red-500 text-sm mt-1">{errors.seoTitle}</p>}
-            </div>
-            <div>
-              <textarea
-                name="seoDescription"
-                value={formData.seoDescription}
-                onChange={handleChange}
-                placeholder="SEO Description"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 h-20 resize-y"
-                required
-              />
-              {errors.seoDescription && <p className="text-red-500 text-sm mt-1">{errors.seoDescription}</p>}
-            </div>
-          </div>
-          <div
-            className="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center bg-white hover:border-teal-500 transition-colors"
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              accept="image/*"
-              className="hidden"
-            />
-            {preview ? (
-              <img src={preview} alt="Preview" className="max-h-40 mx-auto mb-2" />
-            ) : (
-              <p className="text-gray-600">Drag and drop an image here, or click to choose a file</p>
-            )}
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="mt-2 bg-teal-500 text-white px-4 py-2 rounded hover:bg-teal-600 transition-all"
-            >
-              Choose File
-            </button>
-          </div>
-          {errors.general && <p className="text-red-500 text-sm mt-1">{errors.general}</p>}
-          <div className="flex justify-end space-x-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-all"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="btn-primary px-4 py-2 rounded-lg hover:bg-teal-700 transition-all"
-            >
-              Save
-            </button>
-          </div>
-        </form>
+    <form onSubmit={handleSubmit} className="space-y-6 max-h-[80vh] overflow-y-auto p-4">
+      <h2 className="text-2xl font-semibold text-yellow-900">
+        {formData.id ? "Edit Book" : "Create Book"}
+      </h2>
+      {error && <p className="text-red-500 bg-red-100 p-2 rounded">{error}</p>}
+      <div>
+        <label className="block text-gray-800 font-medium">Title *</label>
+        <input
+          type="text"
+          name="title"
+          value={formData.title}
+          onChange={handleChange}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+          required
+          disabled={isSubmitting}
+        />
       </div>
-    </div>
+      <div>
+        <label className="block text-gray-800 font-medium">Category *</label>
+        <select
+          name="category"
+          value={formData.category}
+          onChange={handleChange}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+          required
+          disabled={isSubmitting}
+        >
+          <option value="" disabled>
+            Select a category
+          </option>
+          {categories.map((cat) => (
+            <option key={cat.name} value={cat.name}>
+              {cat.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="block text-gray-800 font-medium">Subcategory *</label>
+        <select
+          name="subCategory"
+          value={formData.subCategory}
+          onChange={handleChange}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+          required
+          disabled={isSubmitting || !formData.category}
+        >
+          <option value="" disabled>
+            Select a subcategory
+          </option>
+          {tags.map((tag) => (
+            <option key={tag} value={tag}>
+              {tag}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="block text-gray-800 font-medium">Tags (comma-separated)</label>
+        <input
+          type="text"
+          name="tags"
+          value={formData.tags}
+          onChange={handleChange}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+          placeholder="e.g., Fiction, Novels"
+          disabled={isSubmitting}
+        />
+      </div>
+      <div>
+        <label className="block text-gray-800 font-medium">Price *</label>
+        <input
+          type="number"
+          name="price"
+          value={formData.price}
+          onChange={handleChange}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+          min="0.01"
+          step="0.01"
+          required
+          disabled={isSubmitting}
+        />
+      </div>
+      <div>
+        <label className="block text-gray-800 font-medium">Image Upload {formData.id ? "" : "*"}</label>
+        <input
+          type="file"
+          name="media"
+          onChange={handleFileChange}
+          className="w-full p-3 border border-gray-300 rounded-lg"
+          accept="image/*"
+          disabled={isSubmitting}
+        />
+        {fileName && <p className="text-gray-600 mt-1">Selected: {fileName}</p>}
+        {formData.imageUrl && !formData.media && (
+          <p className="text-gray-600 mt-1">Current: {formData.imageUrl.split('/').pop()}</p>
+        )}
+      </div>
+      <div>
+        <label className="block text-gray-800 font-medium">Description *</label>
+        <textarea
+          name="description"
+          value={formData.description}
+          onChange={handleChange}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+          rows={4}
+          required
+          disabled={isSubmitting}
+        />
+      </div>
+      <div>
+        <label className="block text-gray-800 font-medium">Estimated Delivery *</label>
+        <input
+          type="text"
+          name="estimatedDelivery"
+          value={formData.estimatedDelivery}
+          onChange={handleChange}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+          placeholder="e.g., 3-5 days"
+          required
+          disabled={isSubmitting}
+        />
+      </div>
+      <div>
+        <label className="block text-gray-800 font-medium">Condition *</label>
+        <select
+          name="condition"
+          value={formData.condition}
+          onChange={handleChange}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+          required
+          disabled={isSubmitting}
+        >
+          <option value="NEW - ORIGINAL PRICE">NEW - ORIGINAL PRICE</option>
+          <option value="OLD - 35% OFF">OLD - 35% OFF</option>
+          <option value="BOTH">BOTH</option>
+        </select>
+      </div>
+      <div>
+        <label className="block text-gray-800 font-medium">Author *</label>
+        <input
+          type="text"
+          name="author"
+          value={formData.author}
+          onChange={handleChange}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+          required
+          disabled={isSubmitting}
+        />
+      </div>
+      <div>
+        <label className="block text-gray-800 font-medium">Publisher *</label>
+        <input
+          type="text"
+          name="publisher"
+          value={formData.publisher}
+          onChange={handleChange}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+          required
+          disabled={isSubmitting}
+        />
+      </div>
+      <div>
+        <label className="block text-gray-800 font-medium">SEO Title</label>
+        <input
+          type="text"
+          name="seoTitle"
+          value={formData.seoTitle}
+          onChange={handleChange}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+          disabled={isSubmitting}
+        />
+      </div>
+      <div>
+        <label className="block text-gray-800 font-medium">SEO Description</label>
+        <textarea
+          name="seoDescription"
+          value={formData.seoDescription}
+          onChange={handleChange}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+          rows={4}
+          disabled={isSubmitting}
+        />
+      </div>
+      <div className="flex justify-end space-x-4">
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 disabled:opacity-50"
+          disabled={isSubmitting}
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 disabled:opacity-50"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Saving..." : "Save"}
+        </button>
+      </div>
+    </form>
   );
-}
+};

@@ -1,47 +1,45 @@
-// app/admin/categories-tags/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import CategoryTagForm from "./components/CategoryTagForm";
 import CategoryTagList from "./components/CategoryTagList";
 
-// Define the CategoryTag interface
-export interface CategoryTag {
+// Define the Category interface
+export interface Category {
   id: string;
   name: string;
-  type: "category" | "tag";
   seoTitle: string;
   seoDescription: string;
+   type: string; 
 }
 
 export default function CategoriesTags() {
-  const [items, setItems] = useState<CategoryTag[]>([]);
-  const [selectedItem, setSelectedItem] = useState<CategoryTag | null>(null);
+  const [items, setItems] = useState<Category[]>([]);
+  const [selectedItem, setSelectedItem] = useState<Category | null>(null);
   const [isCreating, setIsCreating] = useState<boolean>(false);
 
   useEffect(() => {
-    const fetchCategoriesTags = async () => {
+    const fetchCategories = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/bookstore/admincategory");
+        const response = await fetch("http://localhost:5000/api/bookstore/book-categories");
         const data = await response.json();
         setItems(
           data.map((item: any) => ({
             id: item._id,
             name: item.name,
-            type: "category", // Assuming all from API are categories; adjust if tags are included
-            seoTitle: item.seoTitle,
-            seoDescription: item.seoDescription,
+            seoTitle: item.seoTitle || "", // Default to empty string if undefined
+            seoDescription: item.seoDescription || "", // Default to empty string if undefined
           }))
         );
       } catch (error) {
-        console.error("Failed to fetch categories/tags:", error);
+        console.error("Failed to fetch categories:", error);
       }
     };
 
-    fetchCategoriesTags();
+    fetchCategories();
   }, []);
 
-  const handleEdit = (item: CategoryTag) => {
+  const handleEdit = (item: Category) => {
     setSelectedItem(item);
     setIsCreating(true);
   };
@@ -58,37 +56,34 @@ export default function CategoriesTags() {
   const handleSave = async (data: {
     id?: string;
     name: string;
-    type: "category" | "tag";
     seoTitle: string;
     seoDescription: string;
   }) => {
-    const newItem: CategoryTag = {
+    const newItem: Category = {
       id: data.id || Date.now().toString(),
       name: data.name,
-      type: data.type,
       seoTitle: data.seoTitle,
       seoDescription: data.seoDescription,
+      type: "category", // or set this dynamically as needed
     };
     try {
       let response;
       if (data.id) {
-        response = await fetch(`http://localhost:5000/api/bookstore/admincategory/${data.id}`, {
+        response = await fetch(`http://localhost:5000/api/bookstore/book-categories/${data.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             name: data.name,
-            type: data.type,
             seoTitle: data.seoTitle,
             seoDescription: data.seoDescription,
           }),
         });
       } else {
-        response = await fetch("http://localhost:5000/api/bookstore/admincategory", {
+        response = await fetch("http://localhost:5000/api/bookstore/book-categories", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             name: data.name,
-            type: data.type,
             seoTitle: data.seoTitle,
             seoDescription: data.seoDescription,
           }),
@@ -96,7 +91,7 @@ export default function CategoriesTags() {
       }
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to save category/tag");
+        throw new Error(errorData.error || "Failed to save category");
       }
       const savedData = await response.json();
       newItem.id = savedData._id || newItem.id;
@@ -108,8 +103,7 @@ export default function CategoriesTags() {
         setItems((prev) => [...prev, newItem]);
       }
     } catch (error) {
-      console.error("Error saving category/tag:", error);
-      // Handle error display if needed (e.g., via a state or alert)
+      console.error("Error saving category:", error);
     }
     setIsCreating(false);
     setSelectedItem(null);
@@ -122,13 +116,13 @@ export default function CategoriesTags() {
 
   return (
     <div className="space-y-8 p-4 animate__fadeIn">
-      <h1 className="text-4xl font-bold text-yellow-900">Categories & Tags - Books Store</h1>
+      <h1 className="text-4xl font-bold text-yellow-900">Categories - Books Store</h1>
       <div className="flex justify-end">
         <button
           onClick={handleCreate}
           className="btn-primary px-4 py-2 rounded-lg hover:bg-teal-700 transition-all"
         >
-          Create New Category/Tag
+          Create New Category
         </button>
       </div>
       <CategoryTagList onEdit={handleEdit} onDelete={handleDelete} items={items} />
@@ -147,7 +141,6 @@ export default function CategoriesTags() {
                   ? {
                       id: selectedItem.id,
                       name: selectedItem.name,
-                      type: selectedItem.type,
                       seoTitle: selectedItem.seoTitle,
                       seoDescription: selectedItem.seoDescription,
                     }

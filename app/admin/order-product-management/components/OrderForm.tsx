@@ -12,9 +12,9 @@ type OrderFormProps = {
 export default function OrderForm({ order, onClose, onSave }: OrderFormProps) {
   const [formData, setFormData] = useState({
     id: order?.id || "",
-    customerName: order?.customerName || "Anonymous",
+    customerName: order?.customerName || "",
     totalAmount: order?.totalAmount || 0,
-    status: order?.status || "Shipped",
+    status: order?.status || "Pending",
     createdAt: order?.createdAt || new Date().toISOString(),
     items: order?.items || [],
   });
@@ -34,7 +34,7 @@ export default function OrderForm({ order, onClose, onSave }: OrderFormProps) {
     const newErrors: { [key: string]: string } = {};
     if (!formData.customerName.trim()) newErrors.customerName = "Customer name is required";
     if (formData.totalAmount <= 0) newErrors.totalAmount = "Total amount must be greater than 0";
-    if (!["Shipped", "Delivered", "Shipping", "On the Way", "Out for Delivery"].includes(formData.status))
+    if (!["Pending", "Processing", "Shipped", "Delivered", "Cancelled"].includes(formData.status))
       newErrors.status = "Invalid status";
 
     if (Object.keys(newErrors).length > 0) {
@@ -43,6 +43,7 @@ export default function OrderForm({ order, onClose, onSave }: OrderFormProps) {
     }
 
     onSave(formData);
+    onClose();
   };
 
   return (
@@ -86,11 +87,11 @@ export default function OrderForm({ order, onClose, onSave }: OrderFormProps) {
                 onChange={handleChange}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
+                <option value="Pending">Pending</option>
+                <option value="Processing">Processing</option>
                 <option value="Shipped">Shipped</option>
                 <option value="Delivered">Delivered</option>
-                <option value="Shipping">Shipping</option>
-                <option value="On the Way">On the Way</option>
-                <option value="Out for Delivery">Out for Delivery</option>
+                <option value="Cancelled">Cancelled</option>
               </select>
               {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status}</p>}
             </div>

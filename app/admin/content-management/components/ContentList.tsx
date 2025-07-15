@@ -1,52 +1,61 @@
-// components/ContentList.tsx
 "use client";
 
-import { useState, useEffect } from "react";
-import type { Content } from "../page";
+import { Content } from "../page";
 
-type ContentListProps = {
-  onEdit: (item: Content) => void;
-  onDelete: (id: string) => void;
+interface ContentListProps {
   contents: Content[];
-};
+  onEdit: (content: Content) => void;
+  onDelete: (content: Content) => void;
+}
 
-export default function ContentList({ onEdit, onDelete, contents }: ContentListProps) {
-  const handleDelete = async (id: string) => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/bookstore/admincontent/${id}`, {
-        method: "DELETE",
-      });
-      if (!response.ok) throw new Error("Failed to delete content");
-      onDelete(id); // Call parent onDelete after successful API call
-    } catch (error) {
-      console.error("Error deleting content:", error);
-    }
-  };
-
+export default function ContentList({ contents, onEdit, onDelete }: ContentListProps) {
   return (
-    <div className="card p-6 animate__fadeIn">
-      <h2 className="text-2xl font-semibold mb-4 text-yellow-900">Content List</h2>
-      <ul className="space-y-4">
-        {contents.map((item) => (
-          <li key={item.id} className="border p-4 rounded-lg bg-white shadow-md flex justify-between items-center animate__fadeInUp">
-            <span className="text-gray-800">{item.title} ({item.category || "Uncategorized"})</span>
-            <div>
-              <button
-                onClick={() => onEdit(item)}
-                className="bg-yellow-500 text-white px-3 py-1 rounded-lg mr-2 hover:bg-yellow-600 transition-all"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => handleDelete(item.id)}
-                className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition-all"
-              >
-                Delete
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
+    <div className="overflow-x-auto">
+      <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-md">
+        <thead className="bg-gray-100">
+          <tr>
+            <th className="px-4 py-2 text-left text-gray-800">Image</th>
+            <th className="px-4 py-2 text-left text-gray-800">Title</th>
+            <th className="px-4 py-2 text-left text-gray-800">Category</th>
+            <th className="px-4 py-2 text-left text-gray-800">Sub Category</th>
+            <th className="px-4 py-2 text-left text-gray-800">Price</th>
+            <th className="px-4 py-2 text-left text-gray-800">Condition</th>
+            <th className="px-4 py-2 text-left text-gray-800">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {contents.map((content) => (
+            <tr key={content.id} className="border-b border-gray-200 hover:bg-gray-50">
+              <td className="px-4 py-2">
+                <img
+                  src={content.imageUrl || "http://example.com/default.jpg"}
+                  alt={content.title}
+                  className="w-16 h-16 object-cover rounded"
+                />
+              </td>
+              <td className="px-4 py-2">{content.title}</td>
+              <td className="px-4 py-2">{content.category}</td>
+              <td className="px-4 py-2">{content.subCategory}</td>
+              <td className="px-4 py-2">${content.price.toFixed(2)}</td>
+              <td className="px-4 py-2">{content.condition}</td>
+              <td className="px-4 py-2">
+                <button
+                  onClick={() => onEdit(content)}
+                  className="bg-yellow-500 text-white px-3 py-1 rounded-lg hover:bg-yellow-600 mr-2"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => onDelete(content)}
+                  className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600"
+                >
+                  Delete
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

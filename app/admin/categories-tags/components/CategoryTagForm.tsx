@@ -1,4 +1,3 @@
-// components/CategoryTagForm.tsx
 "use client";
 
 import { useState, useRef } from "react";
@@ -7,15 +6,14 @@ type CategoryTagFormProps = {
   item?: {
     id?: string;
     name?: string;
-    type?: "category" | "tag";
     seoTitle?: string;
     seoDescription?: string;
+    tags?: string[]; // Add tags as an optional property
   };
   onClose: () => void;
   onSave: (data: {
     id?: string;
     name: string;
-    type: "category" | "tag";
     seoTitle: string;
     seoDescription: string;
   }) => void;
@@ -25,13 +23,13 @@ export default function CategoryTagForm({ item, onClose, onSave }: CategoryTagFo
   const [formData, setFormData] = useState({
     id: item?.id || "",
     name: item?.name || "",
-    type: item?.type || "category",
     seoTitle: item?.seoTitle || "",
     seoDescription: item?.seoDescription || "",
+    tags: item?.tags || [], // Add tags field with default empty array
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: "" })); // Clear error when user starts typing
@@ -41,7 +39,6 @@ export default function CategoryTagForm({ item, onClose, onSave }: CategoryTagFo
     e.preventDefault();
     const newErrors: { [key: string]: string } = {};
     if (!formData.name.trim()) newErrors.name = "Name is required";
-    if (!formData.type) newErrors.type = "Type is required";
     if (!formData.seoTitle.trim()) newErrors.seoTitle = "SEO Title is required";
     if (!formData.seoDescription.trim()) newErrors.seoDescription = "SEO Description is required";
 
@@ -53,41 +50,43 @@ export default function CategoryTagForm({ item, onClose, onSave }: CategoryTagFo
     const dataToSave = {
       id: formData.id,
       name: formData.name,
-      type: formData.type as "category" | "tag",
       seoTitle: formData.seoTitle,
       seoDescription: formData.seoDescription,
+      tags: formData.tags, // Include tags in the data to save
     };
 
     try {
       let response;
       if (formData.id) {
-        response = await fetch(`http://localhost:5000/api/bookstore/admincategory/${formData.id}`, {
+        response = await fetch(`http://localhost:5000/api/bookstore/book-categories/${formData.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(dataToSave),
         });
       } else {
-        response = await fetch("http://localhost:5000/api/bookstore/admincategory", {
+        // Wrap the single category object in an array to match the backend expectation
+        response = await fetch("http://localhost:5000/api/bookstore/book-categories", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(dataToSave),
+          body: JSON.stringify([dataToSave]), // Send as an array
         });
       }
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to save category/tag");
+        throw new Error(errorData.error || "Failed to save category");
       }
       const savedData = await response.json();
+      // Handle the response, which might be an array of saved categories
+      const savedCategory = Array.isArray(savedData) ? savedData[0] : savedData;
       onSave({
-        id: savedData._id || formData.id || Date.now().toString(),
+        id: savedCategory._id || formData.id || Date.now().toString(),
         name: formData.name,
-        type: formData.type as "category" | "tag",
         seoTitle: formData.seoTitle,
         seoDescription: formData.seoDescription,
       });
     } catch (error: any) {
-      console.error("Error saving category/tag:", error);
-      setErrors({ general: error.message || "Failed to save category/tag. Please try again." });
+      console.error("Error saving category:", error);
+      setErrors({ general: error.message || "Failed to save category. Please try again." });
     }
   };
 
@@ -95,7 +94,7 @@ export default function CategoryTagForm({ item, onClose, onSave }: CategoryTagFo
     <div className="fixed inset-0 bg-yellow-50 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
       <div className="card p-6 max-w-lg w-full animate__zoomIn" style={{ maxHeight: "90vh", overflowY: "auto" }}>
         <h2 className="text-2xl font-semibold mb-4 text-yellow-900">
-          {item ? "Edit Category/Tag" : "Create Category/Tag"}
+          {item ? "Edit Category" : "Create Category"}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 gap-4">
@@ -105,24 +104,11 @@ export default function CategoryTagForm({ item, onClose, onSave }: CategoryTagFo
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                placeholder="Name (e.g., Fiction, Review)"
+                placeholder="Name (e.g., Fiction)"
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                 required
               />
               {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
-            </div>
-            <div>
-              <select
-                name="type"
-                value={formData.type}
-                onChange={handleChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                required
-              >
-                <option value="category">Category</option>
-                <option value="tag">Tag</option>
-              </select>
-              {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type}</p>}
             </div>
             <div>
               <input

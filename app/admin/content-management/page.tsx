@@ -1,26 +1,31 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { ContentForm } from "./components/ContentForm";
+import { useState, useEffect, useCallback } from "react";
 import ContentList from "./components/ContentList";
+import { ContentForm } from "./components/ContentForm";
 
-export interface Content {
+interface Content {
   id?: string;
   title: string;
-  body: string;
-  category: string;
+  categoryName: string;
   subCategory: string;
   tags: string;
   seoTitle: string;
   seoDescription: string;
-  media: File | null;
   price: number;
   description: string;
   estimatedDelivery: string;
   condition: string;
   author: string;
   publisher: string;
-  imageUrl?: string;
+  imageUrl: string;
+  quantityNew: number;
+  quantityOld: number;
+  discountNew: number;
+  discountOld: number;
+  bookName?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface Category {
@@ -31,212 +36,214 @@ interface Category {
 
 export default function ContentManagement() {
   const [contents, setContents] = useState<Content[]>([]);
-  const [selectedContent, setSelectedContent] = useState<Content | null>(null);
-  const [isCreating, setIsCreating] = useState<boolean>(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingContent, setEditingContent] = useState<Content | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string>("");
+  const [successMessage, setSuccessMessage] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [newTag, setNewTag] = useState<string>("");
-  const [editTag, setEditTag] = useState<string>("");
   const [tagToEdit, setTagToEdit] = useState<string>("");
-  const [tagError, setTagError] = useState<string>("");
-  const [successMessage, setSuccessMessage] = useState<string>("");
+  const [editTag, setEditTag] = useState<string>("");
+
+  const fetchCategoriesAndContents = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const categoriesResponse = await fetch("http://localhost:5000/api/bookstore/book-categories");
+      if (!categoriesResponse.ok) throw new Error("Failed to fetch categories");
+      const categoriesData = await categoriesResponse.json();
+      setCategories(categoriesData);
+
+      const allBooks: Content[] = [];
+      const fetchPromises = categoriesData.map(async (category: Category) => {
+        try {
+          const booksResponse = await fetch(
+            `http://localhost:5000/api/bookstore/book-categories/${encodeURIComponent(category.name)}`
+          );
+          if (!booksResponse.ok) {
+            console.warn(`Failed to fetch books for ${category.name}`);
+            return [];
+          }
+          const booksData = await booksResponse.json();
+          const books = Array.isArray(booksData.books) ? booksData.books : [];
+          return books.map((book: any) => ({
+            id: book._id,
+            title: book.title || "",
+            categoryName: category.name,
+            subCategory: book.subCategory || "",
+            tags: Array.isArray(book.tags) ? book.tags.join(", ") : book.tags || "",
+            seoTitle: book.seoTitle || "",
+            seoDescription: book.seoDescription || "",
+            price: book.price || 0,
+            description: book.description || "",
+            estimatedDelivery: book.estimatedDelivery || "",
+            condition: book.condition || "NEW - ORIGINAL PRICE",
+            author: book.author || "",
+            publisher: book.publisher || "",
+            imageUrl: book.imageUrl || "",
+            quantityNew: book.quantityNew || 0,
+            quantityOld: book.quantityOld || 0,
+            discountNew: book.discountNew || 0,
+            discountOld: book.discountOld || 0,
+            bookName: book.bookName || "",
+            createdAt: book.createdAt || "",
+            updatedAt: book.updatedAt || "",
+          }));
+        } catch (error) {
+          console.error(`Error fetching books for category ${category.name}:`, error);
+          return [];
+        }
+      });
+
+      const results = await Promise.all(fetchPromises);
+      allBooks.push(...results.flat());
+      setContents(allBooks);
+    } catch (err: any) {
+      setError(err.message || "Failed to load categories or books");
+      setTimeout(() => setError(""), 5000);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchCategoriesAndContents = async () => {
-      try {
-        const response = await fetch("http://localhost:5000/api/bookstore/book-categories");
-        if (!response.ok) throw new Error("Failed to fetch categories");
-        const categoriesData = await response.json();
-        setCategories(categoriesData);
-
-        const allBooks: Content[] = [];
-        for (const category of categoriesData) {
-          const catResponse = await fetch(`http://localhost:5000/api/bookstore/book-categories/${encodeURIComponent(category.name)}`);
-          if (!catResponse.ok) throw new Error(`Failed to fetch books for ${category.name}`);
-          const catData = await catResponse.json();
-          const books = catData.books.map((item: any) => ({
-            id: item._id,
-            title: item.title || "",
-            body: item.description || "",
-            category: category.name,
-            subCategory: item.subCategory || "",
-            tags: item.tags ? item.tags.join(",") : "",
-            seoTitle: item.seoTitle || "",
-            seoDescription: item.seoDescription || "",
-            media: null,
-            price: item.price || 0,
-            description: item.description || "",
-            estimatedDelivery: item.estimatedDelivery || "",
-            condition: item.condition || "NEW - ORIGINAL PRICE",
-            author: item.author || "",
-            publisher: item.publisher || "",
-            imageUrl: item.imageUrl || "http://example.com/default.jpg",
-          }));
-          allBooks.push(...books);
-        }
-        setContents(allBooks);
-      } catch (error: any) {
-        console.error("Failed to fetch data:", error);
-        setTagError(error.message || "Failed to load categories or books");
-        setTimeout(() => setTagError(""), 5000);
-      }
-    };
-
     fetchCategoriesAndContents();
-  }, []);
+  }, [fetchCategoriesAndContents]);
 
   useEffect(() => {
     const fetchTags = async () => {
       if (!selectedCategory) return;
       try {
-        const url = `http://localhost:5000/api/bookstore/book-categories/${encodeURIComponent(selectedCategory)}/tags`;
-        console.log(`Fetching tags for category: ${url}`);
-        const response = await fetch(url);
+        const response = await fetch(
+          `http://localhost:5000/api/bookstore/book-categories/${encodeURIComponent(selectedCategory)}/tags`
+        );
         if (!response.ok) {
           const errorData = await response.json();
-          console.error(`Tags fetch error for ${selectedCategory}: ${JSON.stringify(errorData)}`);
           throw new Error(errorData.error || "Failed to fetch tags");
         }
         const data = await response.json();
-        console.log(`Tags fetched for ${selectedCategory}:`, data.tags);
         setCategories((prev) =>
           prev.map((cat) =>
             cat.name === selectedCategory ? { ...cat, tags: data.tags || [] } : cat
           )
         );
-        setTagError("");
-      } catch (error: any) {
-        console.error("Failed to fetch tags:", error);
-        setTagError(error.message || `Failed to load tags for ${selectedCategory}`);
-        setTimeout(() => setTagError(""), 5000);
+        setError("");
+      } catch (err: any) {
+        setError(err.message || `Failed to load tags for ${selectedCategory}`);
+        setTimeout(() => setError(""), 5000);
       }
     };
     fetchTags();
   }, [selectedCategory]);
 
-  const handleEdit = (content: Content) => {
-    setSelectedContent(content);
-    setIsCreating(true);
-  };
-
-  const handleCreate = () => {
-    setSelectedContent(null);
-    setIsCreating(true);
-  };
-
-  const handleClose = () => {
-    setIsCreating(false);
-    setSelectedContent(null);
-  };
-
-  const handleDelete = async (content: Content) => {
-    try {
-      if (!content.category || !content.id) {
-        throw new Error("Category and book ID are required to delete the book");
-      }
-      const response = await fetch(
-        `http://localhost:5000/api/bookstore/book-categories/${encodeURIComponent(content.category)}/${content.id}`,
-        {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete book");
-      }
-      setContents((prev) => prev.filter((item) => item.id !== content.id));
-      setSuccessMessage("Book deleted successfully");
-      setTimeout(() => setSuccessMessage(""), 3000);
-    } catch (error: any) {
-      console.error("Error deleting book:", error);
-      setTagError(error.message || "Failed to delete book");
-      setTimeout(() => setTagError(""), 3000);
-    }
-  };
-
   const handleSave = async (data: Content) => {
     try {
-      const formData = new FormData();
-      formData.append("title", data.title);
-      formData.append("categoryName", data.category);
-      formData.append("subCategory", data.subCategory);
-      formData.append("tags", data.tags);
-      formData.append("price", data.price.toString());
-      formData.append("description", data.description);
-      formData.append("estimatedDelivery", data.estimatedDelivery);
-      formData.append("condition", data.condition);
-      formData.append("author", data.author);
-      formData.append("publisher", data.publisher);
-      if (data.media) {
-        formData.append("image", data.media);
-      }
-      formData.append("seoTitle", data.seoTitle);
-      formData.append("seoDescription", data.seoDescription);
-
-      const url = data.id
-        ? `http://localhost:5000/api/bookstore/book-categories/${encodeURIComponent(data.category)}/${data.id}`
-        : `http://localhost:5000/api/bookstore/book-categories/${encodeURIComponent(data.category)}`;
-      const method = data.id ? "PUT" : "POST";
-
+      setIsLoading(true);
+      const isUpdate = Boolean(data.id);
+      const url = isUpdate
+        ? `http://localhost:5000/api/bookstore/book-categories/${encodeURIComponent(data.categoryName)}/${data.id}`
+        : `http://localhost:5000/api/bookstore/book-categories/${encodeURIComponent(data.categoryName)}`;
       const response = await fetch(url, {
-        method,
-        body: formData,
+        method: isUpdate ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...data,
+          tags: typeof data.tags === "string" ? data.tags.split(",").map((tag) => tag.trim()) : data.tags,
+          discountNew: data.discountNew ?? 0,
+          discountOld: data.discountOld ?? 0,
+        }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to ${data.id ? "update" : "create"} book`);
+        throw new Error(errorData.error || `Failed to ${isUpdate ? "update" : "create"} book`);
       }
 
       const savedBook = await response.json();
+      const bookData = Array.isArray(savedBook) ? savedBook[0] : savedBook;
+
       const updatedBook: Content = {
-        id: savedBook._id || data.id,
-        title: savedBook.title,
-        body: savedBook.description,
-        category: savedBook.categoryName,
-        subCategory: savedBook.subCategory,
-        tags: savedBook.tags ? savedBook.tags.join(",") : "",
-        seoTitle: savedBook.seoTitle || data.seoTitle,
-        seoDescription: savedBook.seoDescription || data.seoDescription,
-        media: null,
-        price: savedBook.price,
-        description: savedBook.description,
-        estimatedDelivery: savedBook.estimatedDelivery,
-        condition: savedBook.condition,
-        author: savedBook.author,
-        publisher: savedBook.publisher,
-        imageUrl: savedBook.imageUrl,
+        id: bookData._id,
+        title: bookData.title,
+        categoryName: data.categoryName,
+        subCategory: bookData.subCategory,
+        tags: Array.isArray(bookData.tags) ? bookData.tags.join(", ") : bookData.tags || "",
+        seoTitle: bookData.seoTitle || "",
+        seoDescription: bookData.seoDescription || "",
+        price: bookData.price,
+        description: bookData.description,
+        estimatedDelivery: bookData.estimatedDelivery,
+        condition: bookData.condition,
+        author: bookData.author,
+        publisher: bookData.publisher,
+        imageUrl: bookData.imageUrl,
+        quantityNew: bookData.quantityNew || 0,
+        quantityOld: bookData.quantityOld || 0,
+        discountNew: bookData.discountNew || 0,
+        discountOld: bookData.discountOld || 0,
+        bookName: bookData.bookName || "",
+        createdAt: bookData.createdAt || "",
+        updatedAt: bookData.updatedAt || "",
       };
 
       setContents((prev) =>
-        data.id
-          ? prev.map((item) => (item.id === data.id ? updatedBook : item))
+        isUpdate
+          ? prev.map((content) => (content.id === data.id ? updatedBook : content))
           : [...prev, updatedBook]
       );
-      setSuccessMessage(`Book ${data.id ? "updated" : "created"} successfully`);
+      setSuccessMessage(`Book ${isUpdate ? "updated" : "created"} successfully`);
       setTimeout(() => setSuccessMessage(""), 3000);
-      handleClose();
-    } catch (error: any) {
-      console.error(`Error ${data.id ? "updating" : "creating"} book:`, error);
-      setTagError(error.message || `Failed to ${data.id ? "update" : "create"} book`);
-      setTimeout(() => setTagError(""), 3000);
+      setIsFormOpen(false);
+      setEditingContent(undefined);
+      await fetchCategoriesAndContents(); // Refresh categories to include new tags
+    } catch (err: any) {
+      setError(err.message || `Failed to ${data.id ? "update" : "create"} book`);
+      setTimeout(() => setError(""), 5000);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEdit = (content: Content) => {
+    setEditingContent(content);
+    setIsFormOpen(true);
+  };
+
+  const handleDelete = async (id: string, categoryName: string) => {
+    if (!confirm("Are you sure you want to delete this book?")) return;
+    try {
+      setIsLoading(true);
+      const response = await fetch(
+        `http://localhost:5000/api/bookstore/book-categories/${encodeURIComponent(categoryName)}/${id}`,
+        { method: "DELETE" }
+      );
+      if (!response.ok) throw new Error("Failed to delete book");
+      setContents((prev) => prev.filter((content) => content.id !== id));
+      setSuccessMessage("Book deleted successfully");
+      setTimeout(() => setSuccessMessage(""), 3000);
+    } catch (err: any) {
+      setError(err.message || "Failed to delete book");
+      setTimeout(() => setError(""), 5000);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleCreateTag = async () => {
-    if (!selectedCategory || !newTag) {
-      setTagError("Please select a category and enter a tag");
-      setTimeout(() => setTagError(""), 3000);
+    if (!selectedCategory || !newTag.trim()) {
+      setError("Please select a category and enter a tag");
+      setTimeout(() => setError(""), 3000);
       return;
     }
     try {
+      setIsLoading(true);
       const response = await fetch(
         `http://localhost:5000/api/bookstore/book-categories/${encodeURIComponent(selectedCategory)}/tags`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tag: newTag }),
+          body: JSON.stringify({ tag: newTag.trim() }),
         }
       );
       if (!response.ok) {
@@ -252,26 +259,28 @@ export default function ContentManagement() {
       setNewTag("");
       setSuccessMessage(`Tag '${newTag}' added successfully`);
       setTimeout(() => setSuccessMessage(""), 3000);
-    } catch (error: any) {
-      console.error("Error creating tag:", error);
-      setTagError(error.message || "Failed to create tag");
-      setTimeout(() => setTagError(""), 3000);
+    } catch (err: any) {
+      setError(err.message || "Failed to create tag");
+      setTimeout(() => setError(""), 3000);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleUpdateTag = async () => {
-    if (!selectedCategory || !tagToEdit || !editTag) {
-      setTagError("Please select a category, tag to edit, and new tag value");
-      setTimeout(() => setTagError(""), 3000);
+    if (!selectedCategory || !tagToEdit || !editTag.trim()) {
+      setError("Please select a category, tag to edit, and new tag value");
+      setTimeout(() => setError(""), 3000);
       return;
     }
     try {
+      setIsLoading(true);
       const response = await fetch(
         `http://localhost:5000/api/bookstore/book-categories/${encodeURIComponent(selectedCategory)}/tags/${encodeURIComponent(tagToEdit)}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ newTag: editTag }),
+          body: JSON.stringify({ newTag: editTag.trim() }),
         }
       );
       if (!response.ok) {
@@ -288,20 +297,23 @@ export default function ContentManagement() {
       setEditTag("");
       setSuccessMessage(`Tag updated to '${editTag}' successfully`);
       setTimeout(() => setSuccessMessage(""), 3000);
-    } catch (error: any) {
-      console.error("Error updating tag:", error);
-      setTagError(error.message || "Failed to update tag");
-      setTimeout(() => setTagError(""), 3000);
+    } catch (err: any) {
+      setError(err.message || "Failed to update tag");
+      setTimeout(() => setError(""), 3000);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleDeleteTag = async () => {
     if (!selectedCategory || !tagToEdit) {
-      setTagError("Please select a category and tag to delete");
-      setTimeout(() => setTagError(""), 3000);
+      setError("Please select a category and tag to delete");
+      setTimeout(() => setError(""), 3000);
       return;
     }
+    if (!confirm(`Are you sure you want to delete the tag '${tagToEdit}'?`)) return;
     try {
+      setIsLoading(true);
       const response = await fetch(
         `http://localhost:5000/api/bookstore/book-categories/${encodeURIComponent(selectedCategory)}/tags/${encodeURIComponent(tagToEdit)}`,
         {
@@ -319,35 +331,55 @@ export default function ContentManagement() {
         )
       );
       setTagToEdit("");
+      setEditTag("");
       setSuccessMessage(`Tag '${tagToEdit}' deleted successfully`);
       setTimeout(() => setSuccessMessage(""), 3000);
-    } catch (error: any) {
-      console.error("Error deleting tag:", error);
-      setTagError(error.message || "Failed to delete tag");
-      setTimeout(() => setTagError(""), 3000);
+    } catch (err: any) {
+      setError(err.message || "Failed to delete tag");
+      setTimeout(() => setError(""), 3000);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold text-yellow-900 mb-6">Content Management</h1>
-      {successMessage && <p className="text-green-500 bg-green-100 p-2 rounded mb-4">{successMessage}</p>}
-      {tagError && <p className="text-red-500 bg-red-100 p-2 rounded mb-4">{tagError}</p>}
-      <button
-        onClick={handleCreate}
-        className="mb-6 bg-teal-500 text-white px-4 py-2 rounded-lg hover:bg-teal-600"
-      >
-        Create New Book
-      </button>
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-yellow-900 mb-2">Manage Tags</h2>
-        <div className="flex flex-col space-y-4">
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Content Management</h1>
+        <button
+          onClick={() => {
+            setEditingContent(undefined);
+            setIsFormOpen(true);
+          }}
+          className="px-4 py-2 bg-teal-500 text-black rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+          disabled={isLoading}
+        >
+          Create New Book
+        </button>
+      </div>
+
+      {successMessage && (
+        <div className="bg-teal-50 border border-teal-200 text-teal-700 px-4 py-3 rounded-lg mb-6">
+          {successMessage}
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+          {error}
+        </div>
+      )}
+
+      <div className="mb-6 bg-white p-6 rounded-lg shadow-md">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Manage Tags</h2>
+        <div className="space-y-4">
           <div>
-            <label className="block text-gray-800 font-medium">Select Category</label>
+            <label className="block text-gray-800 font-medium mb-2">Select Category</label>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              disabled={isLoading}
             >
               <option value="" disabled>
                 Select a category
@@ -360,30 +392,33 @@ export default function ContentManagement() {
             </select>
           </div>
           <div>
-            <label className="block text-gray-800 font-medium">New Tag</label>
-            <div className="flex space-x-2">
+            <label className="block text-gray-800 font-medium mb-2">Add New Tag</label>
+            <div className="flex gap-2">
               <input
                 type="text"
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                 placeholder="Enter new tag"
+                disabled={isLoading || !selectedCategory}
               />
               <button
                 onClick={handleCreateTag}
-                className="bg-teal-500 text-white px-4 py-2 rounded-lg hover:bg-teal-600"
+                disabled={isLoading || !selectedCategory || !newTag.trim()}
+                className="px-4 py-2 bg-teal-600 text-black rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Add Tag
               </button>
             </div>
           </div>
           <div>
-            <label className="block text-gray-800 font-medium">Edit/Delete Tag</label>
-            <div className="flex space-x-2">
+            <label className="block text-gray-800 font-medium mb-2">Edit/Delete Tag</label>
+            <div className="flex gap-2">
               <select
                 value={tagToEdit}
                 onChange={(e) => setTagToEdit(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                disabled={isLoading || !selectedCategory}
               >
                 <option value="" disabled>
                   Select tag to edit/delete
@@ -400,18 +435,21 @@ export default function ContentManagement() {
                 type="text"
                 value={editTag}
                 onChange={(e) => setEditTag(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                 placeholder="New tag value"
+                disabled={isLoading || !tagToEdit}
               />
               <button
                 onClick={handleUpdateTag}
-                className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600"
+                disabled={isLoading || !selectedCategory || !tagToEdit || !editTag.trim()}
+                className="px-4 py-2 bg-yellow-500 text-black rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Update Tag
               </button>
               <button
                 onClick={handleDeleteTag}
-                className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+                disabled={isLoading || !selectedCategory || !tagToEdit}
+                className="px-4 py-2 bg-red-500 text-black rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Delete Tag
               </button>
@@ -419,18 +457,30 @@ export default function ContentManagement() {
           </div>
         </div>
       </div>
-      {isCreating && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white p-6 rounded-lg max-w-2xl w-full">
+
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-teal-600"></div>
+        </div>
+      ) : (
+        <ContentList contents={contents} onEdit={handleEdit} onDelete={handleDelete} />
+      )}
+
+      {isFormOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <ContentForm
-              content={selectedContent ?? undefined}
-              onClose={handleClose}
+              content={editingContent}
+              onClose={() => {
+                setIsFormOpen(false);
+                setEditingContent(undefined);
+              }}
               onSave={handleSave}
+              categories={categories}
             />
           </div>
         </div>
       )}
-      <ContentList contents={contents} onEdit={handleEdit} onDelete={handleDelete} />
     </div>
   );
 }

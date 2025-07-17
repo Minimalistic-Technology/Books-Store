@@ -127,7 +127,7 @@ export default function CategoriesTags() {
       </div>
       <CategoryTagList onEdit={handleEdit} onDelete={handleDelete} items={items} />
       {isCreating && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
+        <div className="fixed inset-0 bg-yellow-50 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
           <div className="card bg-white p-6 rounded-lg shadow-lg max-w-lg w-full relative animate__zoomIn">
             <button
               onClick={handleClose}

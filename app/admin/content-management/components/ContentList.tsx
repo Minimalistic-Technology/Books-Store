@@ -1,61 +1,91 @@
-"use client";
+import React from "react";
 
-import { Content } from "../page";
+interface Content {
+  id?: string;
+  title: string;
+  categoryName: string;
+  subCategory: string;
+  tags: string;
+  seoTitle: string;
+  seoDescription: string;
+  price: number;
+  description: string;
+  estimatedDelivery: string;
+  condition: string;
+  author: string;
+  publisher: string;
+  imageUrl: string;
+  quantityNew: number;
+  quantityOld: number;
+  discountNew: number;
+  discountOld: number;
+  bookName?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 interface ContentListProps {
   contents: Content[];
   onEdit: (content: Content) => void;
-  onDelete: (content: Content) => void;
+  onDelete: (id: string, categoryName: string) => void;
 }
 
-export default function ContentList({ contents, onEdit, onDelete }: ContentListProps) {
+const ContentList: React.FC<ContentListProps> = ({ contents, onEdit, onDelete }) => {
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-md">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="px-4 py-2 text-left text-gray-800">Image</th>
-            <th className="px-4 py-2 text-left text-gray-800">Title</th>
-            <th className="px-4 py-2 text-left text-gray-800">Category</th>
-            <th className="px-4 py-2 text-left text-gray-800">Sub Category</th>
-            <th className="px-4 py-2 text-left text-gray-800">Price</th>
-            <th className="px-4 py-2 text-left text-gray-800">Condition</th>
-            <th className="px-4 py-2 text-left text-gray-800">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {contents.map((content) => (
-            <tr key={content.id} className="border-b border-gray-200 hover:bg-gray-50">
-              <td className="px-4 py-2">
-                <img
-                  src={content.imageUrl || "http://example.com/default.jpg"}
-                  alt={content.title}
-                  className="w-16 h-16 object-cover rounded"
-                />
-              </td>
-              <td className="px-4 py-2">{content.title}</td>
-              <td className="px-4 py-2">{content.category}</td>
-              <td className="px-4 py-2">{content.subCategory}</td>
-              <td className="px-4 py-2">${content.price.toFixed(2)}</td>
-              <td className="px-4 py-2">{content.condition}</td>
-              <td className="px-4 py-2">
-                <button
-                  onClick={() => onEdit(content)}
-                  className="bg-yellow-500 text-white px-3 py-1 rounded-lg hover:bg-yellow-600 mr-2"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => onDelete(content)}
-                  className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600"
-                >
-                  Delete
-                </button>
-              </td>
+    <div className="bg-white shadow-md rounded-lg overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Image</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Title</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Category</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Subcategory</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Price</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Condition</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">New Quantity</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Old Quantity</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">New Discount (%)</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Old Discount (%)</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Author</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {contents.map((content) => (
+              <tr key={content.id}>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{content.imageUrl}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{content.title}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{content.categoryName}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{content.subCategory}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{content.price.toFixed(2)}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{content.condition}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{content.quantityNew}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{content.quantityOld}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{content.discountNew}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{content.discountOld}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{content.author}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <button
+                    onClick={() => onEdit(content)}
+                    className="text-teal-600 hover:text-teal-900 mr-4"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => content.id && onDelete(content.id, content.categoryName)}
+                    className="text-red-600 hover:text-red-900"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
-}
+};
+
+export default ContentList;

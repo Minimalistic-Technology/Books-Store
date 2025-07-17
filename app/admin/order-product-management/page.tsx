@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import OrderList from "./components/OrderList";
-import ProductList from "./components/ProductList";
+// import ProductList from "./components/ProductList";
 import OrderForm from "./components/OrderForm";
-import ProductForm from "./components/ProductForm";
+// import ProductForm from "./components/ProductForm";
 import { Order, Product } from "./types";
 
 export const updateProducts = (newProducts: Product[], setProducts: React.Dispatch<React.SetStateAction<Product[]>>) => {
@@ -208,12 +208,12 @@ export default function OrderProductManagement() {
         >
           Add New Order
         </button>
-        <button
+        {/* <button
           onClick={() => setIsProductFormOpen(true)}
           className="btn-primary px-4 py-2 rounded-lg hover:bg-teal-700 transition-all"
         >
           Add New Product
-        </button>
+        </button> */}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
@@ -221,8 +221,8 @@ export default function OrderProductManagement() {
           <OrderList orders={orders} onEdit={handleEditOrder} onDelete={handleDeleteOrder} />
         </div>
         <div>
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Products</h2>
-          <ProductList products={products} onEdit={handleEditProduct} onDelete={handleDeleteProduct} />
+          {/* <h2 className="text-2xl font-semibold text-gray-800 mb-4">Products</h2> */}
+          {/* <ProductList products={products} onEdit={handleEditProduct} onDelete={handleDeleteProduct} /> */}
         </div>
       </div>
       {isOrderFormOpen && (
@@ -260,14 +260,14 @@ export default function OrderProductManagement() {
             >
               ×
             </button>
-            <ProductForm
+            {/* <ProductForm
               product={selectedProduct ?? undefined}
               onClose={() => {
                 setSelectedProduct(null);
                 setIsProductFormOpen(false);
               }}
               onSave={handleSaveProduct}
-            />
+            /> */}
           </div>
         </div>
       )}

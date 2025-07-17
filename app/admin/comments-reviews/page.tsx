@@ -4,39 +4,74 @@ import { useState, useEffect } from "react";
 import CommentReviewForm from "./components/CommentReviewForm";
 import CommentReviewList from "./components/CommentReviewList";
 
-// Define the CommentReview interface
-export interface CommentReview {
+// Define the BookstoreReview interface
+export interface BookstoreReview {
   id: string;
-  content: string;
-  author: string;
+  bookId: { _id: string; title: string }; // Populated bookId
+  categoryName: string;
+  name: string;
   email: string;
   rating: number;
+  comment: string;
   createdAt: string;
-  status: 'pending' | 'approved' | 'disapproved'; // Add status field
+  status: 'pending' | 'approved' | 'disapproved';
 }
 
 export default function CommentsReviews() {
-  const [items, setItems] = useState<CommentReview[]>([]);
-  const [selectedItem, setSelectedItem] = useState<CommentReview | null>(null);
+  const [items, setItems] = useState<BookstoreReview[]>([]);
+  const [books, setBooks] = useState<{ _id: string; title: string; categoryName: string }[]>([]);
+  const [selectedItem, setSelectedItem] = useState<BookstoreReview | null>(null);
   const [isModerating, setIsModerating] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch books for dropdown
+  const fetchBooks = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/api/bookstore/book-categories?t=" + new Date().getTime(), {
+        cache: "no-store",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch books");
+      }
+      const data = await response.json();
+      const books = data.flatMap((category: any) =>
+        category.books.map((book: any) => ({
+          _id: book._id,
+          title: book.title,
+          categoryName: category.name,
+        }))
+      );
+      setBooks(books);
+    } catch (err) {
+      setError("Failed to load books. Please try again.");
+      console.error("Error fetching books:", err);
+    }
+  };
 
   // Fetch reviews from API
   const fetchReviews = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/bookstore/reviews");
+      const response = await fetch("http://localhost:5000/api/bookstore/reviews?t=" + new Date().getTime(), {
+        cache: "no-store",
+      });
       if (!response.ok) {
-        throw new Error("Failed to fetch reviews");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to fetch reviews");
       }
       const data = await response.json();
-      const reviews: CommentReview[] = data.map((review: any) => ({
+      const reviews: BookstoreReview[] = data.map((review: any) => ({
         id: review._id,
-        content: review.review,
-        author: review.name,
+        bookId: {
+          _id: review.bookId?._id || review.bookId,
+          title: review.bookId?.title || "Unknown Book",
+        },
+        categoryName: review.categoryName,
+        name: review.name,
         email: review.email,
         rating: review.rating,
+        comment: review.comment,
         createdAt: review.createdAt,
-        status: review.status, // Map the status field
+        status: review.status,
       }));
       setItems(reviews);
       setError(null);
@@ -46,12 +81,13 @@ export default function CommentsReviews() {
     }
   };
 
-  // Fetch reviews on mount
+  // Fetch books and reviews on mount
   useEffect(() => {
+    fetchBooks();
     fetchReviews();
-  }, []); // Empty dependency array to run only on mount
+  }, []);
 
-  const handleEdit = (item: CommentReview) => {
+  const handleEdit = (item: BookstoreReview) => {
     setSelectedItem(item);
     setIsModerating(true);
   };
@@ -60,9 +96,11 @@ export default function CommentsReviews() {
     try {
       const response = await fetch(`http://localhost:5000/api/bookstore/reviews/${id}`, {
         method: "DELETE",
+        headers: { "Content-Type": "application/json" },
       });
       if (!response.ok) {
-        throw new Error("Failed to delete review");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to delete review");
       }
       setItems((prev) => prev.filter((item) => item.id !== id));
       setError(null);
@@ -74,32 +112,37 @@ export default function CommentsReviews() {
 
   const handleSave = async (data: {
     id?: string;
-    content: string;
-    author: string;
+    bookId: string;
+    categoryName: string;
+    name: string;
     email: string;
     rating: number;
+    comment: string;
     createdAt?: string;
     status?: 'pending' | 'approved' | 'disapproved';
   }) => {
     try {
       const reviewData = {
-        review: data.content,
-        name: data.author,
+        bookId: data.bookId,
+        categoryName: data.categoryName,
+        name: data.name,
         email: data.email,
         rating: data.rating,
-        status: data.status, // Include status in the payload
+        comment: data.comment,
+        status: data.status || "pending",
       };
 
       let response;
       if (data.id) {
-        // Update existing review
+        // Update existing review (only editable fields)
         response = await fetch(`http://localhost:5000/api/bookstore/reviews/${data.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(reviewData),
+          body: JSON.stringify({ rating: data.rating, comment: data.comment, status: data.status }),
         });
         if (!response.ok) {
-          throw new Error("Failed to update review");
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || "Failed to update review");
         }
       } else {
         // Create new review
@@ -109,11 +152,12 @@ export default function CommentsReviews() {
           body: JSON.stringify(reviewData),
         });
         if (!response.ok) {
-          throw new Error("Failed to create review");
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || "Failed to create review");
         }
       }
 
-      // Fetch reviews to ensure state is in sync with database
+      // Fetch reviews to sync state
       await fetchReviews();
       setError(null);
     } catch (err) {
@@ -137,12 +181,12 @@ export default function CommentsReviews() {
           {error}
         </div>
       )}
-      {/* <button
+      <button
         onClick={() => setIsModerating(true)}
         className="bg-teal-500 text-white px-4 py-2 rounded-lg hover:bg-teal-600 transition-all"
       >
         Add New Review
-      </button> */}
+      </button>
       <CommentReviewList onEdit={handleEdit} onDelete={handleDelete} items={items} />
       {isModerating && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
@@ -157,6 +201,7 @@ export default function CommentsReviews() {
               item={selectedItem ?? undefined}
               onClose={handleClose}
               onSave={handleSave}
+              books={books}
             />
           </div>
         </div>

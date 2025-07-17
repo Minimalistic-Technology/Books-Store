@@ -1,11 +1,11 @@
 "use client";
 
-import type { CommentReview } from "../page";
+import { BookstoreReview } from "../page";
 
 type CommentReviewListProps = {
-  onEdit: (item: CommentReview) => void;
+  onEdit: (item: BookstoreReview) => void;
   onDelete: (id: string) => void;
-  items: CommentReview[];
+  items: BookstoreReview[];
 };
 
 export default function CommentReviewList({ onEdit, onDelete, items }: CommentReviewListProps) {
@@ -19,7 +19,7 @@ export default function CommentReviewList({ onEdit, onDelete, items }: CommentRe
             className="border p-4 rounded-lg bg-white shadow-md flex justify-between items-center animate__fadeInUp"
           >
             <span className="text-gray-800">
-              {item.author || "Unknown"} - Rating: {item.rating ? `${item.rating}/5` : "N/A"} - Status: {item.status}
+              {item.name || "Unknown"} - Rating: {item.rating ? `${item.rating}/5` : "N/A"} - Book: {item.bookId.title || "Unknown"} - Status: {item.status}
             </span>
             <div>
               <button

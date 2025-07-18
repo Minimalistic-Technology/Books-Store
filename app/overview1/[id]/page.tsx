@@ -24,8 +24,8 @@ interface Item {
   publisher: string;
   quantityNew: number;
   quantityOld: number;
-  discountNew: number; // Added
-  discountOld: number; // Added
+  discountNew: number;
+  discountOld: number;
 }
 
 interface BookstoreReview {
@@ -52,7 +52,7 @@ export default function Overview() {
     description: "",
     estimatedDelivery: "",
     tags: [],
-    condition: "NEW - ORIGINAL PRICE",
+    condition: "New",
     subCategory: "",
     author: "",
     publisher: "",
@@ -61,16 +61,15 @@ export default function Overview() {
     discountNew: 0,
     discountOld: 0,
   });
-  const [condition, setCondition] = useState("NEW - ORIGINAL PRICE");
+  const [condition, setCondition] = useState("New");
   const [discountedPrice, setDiscountedPrice] = useState(0);
   const [isOutOfStock, setIsOutOfStock] = useState(false);
   const [availableConditions, setAvailableConditions] = useState<string[]>([]);
-  const [viewers, setViewers] = useState(46);
+  const [viewers, setViewers] = useState(Math.floor(Math.random() * 50) + 1); 
   const [rating, setRating] = useState(0);
   const [reviewDescription, setReviewDescription] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [saveDetails, setSaveDetails] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [reviews, setReviews] = useState<BookstoreReview[]>([]);
@@ -98,7 +97,7 @@ export default function Overview() {
             description: data.description || "",
             estimatedDelivery: data.estimatedDelivery || "",
             tags: data.tags || [],
-            condition: data.condition || "NEW - ORIGINAL PRICE",
+            condition: data.condition || "New",
             subCategory: data.subCategory || "",
             author: data.author || "",
             publisher: data.publisher || "",
@@ -108,26 +107,15 @@ export default function Overview() {
             discountOld: data.discountOld || 0,
           };
           setItem(newItem);
-          setCondition(newItem.condition === "BOTH" ? "NEW - ORIGINAL PRICE" : newItem.condition);
+          setCondition(newItem.condition === "BOTH" ? "New" : newItem.condition === "NEW - ORIGINAL PRICE" ? "New" : "Old");
           setDiscountedPrice(
-            newItem.condition === "OLD - 35% OFF"
-              ? newItem.price * (1 - newItem.discountOld / 100)
-              : newItem.condition === "NEW - ORIGINAL PRICE"
-              ? newItem.price * (1 - newItem.discountNew / 100)
-              : newItem.price * (1 - newItem.discountNew / 100)
+            newItem.condition === "OLD " ? newItem.price * (1 - newItem.discountOld / 100) :
+            newItem.price * (1 - newItem.discountNew / 100)
           );
           setIsOutOfStock(newItem.quantityNew === 0 && newItem.quantityOld === 0);
           const conditions = [];
-          if (newItem.condition === "NEW - ORIGINAL PRICE" && newItem.quantityNew > 0) {
-            conditions.push("NEW - ORIGINAL PRICE");
-          }
-          if (newItem.condition === "OLD - 35% OFF" && newItem.quantityOld > 0) {
-            conditions.push("OLD - 35% OFF");
-          }
-          if (newItem.condition === "BOTH") {
-            if (newItem.quantityNew > 0) conditions.push("NEW - ORIGINAL PRICE");
-            if (newItem.quantityOld > 0) conditions.push("OLD - 35% OFF");
-          }
+          if (newItem.quantityNew > 0) conditions.push("New");
+          if (newItem.quantityOld > 0) conditions.push("Old");
           setAvailableConditions(conditions);
           setError(null);
         } catch (err: any) {
@@ -146,7 +134,7 @@ export default function Overview() {
             description: "",
             estimatedDelivery: "",
             tags: [],
-            condition: "NEW - ORIGINAL PRICE",
+            condition: "New",
             subCategory: "",
             author: "",
             publisher: "",
@@ -155,7 +143,7 @@ export default function Overview() {
             discountNew: 0,
             discountOld: 0,
           });
-          setCondition("NEW - ORIGINAL PRICE");
+          setCondition("New");
           setDiscountedPrice(0);
           setIsOutOfStock(true);
           setAvailableConditions([]);
@@ -207,18 +195,11 @@ export default function Overview() {
     }
   }, [id, item.name]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setViewers(Math.floor(Math.random() * 100) + 1);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
   const handleConditionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedCondition = e.target.value;
     setCondition(selectedCondition);
     setDiscountedPrice(
-      selectedCondition === "OLD - 35% OFF"
+      selectedCondition === "Old"
         ? item.price * (1 - item.discountOld / 100)
         : item.price * (1 - item.discountNew / 100)
     );
@@ -269,7 +250,6 @@ export default function Overview() {
         setReviewDescription("");
         setName("");
         setEmail("");
-        setSaveDetails(false);
         setReviewError(null);
         setTimeout(() => {
           setShowSuccessMessage(false);
@@ -287,7 +267,7 @@ export default function Overview() {
 
   const handleAddToCart = () => {
     if (!error && item._id && !isOutOfStock) {
-      const effectivePrice = condition === "OLD - 35% OFF" ? discountedPrice : item.price * (1 - item.discountNew / 100);
+      const effectivePrice = condition === "Old" ? discountedPrice : item.price * (1 - item.discountNew / 100);
       const query = new URLSearchParams({
         _id: item._id,
         name: item.name,
@@ -303,7 +283,7 @@ export default function Overview() {
 
   const handleBuyNow = () => {
     if (!error && item._id && !isOutOfStock) {
-      const effectivePrice = condition === "OLD - 35% OFF" ? discountedPrice : item.price * (1 - item.discountNew / 100);
+      const effectivePrice = condition === "Old" ? discountedPrice : item.price * (1 - item.discountNew / 100);
       const query = new URLSearchParams({
         _id: item._id,
         name: item.name,
@@ -364,13 +344,13 @@ export default function Overview() {
           <div className="w-full lg:w-1/2 lg:pl-6">
             <h2 className="text-2xl font-semibold mb-4 text-gray-900">{item.name}</h2>
             <div className="text-xl font-bold mb-4 flex items-center space-x-2">
-              {condition === "OLD - 35% OFF" && item.discountOld > 0 ? (
+              {condition === "Old" && item.discountOld > 0 ? (
                 <>
                   <span className="text-sm text-gray-500 line-through">₹{item.price.toFixed(2)}</span>
                   <span className="text-2xl text-green-500">₹{discountedPrice.toFixed(2)}</span>
                   <span className="text-sm text-gray-600">({item.discountOld}% off)</span>
                 </>
-              ) : item.discountNew > 0 && condition === "NEW - ORIGINAL PRICE" ? (
+              ) : item.discountNew > 0 && condition === "New" ? (
                 <>
                   <span className="text-sm text-gray-500 line-through">₹{item.price.toFixed(2)}</span>
                   <span className="text-2xl text-green-500">₹{discountedPrice.toFixed(2)}</span>
@@ -393,8 +373,8 @@ export default function Overview() {
                 disabled={availableConditions.length === 0}
               >
                 {availableConditions.map((cond) => {
-                  const isNewOutOfStock = cond === "NEW - ORIGINAL PRICE" && item.quantityNew === 0;
-                  const isOldOutOfStock = cond === "OLD - 35% OFF" && item.quantityOld === 0;
+                  const isNewOutOfStock = cond === "New" && item.quantityNew === 0;
+                  const isOldOutOfStock = cond === "Old" && item.quantityOld === 0;
                   const label = `${cond}${isNewOutOfStock || isOldOutOfStock ? " (Out of Stock)" : ""}`;
                   return (
                     <option key={cond} value={cond} disabled={isNewOutOfStock || isOldOutOfStock}>
@@ -412,14 +392,14 @@ export default function Overview() {
             <button
               onClick={handleAddToCart}
               className="w-full bg-blue-500 text-white p-2 rounded-lg mb-2 hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
-              disabled={isOutOfStock || (condition === "NEW - ORIGINAL PRICE" && item.quantityNew === 0) || (condition === "OLD - 35% OFF" && item.quantityOld === 0)}
+              disabled={isOutOfStock || (condition === "New" && item.quantityNew === 0) || (condition === "Old" && item.quantityOld === 0)}
             >
               Add to Cart
             </button>
             <button
               onClick={handleBuyNow}
               className="w-full bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
-              disabled={isOutOfStock || (condition === "NEW - ORIGINAL PRICE" && item.quantityNew === 0) || (condition === "OLD - 35% OFF" && item.quantityOld === 0)}
+              disabled={isOutOfStock || (condition === "New" && item.quantityNew === 0) || (condition === "Old" && item.quantityOld === 0)}
             >
               Buy Now
             </button>
@@ -505,18 +485,6 @@ export default function Overview() {
                         className="w-full p-2 border rounded-lg text-gray-800 mt-1"
                         placeholder="Enter your email"
                       />
-                    </div>
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        id="saveDetails"
-                        checked={saveDetails}
-                        onChange={(e) => setSaveDetails(e.target.checked)}
-                        className="mr-2 accent-orange-500"
-                      />
-                      <label htmlFor="saveDetails" className="text-sm text-gray-600">
-                        Save my name, email, and website in this browser for the next time I comment.
-                      </label>
                     </div>
                     <button
                       type="submit"

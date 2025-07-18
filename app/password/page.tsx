@@ -125,7 +125,6 @@ const BookStorePasswordPage: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen w-full bg-white font-serif text-gray-900">
       <div className="flex flex-col items-center justify-center flex-1 px-4 py-10">
-        {/* Logo and Book Icon */}
         <div className="flex flex-col items-center mb-6">
           <Image
             src="/images/logo.png"
@@ -136,18 +135,15 @@ const BookStorePasswordPage: React.FC = () => {
           />
         </div>
 
-        {/* Header */}
         <h1 className="text-3xl font-bold mb-2">Set Up Your Account</h1>
         <p className="text-sm text-center mb-6">
           Finish setting up your account at{' '}
-          <Link href="/" className="text-teal-600 hover:underline font-medium">
+          <Link href="#" className="text-teal-600 hover:underline font-medium">
             Harsh Book Store
           </Link>
         </p>
 
-        {/* Form Container */}
         <div className="w-full max-w-md bg-white border border-gray-300 rounded-xl p-6 shadow-md">
-          {/* Email Field */}
           <div className="mb-4">
             <label htmlFor="email" className="block text-sm font-medium">
               Email Address
@@ -161,7 +157,6 @@ const BookStorePasswordPage: React.FC = () => {
             />
           </div>
 
-          {/* Full Name */}
           <div className="mb-4">
             <label htmlFor="fullName" className="block text-sm font-medium">
               Full Name
@@ -179,7 +174,6 @@ const BookStorePasswordPage: React.FC = () => {
             )}
           </div>
 
-          {/* Password */}
           <div className="mb-4">
             <label htmlFor="password" className="block text-sm font-medium">
               Password
@@ -206,7 +200,6 @@ const BookStorePasswordPage: React.FC = () => {
             )}
           </div>
 
-          {/* Role Dropdown */}
           <div className="mb-4">
             <label htmlFor="role" className="block text-sm font-medium">
               Role
@@ -225,7 +218,6 @@ const BookStorePasswordPage: React.FC = () => {
             )}
           </div>
 
-          {/* Password Strength */}
           {password && (
             <div className="mb-4">
               <label className="block text-sm font-medium">
@@ -240,14 +232,12 @@ const BookStorePasswordPage: React.FC = () => {
             </div>
           )}
 
-          {/* API Error */}
           {errors.apiError && (
             <p className="text-center text-sm text-red-600 mb-4">
               {errors.apiError}
             </p>
           )}
 
-          {/* Terms */}
           <p className="text-xs text-center text-gray-600 mb-4">
             By signing up, I accept the{' '}
             <Link href="#" className="text-teal-600 hover:underline">
@@ -260,7 +250,6 @@ const BookStorePasswordPage: React.FC = () => {
             .
           </p>
 
-          {/* Continue Button */}
           <button
             onClick={handleContinue}
             className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-md py-2 transition-all"
@@ -270,7 +259,6 @@ const BookStorePasswordPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Footer */}
       <footer className="text-center py-4 border-t border-gray-200 text-sm text-gray-600">
         <p className="font-medium">
           Legal restrictions and terms of use applicable to this site

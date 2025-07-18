@@ -93,7 +93,7 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
       if (name === "condition") {
         if (value === "NEW - ORIGINAL PRICE") {
           return { ...newData, quantityOld: 0, discountOld: 0 };
-        } else if (value === "OLD - 35% OFF") {
+        } else if (value === "OLD ") {
           return { ...newData, quantityNew: 0, discountNew: 0 };
         }
       }
@@ -177,7 +177,7 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
         return;
       }
 
-      if (!["NEW - ORIGINAL PRICE", "OLD - 35% OFF", "BOTH"].includes(formData.condition)) {
+      if (!["NEW - ORIGINAL PRICE", "OLD ", "BOTH"].includes(formData.condition)) {
         setError("Invalid condition selected");
         setIsSubmitting(false);
         return;
@@ -369,7 +369,7 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
                 disabled={isSubmitting}
               >
                 <option value="NEW - ORIGINAL PRICE">NEW - ORIGINAL PRICE</option>
-                <option value="OLD - 35% OFF">OLD - 35% OFF</option>
+                <option value="OLD ">OLD </option>
                 <option value="BOTH">BOTH</option>
               </select>
             </div>
@@ -406,7 +406,7 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
               </>
             ) : null}
 
-            {formData.condition === "OLD - 35% OFF" || formData.condition === "BOTH" ? (
+            {formData.condition === "OLD " || formData.condition === "BOTH" ? (
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Old Quantity</label>

@@ -45,7 +45,6 @@ const BookStoreSignupPage: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen w-full bg-white font-serif text-gray-900">
       <div className="flex flex-col items-center justify-center flex-1 px-4 py-10">
-        {/* Logo and Book Icon */}
         <div className="flex flex-col items-center mb-6">
           <Image
             src="/images/logo.png"
@@ -56,22 +55,20 @@ const BookStoreSignupPage: React.FC = () => {
           />
         </div>
 
-        {/* Heading */}
         <h1 className="text-3xl font-bold mb-2">Create Your Account</h1>
         <p className="text-sm text-center mb-6">
           Join{' '}
-          <Link href="/" className="text-teal-600 hover:underline font-medium">
+          <Link href="/login" className="text-teal-600 hover:underline font-medium">
             Harsh Book Store
           </Link>{' '}
           to explore millions of books.
         </p>
 
-        {/* Form */}
         <form
           onSubmit={handleSubmit}
           className="w-full max-w-md bg-white border border-gray-300 rounded-xl p-6 shadow-md"
         >
-          {/* Email Field */}
+
           <div className="mb-4">
             <label htmlFor="email" className="block text-sm font-medium">
               Email
@@ -89,7 +86,6 @@ const BookStoreSignupPage: React.FC = () => {
             )}
           </div>
 
-          {/* Terms Checkbox */}
           <div className="mb-4 flex items-start">
             <input
               type="checkbox"
@@ -113,7 +109,6 @@ const BookStoreSignupPage: React.FC = () => {
             <p className="text-sm text-red-500 mb-4">{errors.terms}</p>
           )}
 
-          {/* Next Button */}
           <button
             type="submit"
             className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-md py-2 transition-all"
@@ -121,7 +116,6 @@ const BookStoreSignupPage: React.FC = () => {
             Next
           </button>
 
-          {/* Already have an account */}
           <div className="mt-4 text-center">
             <p className="text-sm">
               Already have an account?{' '}
@@ -133,7 +127,6 @@ const BookStoreSignupPage: React.FC = () => {
         </form>
       </div>
 
-      {/* Footer */}
       <footer className="text-center py-4 border-t border-gray-200 text-sm text-gray-600">
         <p className="font-medium">
           Legal restrictions and terms of use applicable to this site

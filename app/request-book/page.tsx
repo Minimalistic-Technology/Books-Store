@@ -21,8 +21,12 @@ interface FormData {
 interface Errors {
   name: string;
   email: string;
+  mobile: string;
   bookTitle: string;
+  publisher: string;
   author: string;
+  className: string;
+  message: string;
 }
 
 const RequestBookPage: React.FC = () => {
@@ -42,8 +46,12 @@ const RequestBookPage: React.FC = () => {
   const [errors, setErrors] = useState<Errors>({
     name: "",
     email: "",
+    mobile: "",
     bookTitle: "",
+    publisher: "",
     author: "",
+    className: "",
+    message: "",
   });
 
   const [apiError, setApiError] = useState<string | null>(null);
@@ -51,7 +59,7 @@ const RequestBookPage: React.FC = () => {
 
   const handleChange = (field: keyof FormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    setErrors((prev) => ({ ...prev, [field]: "" })); // Clear error on change
+    setErrors((prev) => ({ ...prev, [field]: "" })); 
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -59,9 +67,27 @@ const RequestBookPage: React.FC = () => {
     let hasErrors = false;
 
     const newErrors: Partial<Errors> = {};
-
     if (!formData.name.trim()) {
       newErrors.name = "Name is required";
+      hasErrors = true;
+    } else if (!/^[a-zA-Z\s]+$/.test(formData.name.trim())) {
+      newErrors.name = "Name should contain only letters and spaces";
+      hasErrors = true;
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+      hasErrors = true;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      newErrors.email = "Invalid email address";
+      hasErrors = true;
+    }
+
+    if (!formData.mobile.trim()) {
+      newErrors.mobile = "Mobile number is required";
+      hasErrors = true;
+    } else if (!/^[6-9]\d{9}$/.test(formData.mobile.trim())) {
+      newErrors.mobile = "Mobile number must be a valid 10-digit number starting with 6, 7, 8, or 9";
       hasErrors = true;
     }
 
@@ -75,11 +101,18 @@ const RequestBookPage: React.FC = () => {
       hasErrors = true;
     }
 
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
+    if (formData.publisher && !formData.publisher.trim()) {
+      newErrors.publisher = "Publisher cannot be empty if provided";
       hasErrors = true;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Invalid email address";
+    }
+
+    if (formData.className && !formData.className.trim()) {
+      newErrors.className = "Class cannot be empty if provided";
+      hasErrors = true;
+    }
+
+    if (formData.message && !formData.message.trim()) {
+      newErrors.message = "Message cannot be empty if provided";
       hasErrors = true;
     }
 
@@ -93,14 +126,14 @@ const RequestBookPage: React.FC = () => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            name: formData.name,
-            email: formData.email,
-            mobile: formData.mobile,
-            bookTitle: formData.bookTitle,
-            publisher: formData.publisher,
-            author: formData.author,
-            classLevel: formData.className, // Map className to classLevel
-            message: formData.message,
+            name: formData.name.trim(),
+            email: formData.email.trim(),
+            mobile: formData.mobile.trim(),
+            bookTitle: formData.bookTitle.trim(),
+            publisher: formData.publisher.trim(),
+            author: formData.author.trim(),
+            classLevel: formData.className.trim(),
+            message: formData.message.trim(),
           }),
         });
 
@@ -125,7 +158,6 @@ const RequestBookPage: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen w-full bg-white font-serif relative">
-      {/* Orange Icons */}
       <div className="absolute top-10 left-10 text-orange-600 opacity-20 animate-pulse">
         <FontAwesomeIcon icon={faBookOpen} size="3x" />
       </div>
@@ -136,7 +168,6 @@ const RequestBookPage: React.FC = () => {
         <FontAwesomeIcon icon={faBookOpen} size="3x" />
       </div>
 
-      {/* Main Content */}
       <div className="relative flex flex-1 items-center justify-center p-6 z-10">
         <div className="w-full max-w-lg bg-white border border-gray-200 rounded-xl p-6 shadow-xl">
           <div className="flex flex-col items-center mb-6">
@@ -181,6 +212,7 @@ const RequestBookPage: React.FC = () => {
                 onChange={handleChange}
                 error={errors.name}
                 placeholder="Enter your name"
+                required
               />
               <InputField
                 label="Your Email"
@@ -189,13 +221,16 @@ const RequestBookPage: React.FC = () => {
                 onChange={handleChange}
                 error={errors.email}
                 placeholder="Enter your email"
+                required
               />
               <InputField
                 label="Mobile"
                 id="mobile"
                 value={formData.mobile}
                 onChange={handleChange}
+                error={errors.mobile}
                 placeholder="Enter your mobile number"
+                required
               />
               <InputField
                 label="Book Title"
@@ -204,12 +239,14 @@ const RequestBookPage: React.FC = () => {
                 onChange={handleChange}
                 error={errors.bookTitle}
                 placeholder="Enter the book title"
+                required
               />
               <InputField
                 label="Publisher"
                 id="publisher"
                 value={formData.publisher}
                 onChange={handleChange}
+                error={errors.publisher}
                 placeholder="Publisher name"
               />
               <InputField
@@ -219,12 +256,14 @@ const RequestBookPage: React.FC = () => {
                 onChange={handleChange}
                 error={errors.author}
                 placeholder="Author name"
+                required
               />
               <InputField
                 label="Class"
                 id="className"
                 value={formData.className}
                 onChange={handleChange}
+                error={errors.className}
                 placeholder="e.g. 10th, 12th"
               />
               <div>
@@ -241,6 +280,7 @@ const RequestBookPage: React.FC = () => {
                   value={formData.message}
                   onChange={(e) => handleChange("message", e.target.value)}
                 />
+                {errors.message && <p className="text-sm text-red-500 mt-1">{errors.message}</p>}
               </div>
               <button
                 type="submit"
@@ -256,7 +296,6 @@ const RequestBookPage: React.FC = () => {
   );
 };
 
-// Reusable InputField component
 const InputField = ({
   label,
   id,
@@ -264,20 +303,22 @@ const InputField = ({
   onChange,
   error,
   placeholder,
+  required = false,
 }: {
   label: string;
-  id: keyof FormData; // Fixed to match handleChange parameter
+  id: keyof FormData;
   value: string;
   onChange: (field: keyof FormData, value: string) => void;
   error?: string;
   placeholder?: string;
+  required?: boolean;
 }) => (
   <div>
     <label
       htmlFor={id}
       className="block text-sm font-medium text-gray-700 mb-1"
     >
-      {label}
+      {label} {required && <span className="text-red-500">*</span>}
     </label>
     <input
       type="text"
@@ -286,6 +327,7 @@ const InputField = ({
       value={value}
       onChange={(e) => onChange(id, e.target.value)}
       className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
+      required={required}
     />
     {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
   </div>

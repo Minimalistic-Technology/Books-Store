@@ -1,17 +1,24 @@
+export interface Address {
+  street: string;
+  city: string;
+  state: string;
+  country: string;
+  pinCode: string;
+}
+
 export interface Order {
   id: string;
   customerName: string;
-  totalAmount: number;
-  status: "Pending" | "Processing" | "Shipped" | "Delivered" | "Cancelled";
-  createdAt: string;
-  items?: any[];
-}
-
-export interface Product {
-  id: string;
-  name: string;
+  email: string;
+  mobileNumber: string;
+  address: Address;
+  paymentType: "Credit Card" | "Debit Card" | "UPI" | "Cash on Delivery";
+  quantity: number;
   price: number;
-  inventory: number;
-  description: string;
+  status: "Pending" | "Processing" | "Shipped" | "Delivered" | "Cancelled";
+  condition: "New" | "Old";
   createdAt: string;
+  bookId: string;
+  title: string;
+  imageUrl?: string;
 }

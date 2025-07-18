@@ -6,25 +6,21 @@ import type { Order } from "../types";
 type OrderFormProps = {
   order?: Order;
   onClose: () => void;
-  onSave: (data: { id?: string; customerName: string; totalAmount: number; status: string; createdAt?: string; items?: any[] }) => void;
+  onSave: (data: { id: string; status: string }) => void;
 };
 
 export default function OrderForm({ order, onClose, onSave }: OrderFormProps) {
   const [formData, setFormData] = useState({
     id: order?.id || "",
-    customerName: order?.customerName || "",
-    totalAmount: order?.totalAmount || 0,
     status: order?.status || "Pending",
-    createdAt: order?.createdAt || new Date().toISOString(),
-    items: order?.items || [],
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "totalAmount" ? parseFloat(value) || 0 : value,
+      [name]: value,
     }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
@@ -32,8 +28,6 @@ export default function OrderForm({ order, onClose, onSave }: OrderFormProps) {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const newErrors: { [key: string]: string } = {};
-    if (!formData.customerName.trim()) newErrors.customerName = "Customer name is required";
-    if (formData.totalAmount <= 0) newErrors.totalAmount = "Total amount must be greater than 0";
     if (!["Pending", "Processing", "Shipped", "Delivered", "Cancelled"].includes(formData.status))
       newErrors.status = "Invalid status";
 
@@ -49,38 +43,92 @@ export default function OrderForm({ order, onClose, onSave }: OrderFormProps) {
   return (
     <div className="fixed inset-0 bg-yellow-50 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
       <div className="card p-6 max-w-lg w-full animate__zoomIn" style={{ maxHeight: "90vh", overflowY: "auto" }}>
-        <h2 className="text-2xl font-semibold mb-4 text-yellow-900">
-          {order ? "Edit Order" : "Add New Order"}
-        </h2>
+        <h2 className="text-2xl font-semibold mb-4 text-yellow-900">Edit Order Status</h2>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 gap-4">
             <div>
+              <label className="block text-sm font-medium text-gray-700">Customer Name</label>
               <input
                 type="text"
-                name="customerName"
-                value={formData.customerName}
-                onChange={handleChange}
-                placeholder="Customer Name"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                required
+                value={order?.customerName || ""}
+                disabled
+                className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100"
               />
-              {errors.customerName && <p className="text-red-500 text-sm mt-1">{errors.customerName}</p>}
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700">Email</label>
+              <input
+                type="email"
+                value={order?.email || ""}
+                disabled
+                className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Mobile Number</label>
+              <input
+                type="text"
+                value={order?.mobileNumber || ""}
+                disabled
+                className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Address</label>
+              <input
+                type="text"
+                value={order ? `${order.address.street}, ${order.address.city}, ${order.address.state}, ${order.address.country}, ${order.address.pinCode}` : ""}
+                disabled
+                className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Payment Type</label>
+              <input
+                type="text"
+                value={order?.paymentType || ""}
+                disabled
+                className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Quantity</label>
               <input
                 type="number"
-                name="totalAmount"
-                value={formData.totalAmount || ""}
-                onChange={handleChange}
-                placeholder="Total Amount"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                required
-                step="0.01"
-                min="0.01"
+                value={order?.quantity || 0}
+                disabled
+                className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100"
               />
-              {errors.totalAmount && <p className="text-red-500 text-sm mt-1">{errors.totalAmount}</p>}
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700">Price</label>
+              <input
+                type="number"
+                value={order?.price || 0}
+                disabled
+                className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Condition</label>
+              <input
+                type="text"
+                value={order?.condition || ""}
+                disabled
+                className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Book Title</label>
+              <input
+                type="text"
+                value={order?.title || ""}
+                disabled
+                className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Status</label>
               <select
                 name="status"
                 value={formData.status}

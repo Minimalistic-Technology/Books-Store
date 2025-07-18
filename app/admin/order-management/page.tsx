@@ -4,13 +4,14 @@ import { useState, useEffect } from "react";
 import OrderList from "./components/OrderList";
 
 export interface Order {
-  id: string;
-  customerName: string;
-  totalAmount: number;
-  status: "Pending" | "Processing" | "Shipped" | "Delivered" | "Cancelled";
-  createdAt: string;
-  updatedAt?: string;
+     id: string
+    customerName: string
+    totalAmount: number 
+    status: "Pending" | "Processing" | "Shipped" | "Delivered" | "Cancelled"
+    createdAt: string
+    updatedAt?: string
 }
+
 
 export default function OrderManagement() {
   const [orders, setOrders] = useState<Order[]>([]);

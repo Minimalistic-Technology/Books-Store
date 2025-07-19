@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -31,6 +32,7 @@ interface ContentFormProps {
 }
 
 export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSave, categories }) => {
+  const defaultImageUrl = "https://images.pexels.com/photos/373465/pexels-photo-373465.jpeg";
   const [formData, setFormData] = useState<Content>({
     id: content?.id || "",
     title: content?.title || "",
@@ -45,7 +47,7 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
     condition: content?.condition || "NEW - ORIGINAL PRICE",
     author: content?.author || "",
     publisher: content?.publisher || "",
-    imageUrl: content?.imageUrl || "",
+    imageUrl: content?.imageUrl || defaultImageUrl,
     quantityNew: content?.quantityNew || 0,
     quantityOld: content?.quantityOld || 0,
     discountNew: content?.discountNew || 0,
@@ -106,16 +108,12 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
     const file = e.target.files?.[0];
     if (file) {
       setImageFile(file);
+      setFormData((prev) => ({ ...prev, imageUrl: URL.createObjectURL(file) })); // Show preview of uploaded file
       setError("");
     }
   };
 
   const handleImageUpload = async (): Promise<string | null> => {
-    if (!imageFile && !formData.imageUrl) {
-      setError("Please select an image or provide an image URL");
-      return null;
-    }
-
     if (imageFile) {
       try {
         const formData = new FormData();
@@ -144,7 +142,8 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
       }
     }
 
-    return formData.imageUrl;
+    // Return the existing imageUrl or default if no file is uploaded
+    return formData.imageUrl || defaultImageUrl;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -197,12 +196,14 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
 
       const imageUrl = await handleImageUpload();
       if (!imageUrl) {
+        setError("Failed to process image");
         setIsSubmitting(false);
         return;
       }
 
-      if (!imageUrl.startsWith('https://res.cloudinary.com/')) {
-        setError("Image URL must be a valid Cloudinary URL");
+      // Allow default Pexels image or Cloudinary URLs
+      if (imageUrl !== defaultImageUrl && !imageUrl.startsWith('https://res.cloudinary.com/')) {
+        setError("Image URL must be a valid Cloudinary URL or the default image");
         setIsSubmitting(false);
         return;
       }
@@ -439,7 +440,7 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
             ) : null}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Image Upload *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Image Upload</label>
               <input
                 type="file"
                 accept="image/*"
@@ -447,11 +448,13 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 disabled={isSubmitting}
               />
-              {formData.imageUrl && (
-                <div className="mt-2">
-                  <img src={formData.imageUrl} alt="Preview" className="h-20 w-20 object-cover rounded-md" />
-                </div>
-              )}
+              <div className="mt-2">
+                <img
+                  src={formData.imageUrl || defaultImageUrl}
+                  alt="Preview"
+                  className="h-20 w-20 object-cover rounded-md"
+                />
+              </div>
             </div>
 
             <div>

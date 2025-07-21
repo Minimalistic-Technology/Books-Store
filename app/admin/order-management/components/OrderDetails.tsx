@@ -25,7 +25,7 @@ export default function OrderDetails({ order, onClose, onUpdateOrder }: OrderDet
     if (window.confirm(`Confirm ${isRefundProcessing ? "refund" : "cancel"} for Order #${order.id}?`)) {
       const updatedOrder: Order = { ...order, status: "Cancelled", updatedAt: new Date().toISOString() };
       try {
-        const response = await fetch(`http://localhost:5000/api/bookstore/orderroutes/orders/${order.id}`, {
+        const response = await fetch(`http://localhost:5000/api/orders/${order.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

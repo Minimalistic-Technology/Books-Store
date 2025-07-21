@@ -27,7 +27,7 @@ export default function CommentsReviews() {
   // Fetch books for dropdown
   const fetchBooks = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/bookstore/book-categories?t=" + new Date().getTime(), {
+      const response = await fetch("http://localhost:5000/api/book-categories?t=" + new Date().getTime(), {
         cache: "no-store",
       });
       if (!response.ok) {
@@ -51,7 +51,7 @@ export default function CommentsReviews() {
   // Fetch reviews from API
   const fetchReviews = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/bookstore/reviews?t=" + new Date().getTime(), {
+      const response = await fetch("http://localhost:5000/api/reviews?t=" + new Date().getTime(), {
         cache: "no-store",
       });
       if (!response.ok) {
@@ -94,7 +94,7 @@ export default function CommentsReviews() {
 
   const handleDelete = async (id: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/bookstore/reviews/${id}`, {
+      const response = await fetch(`http://localhost:5000/api/reviews/${id}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
       });
@@ -135,7 +135,7 @@ export default function CommentsReviews() {
       let response;
       if (data.id) {
         // Update existing review (only editable fields)
-        response = await fetch(`http://localhost:5000/api/bookstore/reviews/${data.id}`, {
+        response = await fetch(`http://localhost:5000/api/reviews/${data.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ rating: data.rating, comment: data.comment, status: data.status }),
@@ -146,7 +146,7 @@ export default function CommentsReviews() {
         }
       } else {
         // Create new review
-        response = await fetch("http://localhost:5000/api/bookstore/reviews", {
+        response = await fetch("http://localhost:5000/api/reviews", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(reviewData),

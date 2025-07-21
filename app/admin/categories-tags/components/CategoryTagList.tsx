@@ -12,11 +12,11 @@ type CategoryTagListProps = {
 export default function CategoryTagList({ onEdit, onDelete, items }: CategoryTagListProps) {
   const handleDelete = async (id: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/bookstore/book-categories/${id}`, {
+      const response = await fetch(`http://localhost:5000/api/book-categories/${id}`, {
         method: "DELETE",
       });
       if (!response.ok) throw new Error("Failed to delete category/tag");
-      onDelete(id); // Call parent onDelete after successful API call
+      onDelete(id);
     } catch (error) {
       console.error("Error deleting category/tag:", error);
     }

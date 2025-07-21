@@ -3,8 +3,10 @@
 import { useState, useEffect, useCallback } from "react";
 import ContentList from "./components/ContentList";
 import { ContentForm } from "./components/ContentForm";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faAngleDoubleLeft, faAngleLeft, faAngleRight, faAngleDoubleRight } from "@fortawesome/free-solid-svg-icons";
 
-interface Content {
+export interface Content {
   id?: string;
   title: string;
   categoryName: string;
@@ -34,6 +36,13 @@ interface Category {
   tags: string[];
 }
 
+export const updateProducts = (
+  newProducts: Content[],
+  callback: (products: Content[]) => void
+) => {
+  callback(newProducts);
+};
+
 export default function ContentManagement() {
   const [contents, setContents] = useState<Content[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -46,11 +55,14 @@ export default function ContentManagement() {
   const [newTag, setNewTag] = useState<string>("");
   const [tagToEdit, setTagToEdit] = useState<string>("");
   const [editTag, setEditTag] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const itemsPerPage = 10;
 
   const fetchCategoriesAndContents = useCallback(async () => {
     setIsLoading(true);
     try {
-      const categoriesResponse = await fetch("http://localhost:5000/api/bookstore/book-categories");
+      const categoriesResponse = await fetch("http://localhost:5000/api/book-categories");
       if (!categoriesResponse.ok) throw new Error("Failed to fetch categories");
       const categoriesData = await categoriesResponse.json();
       setCategories(categoriesData);
@@ -59,7 +71,7 @@ export default function ContentManagement() {
       const fetchPromises = categoriesData.map(async (category: Category) => {
         try {
           const booksResponse = await fetch(
-            `http://localhost:5000/api/bookstore/book-categories/${encodeURIComponent(category.name)}`
+            `http://localhost:5000/api/book-categories/${encodeURIComponent(category.name)}`
           );
           if (!booksResponse.ok) {
             console.warn(`Failed to fetch books for ${category.name}`);
@@ -116,7 +128,7 @@ export default function ContentManagement() {
       if (!selectedCategory) return;
       try {
         const response = await fetch(
-          `http://localhost:5000/api/bookstore/book-categories/${encodeURIComponent(selectedCategory)}/tags`
+          `http://localhost:5000/api/book-categories/${encodeURIComponent(selectedCategory)}/tags`
         );
         if (!response.ok) {
           const errorData = await response.json();
@@ -142,8 +154,8 @@ export default function ContentManagement() {
       setIsLoading(true);
       const isUpdate = Boolean(data.id);
       const url = isUpdate
-        ? `http://localhost:5000/api/bookstore/book-categories/${encodeURIComponent(data.categoryName)}/${data.id}`
-        : `http://localhost:5000/api/bookstore/book-categories/${encodeURIComponent(data.categoryName)}`;
+        ? `http://localhost:5000/api/book-categories/${encodeURIComponent(data.categoryName)}/${data.id}`
+        : `http://localhost:5000/api/book-categories/${encodeURIComponent(data.categoryName)}`;
       const response = await fetch(url, {
         method: isUpdate ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -215,7 +227,7 @@ export default function ContentManagement() {
     try {
       setIsLoading(true);
       const response = await fetch(
-        `http://localhost:5000/api/bookstore/book-categories/${encodeURIComponent(categoryName)}/${id}`,
+        `http://localhost:5000/api/book-categories/${encodeURIComponent(categoryName)}/${id}`,
         { method: "DELETE" }
       );
       if (!response.ok) throw new Error("Failed to delete book");
@@ -239,7 +251,7 @@ export default function ContentManagement() {
     try {
       setIsLoading(true);
       const response = await fetch(
-        `http://localhost:5000/api/bookstore/book-categories/${encodeURIComponent(selectedCategory)}/tags`,
+        `http://localhost:5000/api/book-categories/${encodeURIComponent(selectedCategory)}/tags`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -276,7 +288,7 @@ export default function ContentManagement() {
     try {
       setIsLoading(true);
       const response = await fetch(
-        `http://localhost:5000/api/bookstore/book-categories/${encodeURIComponent(selectedCategory)}/tags/${encodeURIComponent(tagToEdit)}`,
+        `http://localhost:5000/api/book-categories/${encodeURIComponent(selectedCategory)}/tags/${encodeURIComponent(tagToEdit)}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -315,7 +327,7 @@ export default function ContentManagement() {
     try {
       setIsLoading(true);
       const response = await fetch(
-        `http://localhost:5000/api/bookstore/book-categories/${encodeURIComponent(selectedCategory)}/tags/${encodeURIComponent(tagToEdit)}`,
+        `http://localhost:5000/api/book-categories/${encodeURIComponent(selectedCategory)}/tags/${encodeURIComponent(tagToEdit)}`,
         {
           method: "DELETE",
         }
@@ -342,6 +354,47 @@ export default function ContentManagement() {
     }
   };
 
+  // Pagination and Search Logic
+  const filteredContents = contents.filter((content) =>
+    content.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  const totalPages = Math.ceil(filteredContents.length / itemsPerPage);
+  const paginatedContents = filteredContents.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Generate page numbers to display
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage < maxVisiblePages - 1) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i);
+    }
+
+    if (startPage > 1) {
+      pageNumbers.unshift("...");
+      pageNumbers.unshift(1);
+    }
+    if (endPage < totalPages) {
+      pageNumbers.push("...");
+      pageNumbers.push(totalPages);
+    }
+
+    return pageNumbers;
+  };
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -356,6 +409,25 @@ export default function ContentManagement() {
         >
           Create New Book
         </button>
+      </div>
+
+      <div className="mb-6">
+        <div className="flex items-center gap-4 mb-4">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1); // Reset to first page on search
+            }}
+            placeholder="Search by title (e.g., physics)..."
+            className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 w-full max-w-xs"
+            disabled={isLoading}
+          />
+          <span className="text-gray-700">
+            Total Books: {filteredContents.length}
+          </span>
+        </div>
       </div>
 
       {successMessage && (
@@ -463,7 +535,49 @@ export default function ContentManagement() {
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-teal-600"></div>
         </div>
       ) : (
-        <ContentList contents={contents} onEdit={handleEdit} onDelete={handleDelete} />
+        <>
+          <ContentList contents={paginatedContents} onEdit={handleEdit} onDelete={handleDelete} />
+          <div className="mt-6 flex justify-center items-center gap-2">
+            <button
+              onClick={() => handlePageChange(1)}
+              disabled={currentPage === 1}
+              className="px-2 py-1 bg-teal-600 text-black rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FontAwesomeIcon icon={faAngleDoubleLeft} />
+            </button>
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="px-2 py-1 bg-teal-500 text-black rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FontAwesomeIcon icon={faAngleLeft} />
+            </button>
+            {getPageNumbers().map((page, index) => (
+              <button
+                key={index}
+                onClick={() => typeof page === "number" && handlePageChange(page)}
+                disabled={page === "..." || currentPage === page}
+                className={`px-3 py-1 rounded-md ${currentPage === page ? "bg-teal-700 text-white" : "bg-teal-500 text-black hover:bg-teal-700"} focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="px-2 py-1 bg-teal-500 text-black rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FontAwesomeIcon icon={faAngleRight} />
+            </button>
+            <button
+              onClick={() => handlePageChange(totalPages)}
+              disabled={currentPage === totalPages}
+              className="px-2 py-1 bg-teal-500 text-black rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FontAwesomeIcon icon={faAngleDoubleRight} />
+            </button>
+          </div>
+        </>
       )}
 
       {isFormOpen && (

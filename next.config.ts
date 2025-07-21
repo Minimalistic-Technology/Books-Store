@@ -16,6 +16,7 @@ module.exports = {
       'unsplash.com',
       'example.com',
       'res.cloudinary.com',
+      "images.pexels.com"
     ],
   },
   async rewrites() {

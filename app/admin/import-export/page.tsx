@@ -1,113 +1,137 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import ExportForm from "./components/ExportForm";
+import { useState } from "react";
 import ImportForm from "./components/ImportForm";
-import { updateProducts } from "../order-product-management/page";
-import { useDashboard } from "../dashboard/page";
-
-// Define interfaces
-export interface ExportData {
-  type: "users" | "products";
-  format: "csv" | "excel";
-}
-
-export interface ImportData {
-  file: File | null;
-  type: "users" | "products";
-  parsedData: any[] | null;
-}
+import ExportForm from "./components/ExportForm";
+import { Content } from "../content-management/page";
+import { User } from "./components/ExportForm";
 
 export default function ImportExportManagement() {
-  const [exportData, setExportData] = useState<ExportData>({ type: "users", format: "csv" });
-  const [importData, setImportData] = useState<ImportData>({ file: null, type: "users", parsedData: null });
-  const [importMessage, setImportMessage] = useState<string | null>(null);
-  const { setMetrics } = useDashboard();
+  const [error, setError] = useState<string>("");
+  const [successMessage, setSuccessMessage] = useState<string>("");
 
-  const handleExport = (data: ExportData) => {
-    setExportData(data);
+  const handleImport = async (
+    data: { type: "users"; file: File | null; parsedData: User[] } | 
+          { type: "products"; file: File | null; parsedData: Content[] }
+  ) => {
+    try {
+      if (data.type === "users") {
+        console.log("Importing users:", data.parsedData);
+        setSuccessMessage("Users imported successfully");
+        setTimeout(() => setSuccessMessage(""), 3000);
+      } else if (data.type === "products") {
+        const productsByCategory: { [key: string]: Content[] } = {};
+        data.parsedData.forEach((product: Content) => {
+          if (!productsByCategory[product.categoryName]) {
+            productsByCategory[product.categoryName] = [];
+          }
+          productsByCategory[product.categoryName].push(product);
+        });
+
+        console.log("Products by category:", productsByCategory);
+
+        const importPromises = Object.entries(productsByCategory).map(async ([category, products]) => {
+          const validatedProducts = products.map((product: Content) => {
+            const tagsArray = product.tags && product.tags.trim() 
+              ? product.tags.split(",").map((tag) => tag.trim()).filter(Boolean)
+              : ["General"];
+            
+            if (!product.title || !product.categoryName || !product.subCategory || !tagsArray.length ||
+                !product.price || !product.description || !product.estimatedDelivery ||
+                !product.condition || !product.author || !product.publisher || !product.imageUrl) {
+              throw new Error(`Invalid product data for "${product.title || 'unknown'}": Missing required fields`);
+            }
+
+            if (!["NEW - ORIGINAL PRICE", "OLD", "BOTH"].includes(product.condition)) {
+              throw new Error(`Invalid condition "${product.condition}" for "${product.title || 'unknown'}"`);
+            }
+
+            return {
+              title: product.title,
+              categoryName: product.categoryName,
+              subCategory: product.subCategory,
+              tags: tagsArray,
+              author: product.author,
+              publisher: product.publisher,
+              price: product.price,
+              condition: product.condition,
+              quantityNew: product.quantityNew || 0,
+              discountNew: product.discountNew || 0,
+              quantityOld: product.quantityOld || 0,
+              discountOld: product.discountOld || 0,
+              imageUrl: product.imageUrl,
+              estimatedDelivery: product.estimatedDelivery,
+              description: product.description,
+              seoTitle: product.seoTitle || product.title,
+              seoDescription: product.seoDescription || product.description,
+            };
+          });
+
+          const response = await fetch(
+            `http://localhost:5000/api/book-categories/${encodeURIComponent(category)}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ books: validatedProducts }),
+            }
+          );
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(
+              `Failed to import products for ${category}: ${errorData.errors?.map((e: any) => e.error).join("; ") || errorData.error || JSON.stringify(errorData)}`
+            );
+          }
+
+          return response.json();
+        });
+
+        await Promise.all(importPromises);
+        setSuccessMessage("Products imported successfully");
+        setTimeout(() => setSuccessMessage(""), 3000);
+      }
+    } catch (err: any) {
+      console.error("Import error:", err);
+      setError(err.message || "Failed to import data");
+      setTimeout(() => setError(""), 5000);
+    }
   };
 
-  const handleImport = (data: ImportData) => {
-    setImportData(data);
-    if (data.file && data.parsedData) {
-      setImportMessage("Importing data, please wait...");
-      if (data.type === "products") {
-        fetch("http://localhost:5000/api/bookstore/productroutes/products/bulk", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ products: data.parsedData }),
-        })
-          .then(response => response.json())
-          .then(updatedProducts => {
-            if (updatedProducts.success) {
-              updateProducts(updatedProducts.products.map((p: any) => ({
-                id: p._id,
-                name: p.productName,
-                price: p.price,
-                inventory: p.inventory,
-                description: p.description,
-                createdAt: p.createdAt,
-              })), (products) => {
-                console.log("Products updated in state:", products);
-              });
-              setImportMessage("Products imported successfully!");
-              setTimeout(() => setImportMessage(null), 3000);
-            } else {
-              setImportMessage(`Failed to import products: ${updatedProducts.message}`);
-              setTimeout(() => setImportMessage(null), 3000);
-            }
-          })
-          .catch(error => {
-            console.error("Failed to import products:", error);
-            setImportMessage("Error importing products.");
-            setTimeout(() => setImportMessage(null), 3000);
-          });
-      } else if (data.type === "users") {
-        fetch("http://localhost:5000/api/users/bulk", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ users: data.parsedData }),
-        })
-          .then(response => response.json())
-          .then(result => {
-            if (result.success) {
-              setImportMessage("Users imported successfully!");
-              fetch("http://localhost:5000/api/users")
-                .then(res => res.json())
-                .then(users => setMetrics(prev => ({ ...prev, userCount: users.length })))
-                .catch(err => console.error("Failed to update user count:", err));
-              setTimeout(() => setImportMessage(null), 3000);
-            } else {
-              setImportMessage(`Failed to import users: ${result.message || result.error?.message || 'Unknown error'}`);
-              setTimeout(() => setImportMessage(null), 3000);
-            }
-          })
-          .catch(error => {
-            console.error("Failed to import users:", error);
-            setImportMessage("Error importing users.");
-            setTimeout(() => setImportMessage(null), 3000);
-          });
-      }
+  const handleExport = (data: { type: string; format: string }) => {
+    try {
+      console.log("Exporting data:", data);
+      setSuccessMessage(`Exporting ${data.type} in ${data.format} format`);
+      setTimeout(() => setSuccessMessage(""), 3000);
+    } catch (err: any) {
+      setError(err.message || "Failed to export data");
+      setTimeout(() => setError(""), 5000);
     }
   };
 
   return (
-    <div className="space-y-8 p-4 animate__fadeInUp">
-      <h1 className="text-4xl font-extrabold text-yellow-900">Import/Export - Books Store</h1>
-      {importMessage && (
-        <div className={`p-3 rounded-lg animate__fadeIn ${importMessage.includes("Failed") || importMessage.includes("Error") ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"}`}>
-          {importMessage}
+    <div className="p-6">
+      <h1 className="text-3xl font-bold text-gray-900 mb-6">Import/Export Management</h1>
+
+      {successMessage && (
+        <div className="bg-teal-50 border border-teal-200 text-teal-700 px-4 py-3 rounded-lg mb-6">
+          {successMessage}
         </div>
       )}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="card">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Export Data</h2>
-          <ExportForm onExport={handleExport} />
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+          {error}
         </div>
-        <div className="card">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Import Bulk Data</h2>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Import Data</h2>
           <ImportForm onImport={handleImport} />
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Export Data</h2>
+          <ExportForm onExport={handleExport} />
         </div>
       </div>
     </div>

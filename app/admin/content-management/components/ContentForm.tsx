@@ -2,27 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-
-interface Content {
-  id?: string;
-  title: string;
-  categoryName: string;
-  subCategory: string;
-  tags: string;
-  seoTitle: string;
-  seoDescription: string;
-  price: number;
-  description: string;
-  estimatedDelivery: string;
-  condition: string;
-  author: string;
-  publisher: string;
-  imageUrl: string;
-  quantityNew: number;
-  quantityOld: number;
-  discountNew: number;
-  discountOld: number;
-}
+import { Content } from "../page"; // Import from content-management/page
 
 interface ContentFormProps {
   content?: Content;
@@ -65,7 +45,7 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
         return;
       }
       try {
-        const url = `http://localhost:5000/api/bookstore/book-categories/${encodeURIComponent(formData.categoryName)}/tags`;
+        const url = `http://localhost:5000/api/book-categories/${encodeURIComponent(formData.categoryName)}/tags`;
         const response = await fetch(url);
         if (!response.ok) throw new Error(`Failed to fetch tags: ${response.statusText}`);
         const data = await response.json();
@@ -108,22 +88,32 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
     const file = e.target.files?.[0];
     if (file) {
       setImageFile(file);
-      setFormData((prev) => ({ ...prev, imageUrl: URL.createObjectURL(file) })); // Show preview of uploaded file
+      setFormData((prev) => ({ ...prev, imageUrl: URL.createObjectURL(file) }));
       setError("");
     }
   };
 
   const handleImageUpload = async (): Promise<string | null> => {
     if (imageFile) {
+      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+      const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
+      if (!cloudName || !uploadPreset) {
+        setError("Cloudinary configuration is missing. Using default image.");
+        return defaultImageUrl;
+      }
+
       try {
         const formData = new FormData();
         formData.append("file", imageFile);
-        formData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "");
-        formData.append("cloud_name", process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "");
+        formData.append("upload_preset", uploadPreset);
+        formData.append("cloud_name", cloudName);
         formData.append("folder", "bookstore");
+        // Add transformation for consistent height (300px) and crop to maintain aspect ratio
+        formData.append("transformation", JSON.stringify([{ height: 300, crop: "fill" }]));
 
         const response = await fetch(
-          `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+          `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
           {
             method: "POST",
             body: formData,
@@ -131,18 +121,19 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
         );
 
         if (!response.ok) {
-          throw new Error("Failed to upload image to Cloudinary");
+          const errorData = await response.json();
+          throw new Error(`Failed to upload image to Cloudinary: ${errorData.error?.message || response.statusText}`);
         }
 
         const data = await response.json();
         return data.secure_url;
       } catch (err: any) {
-        setError(`Failed to upload image: ${err.message}`);
-        return null;
+        console.error("Image upload error:", err);
+        setError(`Failed to upload image: ${err.message}. Using default image.`);
+        return defaultImageUrl;
       }
     }
 
-    // Return the existing imageUrl or default if no file is uploaded
     return formData.imageUrl || defaultImageUrl;
   };
 
@@ -201,7 +192,6 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
         return;
       }
 
-      // Allow default Pexels image or Cloudinary URLs
       if (imageUrl !== defaultImageUrl && !imageUrl.startsWith('https://res.cloudinary.com/')) {
         setError("Image URL must be a valid Cloudinary URL or the default image");
         setIsSubmitting(false);
@@ -452,7 +442,7 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
                 <img
                   src={formData.imageUrl || defaultImageUrl}
                   alt="Preview"
-                  className="h-20 w-20 object-cover rounded-md"
+                  className="h-48 w-auto object-cover rounded-md" // Adjusted to 300px height for preview
                 />
               </div>
             </div>

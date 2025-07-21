@@ -1,28 +1,6 @@
-import React from "react";
 
-interface Content {
-  id?: string;
-  title: string;
-  categoryName: string;
-  subCategory: string;
-  tags: string;
-  seoTitle: string;
-  seoDescription: string;
-  price: number;
-  description: string;
-  estimatedDelivery: string;
-  condition: string;
-  author: string;
-  publisher: string;
-  imageUrl: string;
-  quantityNew: number;
-  quantityOld: number;
-  discountNew: number;
-  discountOld: number;
-  bookName?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
+import React from "react";
+import { Content } from "../page"; 
 
 interface ContentListProps {
   contents: Content[];
@@ -31,7 +9,7 @@ interface ContentListProps {
 }
 
 const ContentList: React.FC<ContentListProps> = ({ contents, onEdit, onDelete }) => {
-  const defaultImageUrl = "https://images.pexels.com/photos/2908773/pexels-photo-2908773.jpeg";
+  const defaultImageUrl = "https://images.pexels.com/photos/373465/pexels-photo-373465.jpeg";
 
   return (
     <div className="bg-white shadow-md rounded-lg overflow-hidden">
@@ -43,54 +21,51 @@ const ContentList: React.FC<ContentListProps> = ({ contents, onEdit, onDelete })
               <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Title</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Category</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Subcategory</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Tags</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Author</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Publisher</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Price</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Condition</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">New Quantity</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Discount New (%)</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Old Quantity</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">New Discount (%)</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Old Discount (%)</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Author</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Discount Old (%)</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Estimated Delivery</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Description</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">SEO Title</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">SEO Description</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {contents.map((content) => (
               <tr key={content.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <td className="px-2 py-2 whitespace-nowrap">
                   <img
                     src={content.imageUrl || defaultImageUrl}
-                    alt={content.title || "Book Image"}
-                    className="w-12 h-16 object-cover rounded-md"
+                    alt={content.title}
+                    className="h-24 w-24 object-cover rounded"
                     onError={(e) => {
-                      const target = e.currentTarget as HTMLImageElement;
-                      if (target.src !== defaultImageUrl) {
-                        target.src = defaultImageUrl; // Fallback to default image
-                      } else {
-                        target.style.display = "none"; // Hide if default image fails
-                        const nextSibling = target.nextElementSibling as HTMLElement;
-                        if (nextSibling) {
-                          nextSibling.style.display = "flex"; // Show text fallback
-                        }
-                      }
+                      e.currentTarget.src = defaultImageUrl;
                     }}
                   />
-                  <div
-                    className="w-12 h-16 flex items-center justify-center bg-gray-100 rounded-md text-gray-500 text-xs"
-                    style={{ display: "none" }} // Hidden unless both imageUrl and default fail
-                  >
-                    No image
-                  </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{content.title}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{content.categoryName}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{content.subCategory}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{content.price.toFixed(2)}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{content.condition}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{content.quantityNew}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{content.quantityOld}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{content.discountNew}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{content.discountOld}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-black">{content.author}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.title}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.categoryName}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.subCategory}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.tags}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.author}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.publisher}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${content.price.toFixed(2)}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.condition}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.quantityNew}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.discountNew}%</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.quantityOld}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.discountOld}%</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.estimatedDelivery}</td>
+                <td className="px-6 py-4 text-sm text-gray-900">{content.description.substring(0, 50)}...</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.seoTitle}</td>
+                <td className="px-6 py-4 text-sm text-gray-900">{content.seoDescription.substring(0, 50)}...</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button
                     onClick={() => onEdit(content)}
@@ -99,7 +74,7 @@ const ContentList: React.FC<ContentListProps> = ({ contents, onEdit, onDelete })
                     Edit
                   </button>
                   <button
-                    onClick={() => content.id && onDelete(content.id, content.categoryName)}
+                    onClick={() => onDelete(content.id!, content.categoryName)}
                     className="text-red-600 hover:text-red-900"
                   >
                     Delete

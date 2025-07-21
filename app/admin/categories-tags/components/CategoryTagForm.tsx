@@ -8,7 +8,7 @@ type CategoryTagFormProps = {
     name?: string;
     seoTitle?: string;
     seoDescription?: string;
-    tags?: string[]; // Add tags as an optional property
+    tags?: string[]; 
   };
   onClose: () => void;
   onSave: (data: {
@@ -25,14 +25,14 @@ export default function CategoryTagForm({ item, onClose, onSave }: CategoryTagFo
     name: item?.name || "",
     seoTitle: item?.seoTitle || "",
     seoDescription: item?.seoDescription || "",
-    tags: item?.tags || [], // Add tags field with default empty array
+    tags: item?.tags || [], 
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    setErrors((prev) => ({ ...prev, [name]: "" })); // Clear error when user starts typing
+    setErrors((prev) => ({ ...prev, [name]: "" })); 
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -52,23 +52,22 @@ export default function CategoryTagForm({ item, onClose, onSave }: CategoryTagFo
       name: formData.name,
       seoTitle: formData.seoTitle,
       seoDescription: formData.seoDescription,
-      tags: formData.tags, // Include tags in the data to save
+      tags: formData.tags, 
     };
 
     try {
       let response;
       if (formData.id) {
-        response = await fetch(`http://localhost:5000/api/bookstore/book-categories/${formData.id}`, {
+        response = await fetch(`http://localhost:5000/api/book-categories/${formData.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(dataToSave),
         });
       } else {
-        // Wrap the single category object in an array to match the backend expectation
-        response = await fetch("http://localhost:5000/api/bookstore/book-categories", {
+        response = await fetch("http://localhost:5000/api/book-categories", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify([dataToSave]), // Send as an array
+          body: JSON.stringify([dataToSave]), 
         });
       }
       if (!response.ok) {
@@ -76,7 +75,6 @@ export default function CategoryTagForm({ item, onClose, onSave }: CategoryTagFo
         throw new Error(errorData.error || "Failed to save category");
       }
       const savedData = await response.json();
-      // Handle the response, which might be an array of saved categories
       const savedCategory = Array.isArray(savedData) ? savedData[0] : savedData;
       onSave({
         id: savedCategory._id || formData.id || Date.now().toString(),

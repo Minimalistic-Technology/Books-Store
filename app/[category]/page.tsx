@@ -1,3 +1,4 @@
+
 "use client";
 import Header from "../components/header/page";
 import Footer from "../components/footer/page";
@@ -9,7 +10,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 
 export default function CategoryPage() {
-  const { category } = useParams(); // Get the category from the URL (e.g., "nicee", "school-books")
+  const { category } = useParams();  
   const [books, setBooks] = useState<any[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,13 +20,14 @@ export default function CategoryPage() {
   const [status, setStatus] = useState<string>("");
   const [booksToShow, setBooksToShow] = useState<number>(0);
   const [sortOption, setSortOption] = useState<string>("default");
+  const defaultImageUrl = "https://images.pexels.com/photos/373465/pexels-photo-373465.jpeg";
+  const [bookImageUrls, setBookImageUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log("Fetching books for category:", category); // Debug log
-        // Fetch books
-        const booksResponse = await fetch(`http://localhost:5000/api/bookstore/book-categories/${encodeURIComponent(category as string)}`);
+        console.log("Fetching books for category:", category); 
+        const booksResponse = await fetch(`http://localhost:5000/api/book-categories/${encodeURIComponent(category as string)}`);
         if (!booksResponse.ok) {
           if (booksResponse.status === 404) {
             throw new Error(`Category '${category}' not found. Please check the category name or create it in the admin panel. Available categories: [School-Books, College-Books, Competitive-Exam-Books, Ref-Books-Guides, Entrance-Exam-Books, Stationary, Non-Academics].`);
@@ -37,20 +39,28 @@ export default function CategoryPage() {
         setBooks(booksData.books || []);
         setBooksToShow(booksData.books.length || 0);
 
-        // Fetch tags
-        const tagsResponse = await fetch(`http://localhost:5000/api/bookstore/book-categories/${encodeURIComponent(category as string)}/tags`);
+        const tagsResponse = await fetch(`http://localhost:5000/api/book-categories/${encodeURIComponent(category as string)}/tags`);
         if (!tagsResponse.ok) throw new Error('Failed to fetch tags');
         const tagsData = await tagsResponse.json();
         setTags(tagsData.tags || []);
       } catch (err: any) {
         setError(err.message || `Error loading data for ${category}. Please try again later.`);
-        console.error('Fetch error:', err);
+        console.log('Fetch error:', err);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
   }, [category]);
+
+  useEffect(() => {
+    // Initialize image URLs for all books
+    const initialImageUrls = books.reduce((acc, book) => ({
+      ...acc,
+      [book._id]: book.imageUrl || defaultImageUrl,
+    }), {});
+    setBookImageUrls(initialImageUrls);
+  }, [books]);
 
   const mapSubCategory = (subCat: string) => {
     const classMatch = subCat.match(/Class (\d+)/);
@@ -122,6 +132,13 @@ export default function CategoryPage() {
 
   const handleViewToggle = (mode: ViewMode) => {
     setViewMode(mode);
+  };
+
+  const handleImageError = (bookId: string) => {
+    setBookImageUrls((prev) => ({
+      ...prev,
+      [bookId]: defaultImageUrl,
+    }));
   };
 
   return (
@@ -255,23 +272,26 @@ export default function CategoryPage() {
                 className={`grid gap-6 ${
                   viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-1"
                 }`}
-                style={{ maxHeight: viewMode === "list" ? "600px" : "auto", overflowY: viewMode === "list" ? "auto" : "visible" }}
               >
                 {filteredBooks.map((book) => (
-                  <Link href={`/overview1/${book._id}?category=${category}`} key={book._id} passHref>
+                  <Link href={`/overview1/${book._id}?category=${category}&imageUrl=${encodeURIComponent(bookImageUrls[book._id] || defaultImageUrl)}`} key={book._id} passHref>
                     <div
-                      className={`border rounded-lg overflow-hidden shadow-md ${viewMode === "list" ? "w-full max-w-2xl mx-auto flex" : ""} cursor-pointer hover:shadow-lg transition-shadow duration-300`}
+                      className={`border rounded-lg overflow-hidden shadow-md cursor-pointer hover:shadow-lg transition-shadow duration-300 ${
+                        viewMode === "grid" ? "h-80" : "h-40 flex"
+                      }`}
                     >
                       <Image
-                        src={book.imageUrl}
+                        src={bookImageUrls[book._id] || defaultImageUrl}
                         alt={book.title}
                         width={150}
-                        height={169}
-                        className="w-full h-auto object-cover"
+                        height={viewMode === "grid" ? 192 : 128} 
+                        className="w-full h-48 object-cover md:h-48 lg:h-48" 
+                        onError={() => handleImageError(book._id)}
+                        style={{ objectFit: "cover" }}
                       />
-                      <div className="p-2 text-center lg:text-left">
-                        <p className="text-sm text-gray-800">{book.title}</p>
-                        <p className="text-orange-500 font-bold mt-1">₹{book.price}.00</p>
+                      <div className={`p-2 ${viewMode === "grid" ? "text-center" : "text-left flex-1"}`}>
+                        <h3 className="text-lg font-semibold text-gray-900">{book.title}</h3>
+                        <p className="text-orange-500 font-bold mt-1">₹{book.price}</p>
                         <p className="text-gray-600 text-xs mt-1">{mapSubCategory(book.subCategory)}</p>
                       </div>
                     </div>

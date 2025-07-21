@@ -33,7 +33,7 @@ export default function Header() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/bookstore/book-categories');
+        const response = await fetch('http://localhost:5000/api/book-categories');
         if (!response.ok) throw new Error('Failed to fetch categories');
         const data = await response.json();
         console.log("Fetched categories:", data);
@@ -81,7 +81,7 @@ export default function Header() {
     setSearchError(null);
 
     try {
-      const response = await fetch(`http://localhost:5000/api/bookstore/search?q=${encodeURIComponent(searchQuery.trim())}`, {
+      const response = await fetch(`http://localhost:5000/api/search?q=${encodeURIComponent(searchQuery.trim())}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

@@ -23,7 +23,7 @@ const OrdersPage = () => {
     const fetchOrders = async () => {
       try {
         setLoading(true);
-        const response = await fetch("http://localhost:5000/api/bookstore/orderroutes/orders", {
+        const response = await fetch("http://localhost:5000/api/orders", {
           cache: "no-store",
         });
         if (!response.ok) {
@@ -47,7 +47,7 @@ const OrdersPage = () => {
 
   const handleCancelOrder = async (orderId: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/bookstore/orderroutes/orders/${orderId}`, {
+      const response = await fetch(`http://localhost:5000/api/orders/${orderId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "Cancelled" }),

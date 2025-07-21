@@ -46,7 +46,7 @@ export default function BannerForm({ onAddBanner }: BannerFormProps) {
       };
 
       try {
-        const response = await fetch("http://localhost:5000/api/bookstore/bannerRoutes", {
+        const response = await fetch("http://localhost:5000/api/banner", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(newBanner),

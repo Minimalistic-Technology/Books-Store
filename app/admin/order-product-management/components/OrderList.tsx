@@ -11,7 +11,7 @@ type OrderListProps = {
 export default function OrderList({ orders, onEdit, onDelete }: OrderListProps) {
   const handleDelete = async (id: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/bookstore/orderroutes/orders/${id}`, {
+      const response = await fetch(`http://localhost:5000/api/orders/${id}`, {
         method: "DELETE",
       });
       if (!response.ok) throw new Error("Failed to delete order");

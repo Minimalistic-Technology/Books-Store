@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import CategoryTagForm from "./components/CategoryTagForm";
 import CategoryTagList from "./components/CategoryTagList";
 
-// Define the Category interface
 export interface Category {
   id: string;
   name: string;
@@ -21,14 +20,14 @@ export default function CategoriesTags() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/bookstore/book-categories");
+        const response = await fetch("http://localhost:5000/api/book-categories");
         const data = await response.json();
         setItems(
           data.map((item: any) => ({
             id: item._id,
             name: item.name,
-            seoTitle: item.seoTitle || "", // Default to empty string if undefined
-            seoDescription: item.seoDescription || "", // Default to empty string if undefined
+            seoTitle: item.seoTitle || "",
+            seoDescription: item.seoDescription || "",
           }))
         );
       } catch (error) {
@@ -64,12 +63,12 @@ export default function CategoriesTags() {
       name: data.name,
       seoTitle: data.seoTitle,
       seoDescription: data.seoDescription,
-      type: "category", // or set this dynamically as needed
+      type: "category",
     };
     try {
       let response;
       if (data.id) {
-        response = await fetch(`http://localhost:5000/api/bookstore/book-categories/${data.id}`, {
+        response = await fetch(`http://localhost:5000/api/book-categories/${data.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -79,7 +78,7 @@ export default function CategoriesTags() {
           }),
         });
       } else {
-        response = await fetch("http://localhost:5000/api/bookstore/book-categories", {
+        response = await fetch("http://localhost:5000/api/book-categories", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

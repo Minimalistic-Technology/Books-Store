@@ -1,7 +1,8 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
-import type { Product } from "../../order-product-management/types"; // Adjusted path
+import { Content } from "../../content-management/page"; // Import Content interface
 
 export interface User {
   username: string;
@@ -15,7 +16,7 @@ type ExportFormProps = {
 export default function ExportForm({ onExport }: ExportFormProps) {
   const [exportData, setExportData] = useState<{ type: "users" | "products"; format: "csv" | "excel" }>({ type: "users", format: "csv" });
   const [users, setUsers] = useState<User[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Content[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -23,6 +24,7 @@ export default function ExportForm({ onExport }: ExportFormProps) {
       setLoading(true);
       try {
         const response = await fetch("http://localhost:5000/api/users");
+        if (!response.ok) throw new Error("Failed to fetch users");
         const data = await response.json();
         setUsers(data);
       } catch (error) {
@@ -33,16 +35,54 @@ export default function ExportForm({ onExport }: ExportFormProps) {
     const fetchProducts = async () => {
       setLoading(true);
       try {
-        const response = await fetch("http://localhost:5000/api/bookstore/productroutes/products");
-        const data = await response.json();
-        setProducts(data.map((item: any) => ({
-          id: item._id,
-          name: item.productName,
-          price: item.price,
-          inventory: item.inventory,
-          description: item.description,
-          createdAt: item.createdAt,
-        })));
+        const categoriesResponse = await fetch("http://localhost:5000/api/book-categories");
+        if (!categoriesResponse.ok) throw new Error("Failed to fetch categories");
+        const categoriesData = await categoriesResponse.json();
+
+        const allBooks: Content[] = [];
+        const fetchPromises = categoriesData.map(async (category: any) => {
+          try {
+            const booksResponse = await fetch(
+              `http://localhost:5000/api/book-categories/${encodeURIComponent(category.name)}`
+            );
+            if (!booksResponse.ok) {
+              console.warn(`Failed to fetch books for ${category.name}`);
+              return [];
+            }
+            const booksData = await booksResponse.json();
+            const books = Array.isArray(booksData.books) ? booksData.books : [];
+            return books.map((book: any) => ({
+              id: book._id,
+              title: book.title || "",
+              categoryName: category.name,
+              subCategory: book.subCategory || "",
+              tags: Array.isArray(book.tags) ? book.tags.join(", ") : book.tags || "",
+              seoTitle: book.seoTitle || "",
+              seoDescription: book.seoDescription || "",
+              price: book.price || 0,
+              description: book.description || "",
+              estimatedDelivery: book.estimatedDelivery || "",
+              condition: book.condition || "NEW - ORIGINAL PRICE",
+              author: book.author || "",
+              publisher: book.publisher || "",
+              imageUrl: book.imageUrl || "",
+              quantityNew: book.quantityNew || 0,
+              quantityOld: book.quantityOld || 0,
+              discountNew: book.discountNew || 0,
+              discountOld: book.discountOld || 0,
+              bookName: book.bookName || "",
+              createdAt: book.createdAt || "",
+              updatedAt: book.updatedAt || "",
+            }));
+          } catch (error) {
+            console.error(`Error fetching books for category ${category.name}:`, error);
+            return [];
+          }
+        });
+
+        const results = await Promise.all(fetchPromises);
+        allBooks.push(...results.flat());
+        setProducts(allBooks);
       } catch (error) {
         console.error("Failed to fetch products:", error);
       } finally {
@@ -56,23 +96,18 @@ export default function ExportForm({ onExport }: ExportFormProps) {
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setExportData((prev) => {
-      if (name === "type") {
-        return { ...prev, [name]: value as "users" | "products" };
-      } else if (name === "format") {
-        return { ...prev, [name]: value as "csv" | "excel" };
-      }
-      return prev;
-    });
+    setExportData((prev) => ({
+      ...prev,
+      [name]: value as "users" | "products" | "csv" | "excel",
+    }));
   };
 
   const handleExport = () => {
     onExport(exportData);
     if (exportData.type === "users" && users.length > 0) {
       let exportContent = "";
-
+      const headers = ["Username", "Email"];
       if (exportData.format === "csv") {
-        const headers = ["Username", "Email"];
         exportContent = [
           headers.join(","),
           ...users.map((user) =>
@@ -84,17 +119,14 @@ export default function ExportForm({ onExport }: ExportFormProps) {
         ].join("\n");
         const blob = new Blob([exportContent], { type: "text/csv;charset=utf-8;" });
         const link = document.createElement("a");
-        if (link.download !== undefined) {
-          const url = URL.createObjectURL(blob);
-          link.setAttribute("href", url);
-          link.setAttribute("download", `users_${new Date().toISOString().split("T")[0]}.csv`);
-          link.style.visibility = "hidden";
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        }
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `users_${new Date().toISOString().split("T")[0]}.csv`);
+        link.style.visibility = "hidden";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       } else if (exportData.format === "excel") {
-        const headers = ["Username", "Email"];
         exportContent = [
           headers.join("\t"),
           ...users.map((user) =>
@@ -106,67 +138,103 @@ export default function ExportForm({ onExport }: ExportFormProps) {
         ].join("\n");
         const blob = new Blob([exportContent], { type: "text/tab-separated-values;charset=utf-8;" });
         const link = document.createElement("a");
-        if (link.download !== undefined) {
-          const url = URL.createObjectURL(blob);
-          link.setAttribute("href", url);
-          link.setAttribute("download", `users_${new Date().toISOString().split("T")[0]}.xls`);
-          link.style.visibility = "hidden";
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        }
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `users_${new Date().toISOString().split("T")[0]}.xls`);
+        link.style.visibility = "hidden";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       }
     } else if (exportData.type === "products" && products.length > 0) {
       let exportContent = "";
-
+      const headers = [
+        "Title",
+        "Category",
+        "Subcategory",
+        "Tags",
+        "Author",
+        "Publisher",
+        "Price",
+        "Condition",
+        "New Quantity",
+        "Discount for New Books (%)",
+        "Old Quantity",
+        "Discount for Old Books (%)",
+        "Valid Image Link",
+        "Estimated Delivery",
+        "Description",
+        "SEO Title",
+        "SEO Description",
+      ];
       if (exportData.format === "csv") {
-        const headers = ["Product Name", "Price", "Inventory (Quantity)", "Description"];
         exportContent = [
           headers.join(","),
           ...products.map((product) =>
             [
-              `"${product.name}"`,
+              `"${product.title}"`,
+              `"${product.categoryName}"`,
+              `"${product.subCategory}"`,
+              `"${product.tags}"`,
+              `"${product.author}"`,
+              `"${product.publisher}"`,
               `"${product.price}"`,
-              `"${product.inventory}"`,
+              `"${product.condition}"`,
+              `"${product.quantityNew}"`,
+              `"${product.discountNew}"`,
+              `"${product.quantityOld}"`,
+              `"${product.discountOld}"`,
+              `"${product.imageUrl}"`,
+              `"${product.estimatedDelivery}"`,
               `"${product.description}"`,
+              `"${product.seoTitle}"`,
+              `"${product.seoDescription}"`,
             ].join(",")
           ),
         ].join("\n");
         const blob = new Blob([exportContent], { type: "text/csv;charset=utf-8;" });
         const link = document.createElement("a");
-        if (link.download !== undefined) {
-          const url = URL.createObjectURL(blob);
-          link.setAttribute("href", url);
-          link.setAttribute("download", `products_${new Date().toISOString().split("T")[0]}.csv`);
-          link.style.visibility = "hidden";
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        }
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `products_${new Date().toISOString().split("T")[0]}.csv`);
+        link.style.visibility = "hidden";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       } else if (exportData.format === "excel") {
-        const headers = ["Product Name", "Price", "Inventory (Quantity)", "Description"];
         exportContent = [
           headers.join("\t"),
           ...products.map((product) =>
             [
-              product.name,
+              product.title,
+              product.categoryName,
+              product.subCategory,
+              product.tags,
+              product.author,
+              product.publisher,
               product.price,
-              product.inventory,
+              product.condition,
+              product.quantityNew,
+              product.discountNew,
+              product.quantityOld,
+              product.discountOld,
+              product.imageUrl,
+              product.estimatedDelivery,
               product.description,
+              product.seoTitle,
+              product.seoDescription,
             ].join("\t")
           ),
         ].join("\n");
         const blob = new Blob([exportContent], { type: "text/tab-separated-values;charset=utf-8;" });
         const link = document.createElement("a");
-        if (link.download !== undefined) {
-          const url = URL.createObjectURL(blob);
-          link.setAttribute("href", url);
-          link.setAttribute("download", `products_${new Date().toISOString().split("T")[0]}.xls`);
-          link.style.visibility = "hidden";
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        }
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `products_${new Date().toISOString().split("T")[0]}.xls`);
+        link.style.visibility = "hidden";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       }
     }
   };

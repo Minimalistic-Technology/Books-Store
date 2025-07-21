@@ -23,7 +23,7 @@ export default function OrderManagement() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:5000/api/bookstore/orderroutes/orders");
+      const response = await fetch("http://localhost:5000/api/orders");
       if (!response.ok) throw new Error("Network response was not ok");
       const data = await response.json();
       if (!Array.isArray(data.orders)) {
@@ -68,7 +68,7 @@ export default function OrderManagement() {
 
   const handleUpdateOrder = async (updatedOrder: Order) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/bookstore/orderroutes/orders/${updatedOrder.id}`, {
+      const response = await fetch(`http://localhost:5000/api/orders/${updatedOrder.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

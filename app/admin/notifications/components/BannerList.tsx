@@ -15,7 +15,7 @@ export default function BannerList({ banners, onUpdateBanners }: BannerListProps
     onUpdateBanners(updatedBanners);
 
     try {
-      await fetch(`http://localhost:5000/api/bookstore/bannerRoutes/${id}`, {
+      await fetch(`http://localhost:5000/api/banner/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive: !currentActive }),
@@ -31,7 +31,7 @@ export default function BannerList({ banners, onUpdateBanners }: BannerListProps
     onUpdateBanners(updatedBanners);
 
     try {
-      await fetch(`http://localhost:5000/api/bookstore/bannerRoutes/${id}`, {
+      await fetch(`http://localhost:5000/api/banner/${id}`, {
         method: "DELETE",
       });
     } catch (error) {

@@ -4,6 +4,7 @@ export interface Address {
   state: string;
   country: string;
   pinCode: string;
+  zipCode: string;
 }
 
 export interface Order {
@@ -21,4 +22,9 @@ export interface Order {
   bookId: string;
   title: string;
   imageUrl?: string;
+  userId: string;
+  products: { productId: string; quantity: number }[];
+  totalAmount: number;
+  shippingAddress: Address;
+  updatedAt: string;
 }

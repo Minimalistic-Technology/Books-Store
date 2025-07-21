@@ -120,7 +120,7 @@ const RequestBookPage: React.FC = () => {
 
     if (!hasErrors) {
       try {
-        const response = await fetch('http://localhost:5000/api/bookstore/book-requests', {
+        const response = await fetch('http://localhost:5000/api/book-requests', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

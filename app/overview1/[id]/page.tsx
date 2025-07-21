@@ -81,7 +81,7 @@ export default function Overview() {
         try {
           console.log(`Fetching item with ID: ${id} from category: ${category}`);
           const response = await fetch(
-            `http://localhost:5000/api/bookstore/book-categories/${encodeURIComponent(category)}/${id}?t=${new Date().getTime()}`,
+            `http://localhost:5000/api/book-categories/${encodeURIComponent(category)}/${id}?t=${new Date().getTime()}`,
             { cache: "no-store" }
           );
           if (!response.ok) {
@@ -157,7 +157,7 @@ export default function Overview() {
     const fetchReviews = async () => {
       try {
         const response = await fetch(
-          `http://localhost:5000/api/bookstore/reviews/book/${id}?t=${new Date().getTime()}`,
+          `http://localhost:5000/api/reviews/book/${id}?t=${new Date().getTime()}`,
           { cache: "no-store" }
         );
         if (!response.ok) {
@@ -233,7 +233,7 @@ export default function Overview() {
           comment: reviewDescription,
           categoryName: category,
         };
-        const response = await fetch("http://localhost:5000/api/bookstore/reviews", {
+        const response = await fetch("http://localhost:5000/api/reviews", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),

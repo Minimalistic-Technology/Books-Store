@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import MetricsCard from "./components/MetricsCard";
 import ChartComponent from "./components/ChartComponent";
 import { useRouter } from "next/navigation";
+import { API_BASE_URL } from '../../../utils/api';
 
 // Create Context
 const DashboardContext = createContext<{
@@ -71,7 +72,7 @@ export default function Dashboard() {
 
     const fetchUsers = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/users", {
+        const response = await fetch(`${API_BASE_URL}/users`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faShoppingCart } from "@fortawesome/free-solid-svg-icons";
+import { API_BASE_URL } from '../../utils/api';
 
 interface CartItem {
   _id: string;
@@ -172,7 +173,7 @@ const CartPage: React.FC = () => {
     const paymentType = paymentTypeMap[paymentMethod] || "Cash on Delivery";
 
     try {
-      const response = await fetch(`http://localhost:5000/api/book-categories/School-Books/${cartItems[0]._id}`);
+      const response = await fetch(`${API_BASE_URL}/book-categories/School-Books/${cartItems[0]._id}`);
       if (!response.ok) throw new Error("Failed to fetch book details");
       const book = await response.json();
       if (cartItems[0].condition === "New" && book.quantityNew < cartItems[0].quantity) {
@@ -210,7 +211,7 @@ const CartPage: React.FC = () => {
         bookId: cartItems[0]._id,
       };
 
-      const response = await fetch("http://localhost:5000/api/orders", {
+      const response = await fetch(`${API_BASE_URL}/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(orderData),

@@ -1,6 +1,8 @@
 "use client";
 
 import { Banner } from "../page";
+import { useState } from "react";
+import { API_BASE_URL } from '../../../../utils/api';
 
 interface BannerListProps {
   banners: Banner[];
@@ -15,7 +17,7 @@ export default function BannerList({ banners, onUpdateBanners }: BannerListProps
     onUpdateBanners(updatedBanners);
 
     try {
-      await fetch(`http://localhost:5000/api/banner/${id}`, {
+      await fetch(`${API_BASE_URL}/banner/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive: !currentActive }),
@@ -31,7 +33,7 @@ export default function BannerList({ banners, onUpdateBanners }: BannerListProps
     onUpdateBanners(updatedBanners);
 
     try {
-      await fetch(`http://localhost:5000/api/banner/${id}`, {
+      await fetch(`${API_BASE_URL}/banner/${id}`, {
         method: "DELETE",
       });
     } catch (error) {

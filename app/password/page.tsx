@@ -1,9 +1,11 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { API_BASE_URL } from '../../utils/api';
 
 const BookStorePasswordPage: React.FC = () => {
   const router = useRouter();
@@ -95,7 +97,7 @@ const BookStorePasswordPage: React.FC = () => {
 
     if (!hasErrors) {
       try {
-        const response = await fetch('http://localhost:5000/api/auth/signup', {
+        const response = await fetch(`${API_BASE_URL}/auth/signup`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

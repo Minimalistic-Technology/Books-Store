@@ -5,6 +5,7 @@ import ImportForm from "./components/ImportForm";
 import ExportForm from "./components/ExportForm";
 import { Content } from "../content-management/page";
 import { User } from "./components/ExportForm";
+import { API_BASE_URL } from '../../../utils/api';
 
 export default function ImportExportManagement() {
   const [error, setError] = useState<string>("");
@@ -68,7 +69,7 @@ export default function ImportExportManagement() {
           });
 
           const response = await fetch(
-            `http://localhost:5000/api/book-categories/${encodeURIComponent(category)}`,
+            `${API_BASE_URL}/book-categories/${encodeURIComponent(category)}`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },

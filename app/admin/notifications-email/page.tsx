@@ -1,4 +1,3 @@
-// app/admin/notifications-email/page.tsx
 "use client";
 
 import { useState } from "react";

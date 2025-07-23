@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { API_BASE_URL } from '../../../../utils/api';
 
 type CategoryTagFormProps = {
   item?: {
@@ -58,13 +59,13 @@ export default function CategoryTagForm({ item, onClose, onSave }: CategoryTagFo
     try {
       let response;
       if (formData.id) {
-        response = await fetch(`http://localhost:5000/api/book-categories/${formData.id}`, {
+        response = await fetch(`${API_BASE_URL}/book-categories/${formData.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(dataToSave),
         });
       } else {
-        response = await fetch("http://localhost:5000/api/book-categories", {
+        response = await fetch(`${API_BASE_URL}/book-categories`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify([dataToSave]), 

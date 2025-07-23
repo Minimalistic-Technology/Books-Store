@@ -4,6 +4,7 @@ import Header from "../components/header/page";
 import Footer from "../components/footer/page";
 import Link from "next/link";
 import Image from "next/image";
+import { API_BASE_URL } from '../../utils/api';
 
 interface Order {
   _id: string;
@@ -23,7 +24,7 @@ const OrdersPage = () => {
     const fetchOrders = async () => {
       try {
         setLoading(true);
-        const response = await fetch("http://localhost:5000/api/orders", {
+        const response = await fetch(`${API_BASE_URL}/orders`, {
           cache: "no-store",
         });
         if (!response.ok) {
@@ -47,7 +48,7 @@ const OrdersPage = () => {
 
   const handleCancelOrder = async (orderId: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/orders/${orderId}`, {
+      const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "Cancelled" }),

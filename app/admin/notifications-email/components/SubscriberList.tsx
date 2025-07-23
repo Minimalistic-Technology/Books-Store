@@ -1,4 +1,3 @@
-// components/SubscriberList.tsx
 "use client";
 
 import type { Subscriber } from "../page";

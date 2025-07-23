@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBookOpen, faBookmark, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
+import { API_BASE_URL } from '../../utils/api';
 
 interface FormData {
   name: string;
@@ -120,7 +121,7 @@ const RequestBookPage: React.FC = () => {
 
     if (!hasErrors) {
       try {
-        const response = await fetch('http://localhost:5000/api/book-requests', {
+        const response = await fetch(`${API_BASE_URL}/book-requests`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

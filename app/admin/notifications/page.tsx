@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import BannerForm from "./components/BannerForm";
 import BannerList from "./components/BannerList";
+import { API_BASE_URL } from '../../../utils/api';
 
 export interface Banner {
   id: string;
@@ -18,7 +19,7 @@ export default function Notifications() {
   useEffect(() => {
     const fetchBanners = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/banner");
+        const response = await fetch(`${API_BASE_URL}/banner`);
         const data = await response.json();
         setBanners(data.map((item: any) => ({
           id: item._id,

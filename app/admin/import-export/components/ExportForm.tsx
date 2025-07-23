@@ -2,7 +2,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Content } from "../../content-management/page"; // Import Content interface
+import { Content } from "../../content-management/page"; 
+import { API_BASE_URL } from '../../../../utils/api';
 
 export interface User {
   username: string;
@@ -23,7 +24,7 @@ export default function ExportForm({ onExport }: ExportFormProps) {
     const fetchUsers = async () => {
       setLoading(true);
       try {
-        const response = await fetch("http://localhost:5000/api/users");
+        const response = await fetch(`${API_BASE_URL}/users`);
         if (!response.ok) throw new Error("Failed to fetch users");
         const data = await response.json();
         setUsers(data);
@@ -35,7 +36,7 @@ export default function ExportForm({ onExport }: ExportFormProps) {
     const fetchProducts = async () => {
       setLoading(true);
       try {
-        const categoriesResponse = await fetch("http://localhost:5000/api/book-categories");
+        const categoriesResponse = await fetch(`${API_BASE_URL}/book-categories`);
         if (!categoriesResponse.ok) throw new Error("Failed to fetch categories");
         const categoriesData = await categoriesResponse.json();
 
@@ -43,7 +44,7 @@ export default function ExportForm({ onExport }: ExportFormProps) {
         const fetchPromises = categoriesData.map(async (category: any) => {
           try {
             const booksResponse = await fetch(
-              `http://localhost:5000/api/book-categories/${encodeURIComponent(category.name)}`
+              `${API_BASE_URL}/book-categories/${encodeURIComponent(category.name)}`
             );
             if (!booksResponse.ok) {
               console.warn(`Failed to fetch books for ${category.name}`);

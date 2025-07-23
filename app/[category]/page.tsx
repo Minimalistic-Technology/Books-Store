@@ -8,6 +8,7 @@ import { faThLarge, faList } from "@fortawesome/free-solid-svg-icons";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { API_BASE_URL } from '../../utils/api';
 
 export default function CategoryPage() {
   const { category } = useParams();  
@@ -27,7 +28,7 @@ export default function CategoryPage() {
     const fetchData = async () => {
       try {
         console.log("Fetching books for category:", category); 
-        const booksResponse = await fetch(`http://localhost:5000/api/book-categories/${encodeURIComponent(category as string)}`);
+        const booksResponse = await fetch(`${API_BASE_URL}/book-categories/${encodeURIComponent(category as string)}`);
         if (!booksResponse.ok) {
           if (booksResponse.status === 404) {
             throw new Error(`Category '${category}' not found. Please check the category name or create it in the admin panel. Available categories: [School-Books, College-Books, Competitive-Exam-Books, Ref-Books-Guides, Entrance-Exam-Books, Stationary, Non-Academics].`);
@@ -39,7 +40,7 @@ export default function CategoryPage() {
         setBooks(booksData.books || []);
         setBooksToShow(booksData.books.length || 0);
 
-        const tagsResponse = await fetch(`http://localhost:5000/api/book-categories/${encodeURIComponent(category as string)}/tags`);
+        const tagsResponse = await fetch(`${API_BASE_URL}/book-categories/${encodeURIComponent(category as string)}/tags`);
         if (!tagsResponse.ok) throw new Error('Failed to fetch tags');
         const tagsData = await tagsResponse.json();
         setTags(tagsData.tags || []);

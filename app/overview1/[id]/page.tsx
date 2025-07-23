@@ -7,6 +7,7 @@ import { FaStar } from "react-icons/fa";
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
+import { API_BASE_URL } from "../../../utils/api";
 
 const Header = dynamic(() => import("../../components/header/page"), { ssr: false });
 
@@ -81,7 +82,7 @@ export default function Overview() {
         try {
           console.log(`Fetching item with ID: ${id} from category: ${category}`);
           const response = await fetch(
-            `http://localhost:5000/api/book-categories/${encodeURIComponent(category)}/${id}?t=${new Date().getTime()}`,
+            `${API_BASE_URL}/book-categories/${encodeURIComponent(category)}/${id}?t=${new Date().getTime()}`,
             { cache: "no-store" }
           );
           if (!response.ok) {
@@ -157,7 +158,7 @@ export default function Overview() {
     const fetchReviews = async () => {
       try {
         const response = await fetch(
-          `http://localhost:5000/api/reviews/book/${id}?t=${new Date().getTime()}`,
+          `${API_BASE_URL}/reviews/book/${id}?t=${new Date().getTime()}`,
           { cache: "no-store" }
         );
         if (!response.ok) {
@@ -233,7 +234,7 @@ export default function Overview() {
           comment: reviewDescription,
           categoryName: category,
         };
-        const response = await fetch("http://localhost:5000/api/reviews", {
+        const response = await fetch(`${API_BASE_URL}/reviews`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),

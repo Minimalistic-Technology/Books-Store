@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import OrderList from "./components/OrderList";
+import { API_BASE_URL } from '../../../utils/api';
 
 export interface Order {
      id: string
@@ -23,7 +24,7 @@ export default function OrderManagement() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:5000/api/orders");
+      const response = await fetch(`${API_BASE_URL}/orders`);
       if (!response.ok) throw new Error("Network response was not ok");
       const data = await response.json();
       if (!Array.isArray(data.orders)) {
@@ -68,7 +69,7 @@ export default function OrderManagement() {
 
   const handleUpdateOrder = async (updatedOrder: Order) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/orders/${updatedOrder.id}`, {
+      const response = await fetch(`${API_BASE_URL}/orders/${updatedOrder.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

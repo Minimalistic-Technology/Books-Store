@@ -5,6 +5,7 @@ import ContentList from "./components/ContentList";
 import { ContentForm } from "./components/ContentForm";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faAngleDoubleLeft, faAngleLeft, faAngleRight, faAngleDoubleRight } from "@fortawesome/free-solid-svg-icons";
+import { API_BASE_URL } from '../../../utils/api';
 
 export interface Content {
   id?: string;
@@ -62,7 +63,7 @@ export default function ContentManagement() {
   const fetchCategoriesAndContents = useCallback(async () => {
     setIsLoading(true);
     try {
-      const categoriesResponse = await fetch("http://localhost:5000/api/book-categories");
+      const categoriesResponse = await fetch(`${API_BASE_URL}/book-categories`);
       if (!categoriesResponse.ok) throw new Error("Failed to fetch categories");
       const categoriesData = await categoriesResponse.json();
       setCategories(categoriesData);
@@ -71,7 +72,7 @@ export default function ContentManagement() {
       const fetchPromises = categoriesData.map(async (category: Category) => {
         try {
           const booksResponse = await fetch(
-            `http://localhost:5000/api/book-categories/${encodeURIComponent(category.name)}`
+            `${API_BASE_URL}/book-categories/${encodeURIComponent(category.name)}`
           );
           if (!booksResponse.ok) {
             console.warn(`Failed to fetch books for ${category.name}`);
@@ -128,7 +129,7 @@ export default function ContentManagement() {
       if (!selectedCategory) return;
       try {
         const response = await fetch(
-          `http://localhost:5000/api/book-categories/${encodeURIComponent(selectedCategory)}/tags`
+          `${API_BASE_URL}/book-categories/${encodeURIComponent(selectedCategory)}/tags`
         );
         if (!response.ok) {
           const errorData = await response.json();
@@ -154,8 +155,8 @@ export default function ContentManagement() {
       setIsLoading(true);
       const isUpdate = Boolean(data.id);
       const url = isUpdate
-        ? `http://localhost:5000/api/book-categories/${encodeURIComponent(data.categoryName)}/${data.id}`
-        : `http://localhost:5000/api/book-categories/${encodeURIComponent(data.categoryName)}`;
+        ? `${API_BASE_URL}/book-categories/${encodeURIComponent(data.categoryName)}/${data.id}`
+        : `${API_BASE_URL}/book-categories/${encodeURIComponent(data.categoryName)}`;
       const response = await fetch(url, {
         method: isUpdate ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -227,7 +228,7 @@ export default function ContentManagement() {
     try {
       setIsLoading(true);
       const response = await fetch(
-        `http://localhost:5000/api/book-categories/${encodeURIComponent(categoryName)}/${id}`,
+        `${API_BASE_URL}/book-categories/${encodeURIComponent(categoryName)}/${id}`,
         { method: "DELETE" }
       );
       if (!response.ok) throw new Error("Failed to delete book");
@@ -251,7 +252,7 @@ export default function ContentManagement() {
     try {
       setIsLoading(true);
       const response = await fetch(
-        `http://localhost:5000/api/book-categories/${encodeURIComponent(selectedCategory)}/tags`,
+        `${API_BASE_URL}/book-categories/${encodeURIComponent(selectedCategory)}/tags`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -288,7 +289,7 @@ export default function ContentManagement() {
     try {
       setIsLoading(true);
       const response = await fetch(
-        `http://localhost:5000/api/book-categories/${encodeURIComponent(selectedCategory)}/tags/${encodeURIComponent(tagToEdit)}`,
+        `${API_BASE_URL}/book-categories/${encodeURIComponent(selectedCategory)}/tags/${encodeURIComponent(tagToEdit)}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -327,7 +328,7 @@ export default function ContentManagement() {
     try {
       setIsLoading(true);
       const response = await fetch(
-        `http://localhost:5000/api/book-categories/${encodeURIComponent(selectedCategory)}/tags/${encodeURIComponent(tagToEdit)}`,
+        `${API_BASE_URL}/book-categories/${encodeURIComponent(selectedCategory)}/tags/${encodeURIComponent(tagToEdit)}`,
         {
           method: "DELETE",
         }

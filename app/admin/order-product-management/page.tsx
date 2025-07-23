@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import OrderList from "./components/OrderList";
 import OrderForm from "./components/OrderForm";
 import type { Order } from "./types";
+import { API_BASE_URL } from '../../../utils/api';
 
 export default function OrderProductManagement() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -13,7 +14,7 @@ export default function OrderProductManagement() {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/orders");
+      const response = await fetch(`${API_BASE_URL}/orders`);
       if (!response.ok) throw new Error("Failed to fetch orders");
       const data = await response.json();
       setOrders(data.orders.map((order: any) => ({
@@ -58,7 +59,7 @@ export default function OrderProductManagement() {
 
   const handleSaveOrder = async (data: { id: string; status: string }) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/orders/${data.id}`, {
+      const response = await fetch(`${API_BASE_URL}/orders/${data.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: data.status }),

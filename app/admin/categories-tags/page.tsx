@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import CategoryTagForm from "./components/CategoryTagForm";
 import CategoryTagList from "./components/CategoryTagList";
+import { API_BASE_URL } from '../../../utils/api';
 
 export interface Category {
   id: string;
@@ -20,7 +21,7 @@ export default function CategoriesTags() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/book-categories");
+        const response = await fetch(`${API_BASE_URL}/book-categories`);
         const data = await response.json();
         setItems(
           data.map((item: any) => ({
@@ -68,7 +69,7 @@ export default function CategoriesTags() {
     try {
       let response;
       if (data.id) {
-        response = await fetch(`http://localhost:5000/api/book-categories/${data.id}`, {
+        response = await fetch(`${API_BASE_URL}/book-categories/${data.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -78,7 +79,7 @@ export default function CategoriesTags() {
           }),
         });
       } else {
-        response = await fetch("http://localhost:5000/api/book-categories", {
+        response = await fetch(`${API_BASE_URL}/book-categories`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

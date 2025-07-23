@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Content } from "../../content-management/page";
 import Papa, { ParseResult } from "papaparse";
 import { User } from "./ExportForm";
+import { API_BASE_URL } from '../../../../utils/api';
 
 interface ImportFormProps {
   onImport: (
@@ -21,7 +22,7 @@ export default function ImportForm({ onImport }: ImportFormProps) {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/book-categories");
+        const response = await fetch(`${API_BASE_URL}/book-categories`);
         if (!response.ok) throw new Error("Failed to fetch categories");
         const data = await response.json();
         setCategories(data.map((cat: any) => cat.name));
@@ -141,7 +142,7 @@ export default function ImportForm({ onImport }: ImportFormProps) {
 
             try {
               const tagRes = await fetch(
-                `http://localhost:5000/api/book-categories/${encodeURIComponent(category)}/tags`
+                `${API_BASE_URL}/book-categories/${encodeURIComponent(category)}/tags`
               );
               if (!tagRes.ok) throw new Error(`Could not fetch tags for ${category}`);
               const tagData = await tagRes.json();

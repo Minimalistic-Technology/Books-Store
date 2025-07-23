@@ -1,6 +1,7 @@
 "use client";
 
 import type { Order } from "../types";
+import { API_BASE_URL } from '../../../../utils/api';
 
 type OrderListProps = {
   orders: Order[];
@@ -11,7 +12,7 @@ type OrderListProps = {
 export default function OrderList({ orders, onEdit, onDelete }: OrderListProps) {
   const handleDelete = async (id: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/orders/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/orders/${id}`, {
         method: "DELETE",
       });
       if (!response.ok) throw new Error("Failed to delete order");

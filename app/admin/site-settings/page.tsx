@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import SiteSettingsForm from "./components/SiteSettingsForm";
+import { API_BASE_URL } from '../../../utils/api';
 
 export interface SiteSettings {
   _id?: string; // Optional, as it comes from the API
@@ -32,7 +33,7 @@ export default function SiteSettings() {
     const fetchSettings = async () => {
       try {
         setLoading(true);
-        const response = await fetch("http://localhost:5000/api/settings");
+        const response = await fetch(`${API_BASE_URL}/settings`);
         if (!response.ok) throw new Error("Failed to fetch settings");
         const data = await response.json();
         console.log("API Response:", data); // Debug the response
@@ -61,7 +62,7 @@ export default function SiteSettings() {
 
   const handleSave = async (updatedSettings: SiteSettings) => {
     try {
-      const response = await fetch("http://localhost:5000/api/settings", {
+      const response = await fetch(`${API_BASE_URL}/settings`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

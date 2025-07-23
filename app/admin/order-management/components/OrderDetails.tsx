@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Order } from "../page";
 import { saveAs } from "file-saver";
+import { API_BASE_URL } from '../../../../utils/api';
 
 type OrderDetailsProps = {
   order: Order;
@@ -25,7 +26,7 @@ export default function OrderDetails({ order, onClose, onUpdateOrder }: OrderDet
     if (window.confirm(`Confirm ${isRefundProcessing ? "refund" : "cancel"} for Order #${order.id}?`)) {
       const updatedOrder: Order = { ...order, status: "Cancelled", updatedAt: new Date().toISOString() };
       try {
-        const response = await fetch(`http://localhost:5000/api/orders/${order.id}`, {
+        const response = await fetch(`${API_BASE_URL}/orders/${order.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

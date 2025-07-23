@@ -2,7 +2,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Content } from "../page"; // Import from content-management/page
+import { Content } from "../page"; 
+import { API_BASE_URL } from '../../../../utils/api';
 
 interface ContentFormProps {
   content?: Content;
@@ -45,7 +46,7 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
         return;
       }
       try {
-        const url = `http://localhost:5000/api/book-categories/${encodeURIComponent(formData.categoryName)}/tags`;
+        const url = `${API_BASE_URL}/book-categories/${encodeURIComponent(formData.categoryName)}/tags`;
         const response = await fetch(url);
         if (!response.ok) throw new Error(`Failed to fetch tags: ${response.statusText}`);
         const data = await response.json();

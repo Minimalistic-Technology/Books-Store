@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { Category } from "../page";
+import { API_BASE_URL } from '../../../../utils/api';
 
 type CategoryTagListProps = {
   onEdit: (item: Category) => void;
@@ -12,7 +13,7 @@ type CategoryTagListProps = {
 export default function CategoryTagList({ onEdit, onDelete, items }: CategoryTagListProps) {
   const handleDelete = async (id: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/book-categories/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/book-categories/${id}`, {
         method: "DELETE",
       });
       if (!response.ok) throw new Error("Failed to delete category/tag");

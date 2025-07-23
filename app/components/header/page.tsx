@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { API_BASE_URL } from '../../../utils/api';
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -33,7 +34,7 @@ export default function Header() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/book-categories');
+        const response = await fetch(`${API_BASE_URL}/book-categories`);
         if (!response.ok) throw new Error('Failed to fetch categories');
         const data = await response.json();
         console.log("Fetched categories:", data);
@@ -81,7 +82,7 @@ export default function Header() {
     setSearchError(null);
 
     try {
-      const response = await fetch(`http://localhost:5000/api/search?q=${encodeURIComponent(searchQuery.trim())}`, {
+      const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(searchQuery.trim())}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import {jwtDecode }from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode';
+import { API_BASE_URL } from '../../utils/api';
 
 interface JwtPayload {
   id: string;
@@ -77,7 +78,7 @@ const BookStoreLoginPage: React.FC = () => {
 
         console.log('Sending login request with:', loginData); // Debugging
 
-        const response = await fetch('http://localhost:5000/api/auth/login', {
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

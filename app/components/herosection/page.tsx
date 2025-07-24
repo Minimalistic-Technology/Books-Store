@@ -1,9 +1,12 @@
 "use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import Head from "next/head";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBook, faShippingFast, faUndo, faHeadset } from "@fortawesome/free-solid-svg-icons";
 import { useState, useEffect } from "react";
+import { API_BASE_URL } from '../../../utils/api';
 
 interface Book {
   _id: string;
@@ -15,10 +18,44 @@ interface Book {
   viewCount: number;
 }
 
+interface SiteSettings {
+  _id: string;
+  logo: string | null;
+  title: string;
+  metaDescription: string;
+  metaKeywords: string;
+  apiKey: string;
+  maintenanceMode: boolean;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+}
+
 export default function Home() {
   const [searchResults, setSearchResults] = useState<Book[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [settings, setSettings] = useState<SiteSettings | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/settings`);
+        if (!response.ok) throw new Error("Failed to fetch settings");
+        const data = await response.json();
+        setSettings(data);
+      } catch (err) {
+        console.error("Error fetching settings:", err);
+        setError("Failed to load site settings.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSettings();
+  }, []);
 
   const handleSearch = (results: Book[], query?: string) => {
     setSearchResults(results);
@@ -27,23 +64,34 @@ export default function Home() {
       setSearchQuery(query);
     }
   };
-      
-      
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
+      <Head>
+        <title>{settings?.title || "Book Center"}</title>
+        <meta name="description" content={settings?.metaDescription || "Welcome to the best online book store!"} />
+        <meta name="keywords" content={settings?.metaKeywords || "books, online store, reading"} />
+      </Head>
 
-      {/* Main Content (Hero Section) */}
       <main className="container mx-auto p-4 flex-grow">
-        {/* Welcome Section */}
         <section className="text-center mb-8">
-          <h1 className="text-4xl text-black font-bold mb-4">Welcome to Book Center</h1>
-          <p className="text-lg text-gray-600 mb-8">A Harsh Book Store platform for book lovers</p>
-          <a href="/books" className="text-blue-600 hover:underline">
-            Explore Books
-          </a>
+          {loading ? (
+            <p className="text-gray-500 text-lg">Loading...</p>
+          ) : error ? (
+            <p className="text-red-500 text-lg">{error}</p>
+          ) : (
+            <>
+              <h1 className="text-4xl text-black font-bold mb-4">
+                {settings?.metaDescription || "Welcome to Book Center"}
+              </h1>
+              <p className="text-lg text-gray-600 mb-8">A Harsh Book Store platform for book lovers</p>
+              <Link href="/books" className="text-blue-600 hover:underline">
+                Explore Books
+              </Link>
+            </>
+          )}
         </section>
 
-        {/* Search Results or Shop by Class Section */}
         {showSearchResults && searchResults.length > 0 ? (
           <section className="mb-20">
             <h2 className="text-2xl font-semibold mb-4 px-29 text-black">Search Results for "{searchQuery}"</h2>
@@ -67,7 +115,6 @@ export default function Home() {
           </section>
         ) : (
           <>
-            {/* Shop by Class Section */}
             <section className="mb-8">
               <h2 className="text-2xl font-semibold mb-4 px-29 text-black">Shop by Class</h2>
               <div className="w-full max-w-xs mx-auto">
@@ -92,7 +139,6 @@ export default function Home() {
               </div>
             </section>
 
-            {/* Best Sellers Section */}
             <section className="mb-20">
               <h2 className="text-2xl font-semibold mb-4 px-29 text-black">Best Sellers</h2>
               <div className="px-29 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
@@ -169,7 +215,6 @@ export default function Home() {
               </div>
             </section>
 
-            {/* New Arrivals Section */}
             <section className="mb-20">
               <h2 className="text-2xl font-semibold mb-4 px-29 text-black">New Arrivals</h2>
               <div className="px-29 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-6">
@@ -246,7 +291,6 @@ export default function Home() {
               </div>
             </section>
 
-            {/* Reference Books & Guides Section */}
             <section className="mb-20">
               <h2 className="text-2xl font-semibold mb-4 px-29 text-black">Reference Books & Guides</h2>
               <div className="px-29 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-6">
@@ -323,7 +367,6 @@ export default function Home() {
               </div>
             </section>
 
-            {/* Our Services Section */}
             <section className="mb-20">
               <h2 className="text-2xl font-semibold mb-6 px-29 text-black">Our Services</h2>
               <div className="px-29 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
@@ -352,9 +395,6 @@ export default function Home() {
           </>
         )}
       </main>
-
-      {/* Footer */}
-      {/* Add your Footer component here if needed */}
     </div>
   );
 }

@@ -1,12 +1,11 @@
-// components/MetricsCard.tsx
 "use client";
 
 import React from "react";
 
 interface MetricsCardProps {
   title: string;
-  value: number;
-  onClick?: () => void; // Added optional onClick prop
+  value: number | undefined | null; 
+  onClick?: () => void;
 }
 
 export default function MetricsCard({ title, value, onClick }: MetricsCardProps) {
@@ -16,7 +15,9 @@ export default function MetricsCard({ title, value, onClick }: MetricsCardProps)
       onClick={onClick}
     >
       <h3 className="text-sm font-medium text-gray-600">{title}</h3>
-      <p className="text-2xl font-bold text-yellow-900">{value.toLocaleString()}</p>
+      <p className="text-2xl font-bold text-yellow-900">
+        {typeof value === "number" ? value.toLocaleString() : "N/A"}
+      </p>
     </div>
   );
 }

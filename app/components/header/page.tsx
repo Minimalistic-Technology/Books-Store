@@ -1,5 +1,6 @@
 
 "use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -21,10 +22,24 @@ interface Category {
   name: string;
 }
 
+interface SiteSettings {
+  _id: string;
+  logo: string | null;
+  title: string;
+  metaDescription: string;
+  metaKeywords: string;
+  apiKey: string;
+  maintenanceMode: boolean;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+}
+
 export default function Header() {
   const router = useRouter();
-  const [isMenuOpen, setIsMenuOpen] = useState(true); 
+  const [isMenuOpen, setIsMenuOpen] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -32,12 +47,23 @@ export default function Header() {
   const [searchError, setSearchError] = useState<string | null>(null);
 
   useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/settings`);
+        if (!response.ok) throw new Error("Failed to fetch settings");
+        const data = await response.json();
+        setSettings(data);
+      } catch (err) {
+        console.error("Error fetching settings:", err);
+        setError("Failed to load site settings.");
+      }
+    };
+
     const fetchCategories = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/book-categories`);
-        if (!response.ok) throw new Error('Failed to fetch categories');
+        if (!response.ok) throw new Error("Failed to fetch categories");
         const data = await response.json();
-        console.log("Fetched categories:", data);
         const fetchedCategories = data.map((item: any) => ({
           _id: item._id,
           name: item.name,
@@ -53,7 +79,15 @@ export default function Header() {
             { _id: "static-non-academics", name: "Non-Academics" },
           ],
           ...fetchedCategories.filter(
-            (cat: Category) => !["Competitive-Exam-Books", "School-Books", "College-Books", "Ref-Books-Guides", "Entrance-Exam-Books", "Stationary", "Non-Academics"].includes(cat.name)
+            (cat: Category) => ![
+              "Competitive-Exam-Books",
+              "School-Books",
+              "College-Books",
+              "Ref-Books-Guides",
+              "Entrance-Exam-Books",
+              "Stationary",
+              "Non-Academics"
+            ].includes(cat.name)
           ),
         ];
         if (!combinedCategories.some((cat: Category) => cat.name === "Request Your Book")) {
@@ -61,13 +95,14 @@ export default function Header() {
         }
         setCategories(combinedCategories);
       } catch (err) {
-        setError('Error loading categories. Please try again later.');
+        setError("Error loading categories. Please try again later.");
         console.error(err);
       } finally {
         setLoading(false);
       }
     };
 
+    fetchSettings();
     fetchCategories();
   }, []);
 
@@ -83,10 +118,8 @@ export default function Header() {
 
     try {
       const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(searchQuery.trim())}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
       });
 
       if (!response.ok) {
@@ -110,8 +143,8 @@ export default function Header() {
         <div className="flex items-center">
           <Link href="/">
             <Image
-              src="/Images/logo.png"
-              alt="Harsh Books Store Logo"
+              src={settings?.logo || "/Images/placeholder-logo.png"}
+              alt="Books Store Logo"
               width={80}
               height={80}
               className="ml-2 rounded-full hover:opacity-80 transition-opacity duration-300"
@@ -223,7 +256,7 @@ export default function Header() {
             <span>Loading...</span>
           </div>
         ) : error ? (
-          <p className="text-red-500 text-center p-4">{error}</p>
+          <p className="text-red-500 textಮ text-center p-4">{error}</p>
         ) : (
           <>
             <ul

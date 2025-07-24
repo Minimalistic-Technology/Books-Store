@@ -8,18 +8,14 @@ import { API_BASE_URL } from '../../../utils/api';
 
 // Create Context
 const DashboardContext = createContext<{
-  isLoggedIn: boolean;
-  handleLogout: () => void;
   setMetrics: React.Dispatch<
     React.SetStateAction<{
-      userCount: number;
-      sales: number;
-      activeUsers: number;
+      userCount: number | null;
+      sales: number | null;
+      activeUsers: number | null;
     }>
   >;
 }>({
-  isLoggedIn: false,
-  handleLogout: () => {},
   setMetrics: () => {},
 });
 
@@ -37,11 +33,16 @@ export function useDashboard() {
 }
 
 export default function Dashboard() {
-  const [metrics, setMetrics] = useState({
-    userCount: 0,
-    sales: 0,
-    activeUsers: 0,
+  const [metrics, setMetrics] = useState<{
+    userCount: number | null;
+    sales: number | null;
+    activeUsers: number | null;
+  }>({
+    userCount: null,
+    sales: null,
+    activeUsers: null,
   });
+  const [loading, setLoading] = useState(true);
   type ChartData = {
     labels: string[];
     datasets: {
@@ -56,29 +57,18 @@ export default function Dashboard() {
     labels: [],
     datasets: [],
   });
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    return !!localStorage.getItem("token");
-  });
   const router = useRouter();
 
   useEffect(() => {
-    // Check if token exists
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setIsLoggedIn(false);
-      router.push("/login");
-      return;
-    }
-
     const fetchUsers = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/users`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await fetch(`${API_BASE_URL}/registered-users`);
+        if (!response.ok) throw new Error("Failed to fetch users");
         const data = await response.json();
-        setMetrics((prev) => ({ ...prev, userCount: data.length }));
+        setMetrics((prev) => ({
+          ...prev,
+          userCount: Array.isArray(data) ? data.length : 0,
+        }));
       } catch (error) {
         console.error("Failed to fetch users:", error);
         setMetrics((prev) => ({ ...prev, userCount: 0 }));
@@ -124,29 +114,30 @@ export default function Dashboard() {
       });
     };
 
-    if (isLoggedIn) {
-      fetchUsers();
+    const fetchData = async () => {
+      setLoading(true);
+      await fetchUsers();
       generateRandomData();
-    }
-  }, [isLoggedIn, router]);
+      setLoading(false);
+    };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    localStorage.removeItem("token");
-    localStorage.setItem("isLoggedIn", "false");
-    router.push("/login");
-  };
+    fetchData();
+  }, []);
 
   const handleUserCountClick = () => {
     router.push("/admin/users");
   };
 
-  if (!isLoggedIn) {
-    return null; // Prevent rendering until redirected to login
+  if (loading) {
+    return (
+      <div className="space-y-8 p-4 animate__fadeIn">
+        <p className="text-gray-500 text-center">Loading dashboard...</p>
+      </div>
+    );
   }
 
   return (
-    <DashboardContext.Provider value={{ isLoggedIn, handleLogout, setMetrics }}>
+    <DashboardContext.Provider value={{ setMetrics }}>
       <div className="space-y-8 p-4 animate__fadeIn">
         <h1 className="text-4xl font-bold text-yellow-900">
           Dashboard - Books Store
@@ -196,14 +187,6 @@ export default function Dashboard() {
               </a>
             </li>
           </ul>
-        </div>
-        <div className="text-right">
-          <button
-            onClick={handleLogout}
-            className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-all"
-          >
-            Logout
-          </button>
         </div>
       </div>
     </DashboardContext.Provider>

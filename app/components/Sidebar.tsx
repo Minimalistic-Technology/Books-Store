@@ -101,7 +101,7 @@ export default function Sidebar() {
                 Order Management
               </Link>
             </li>
-            <li>
+            {/* <li>
               <Link
                 href="/admin/notifications"
                 className={`block p-3 text-gray-800 rounded-lg transition-all duration-200 font-medium ${
@@ -112,7 +112,7 @@ export default function Sidebar() {
               >
                 Banners
               </Link>
-            </li>
+            </li> */}
             <li>
               <Link
                 href="/admin/notifications-email"

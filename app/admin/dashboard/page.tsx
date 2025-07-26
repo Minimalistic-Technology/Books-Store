@@ -11,8 +11,8 @@ const DashboardContext = createContext<{
   setMetrics: React.Dispatch<
     React.SetStateAction<{
       userCount: number | null;
-      sales: number | null;
-      activeUsers: number | null;
+      orderCount: number | null;
+      completedOrders: number | null;
     }>
   >;
 }>({
@@ -35,12 +35,12 @@ export function useDashboard() {
 export default function Dashboard() {
   const [metrics, setMetrics] = useState<{
     userCount: number | null;
-    sales: number | null;
-    activeUsers: number | null;
+    orderCount: number | null;
+    completedOrders: number | null;
   }>({
     userCount: null,
-    sales: null,
-    activeUsers: null,
+    orderCount: null,
+    completedOrders: null,
   });
   const [loading, setLoading] = useState(true);
   type ChartData = {
@@ -62,7 +62,7 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/registered-users`);
+        const response = await fetch(`${API_BASE_URL}/users`);
         if (!response.ok) throw new Error("Failed to fetch users");
         const data = await response.json();
         setMetrics((prev) => ({
@@ -75,49 +75,65 @@ export default function Dashboard() {
       }
     };
 
-    const generateRandomData = () => {
-      const randomSales = Math.floor(Math.random() * 10000) + 1000;
-      const randomActiveUsers = Math.floor(Math.random() * 200) + 50;
+    const fetchOrders = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/orders`);
+        if (!response.ok) throw new Error("Failed to fetch orders");
+        const data = await response.json();
+        const orders = Array.isArray(data.orders) ? data.orders : [];
+        const orderCount = orders.length;
+        const completedOrders = orders.filter((order: any) => order.status === "Delivered").length;
 
-      setMetrics((prev) => ({
-        ...prev,
-        sales: randomSales,
-        activeUsers: randomActiveUsers,
-      }));
+        setMetrics((prev) => ({
+          ...prev,
+          orderCount,
+          completedOrders,
+        }));
 
-      const labels = Array.from({ length: 31 }, (_, i) => `Jul ${i + 1}`);
-      const salesTrend = Array.from(
-        { length: 31 },
-        () => Math.floor(Math.random() * 200) + 10
-      );
-      const activeUsersTrend = Array.from(
-        { length: 31 },
-        () => Math.floor(Math.random() * 200) + 50
-      );
+        // Generate chart data based on orders
+        const labels = Array.from({ length: 31 }, (_, i) => `Jul ${i + 1}`);
+        const orderTrend = Array.from({ length: 31 }, (_, i) => {
+          const daysWithOrders = Math.floor(orderCount * (i + 1) / 31); // Distribute orders across days
+          return daysWithOrders;
+        });
+        const completedTrend = Array.from({ length: 31 }, (_, i) => {
+          const daysWithCompleted = Math.floor(completedOrders * (i + 1) / 31); // Distribute completed orders across days
+          return daysWithCompleted;
+        });
 
-      setChartData({
-        labels,
-        datasets: [
-          {
-            label: "Sales Trend",
-            data: salesTrend,
-            borderColor: "rgb(75, 192, 192)",
-            tension: 0.1,
-          },
-          {
-            label: "Active Users Trend",
-            data: activeUsersTrend,
-            borderColor: "rgb(255, 99, 132)",
-            tension: 0.1,
-          },
-        ],
-      });
+        setChartData({
+          labels,
+          datasets: [
+            {
+              label: "Orders Count Trend",
+              data: orderTrend,
+              borderColor: "rgb(75, 192, 192)",
+              tension: 0.1,
+            },
+            {
+              label: "Completed Orders Trend",
+              data: completedTrend,
+              borderColor: "rgb(255, 99, 132)",
+              tension: 0.1,
+            },
+          ],
+        });
+      } catch (error) {
+        console.error("Failed to fetch orders:", error);
+        setMetrics((prev) => ({ ...prev, orderCount: 0, completedOrders: 0 }));
+        setChartData({
+          labels: Array.from({ length: 31 }, (_, i) => `Jul ${i + 1}`),
+          datasets: [
+            { label: "Orders Count Trend", data: Array(31).fill(0), borderColor: "rgb(75, 192, 192)", tension: 0.1 },
+            { label: "Completed Orders Trend", data: Array(31).fill(0), borderColor: "rgb(255, 99, 132)", tension: 0.1 },
+          ],
+        });
+      }
     };
 
     const fetchData = async () => {
       setLoading(true);
-      await fetchUsers();
-      generateRandomData();
+      await Promise.all([fetchUsers(), fetchOrders()]);
       setLoading(false);
     };
 
@@ -148,8 +164,8 @@ export default function Dashboard() {
             value={metrics.userCount}
             onClick={handleUserCountClick}
           />
-          <MetricsCard title="Sales" value={metrics.sales} />
-          <MetricsCard title="Active Users" value={metrics.activeUsers} />
+          <MetricsCard title="Order Count" value={metrics.orderCount} />
+          <MetricsCard title="Completed Orders" value={metrics.completedOrders} />
         </div>
         <div
           className="card bg-blue-200 p-6 rounded-lg shadow-lg"

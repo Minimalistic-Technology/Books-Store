@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { API_BASE_URL } from "../../../utils/api";
 
 const Header = dynamic(() => import("../../components/header/page"), { ssr: false });
+const defaultImageUrl = "https://images.pexels.com/photos/373465/pexels-photo-373465.jpeg";
 
 interface Item {
   _id: string;
@@ -44,12 +45,12 @@ export default function Overview() {
   const { id } = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const category = searchParams.get("category") || "School-Books";
+  const category = searchParams.get("category") || "Non-Academics"; // Updated default
   const [item, setItem] = useState<Item>({
     _id: "",
     name: "Loading...",
     price: 0,
-    imageUrl: "/images/placeholder.jpg",
+    imageUrl: defaultImageUrl,
     description: "",
     estimatedDelivery: "",
     tags: [],
@@ -66,7 +67,7 @@ export default function Overview() {
   const [discountedPrice, setDiscountedPrice] = useState(0);
   const [isOutOfStock, setIsOutOfStock] = useState(false);
   const [availableConditions, setAvailableConditions] = useState<string[]>([]);
-  const [viewers, setViewers] = useState(Math.floor(Math.random() * 50) + 1); 
+  const [viewers, setViewers] = useState(Math.floor(Math.random() * 50) + 1);
   const [rating, setRating] = useState(0);
   const [reviewDescription, setReviewDescription] = useState("");
   const [name, setName] = useState("");
@@ -94,7 +95,7 @@ export default function Overview() {
             _id: data._id || "",
             name: data.title || "Unknown Title",
             price: data.price || 0,
-            imageUrl: data.imageUrl || "/images/placeholder.jpg",
+            imageUrl: data.imageUrl || defaultImageUrl,
             description: data.description || "",
             estimatedDelivery: data.estimatedDelivery || "",
             tags: data.tags || [],
@@ -102,10 +103,10 @@ export default function Overview() {
             subCategory: data.subCategory || "",
             author: data.author || "",
             publisher: data.publisher || "",
-            quantityNew: data.quantityNew || 0,
-            quantityOld: data.quantityOld || 0,
-            discountNew: data.discountNew || 0,
-            discountOld: data.discountOld || 0,
+            quantityNew: data.quantityNew ?? 0,
+            quantityOld: data.quantityOld ?? 0,
+            discountNew: data.discountNew ?? 0,
+            discountOld: data.discountOld ?? 0,
           };
           setItem(newItem);
           setCondition(newItem.condition === "BOTH" ? "New" : newItem.condition === "NEW - ORIGINAL PRICE" ? "New" : "Old");
@@ -131,7 +132,7 @@ export default function Overview() {
             _id: "",
             name: "Not Found",
             price: 0,
-            imageUrl: "/images/placeholder.jpg",
+            imageUrl: defaultImageUrl,
             description: "",
             estimatedDelivery: "",
             tags: [],
@@ -272,10 +273,11 @@ export default function Overview() {
       const query = new URLSearchParams({
         _id: item._id,
         name: item.name,
-        price: effectivePrice.toFixed(2),
-        imageUrl: item.imageUrl,
+        price: item.price.toFixed(2), // Original price
+        imageUrl: item.imageUrl || defaultImageUrl,
         condition,
-        discountedPrice: discountedPrice.toFixed(2),
+        discountedPrice: effectivePrice.toFixed(2),
+        category, // Include category in query
       }).toString();
       console.log("Navigating to cart with query:", query);
       router.push(`/cart?${query}`);
@@ -288,10 +290,11 @@ export default function Overview() {
       const query = new URLSearchParams({
         _id: item._id,
         name: item.name,
-        price: effectivePrice.toFixed(2),
-        imageUrl: item.imageUrl,
+        price: item.price.toFixed(2), // Original price
+        imageUrl: item.imageUrl || defaultImageUrl,
         condition,
-        discountedPrice: discountedPrice.toFixed(2),
+        discountedPrice: effectivePrice.toFixed(2),
+        category,
       }).toString();
       console.log("Navigating to cart with query:", query);
       router.push(`/cart?${query}`);
@@ -328,19 +331,16 @@ export default function Overview() {
       <main className="flex-grow px-6 sm:px-8 md:px-12 py-6">
         <div className="flex flex-col lg:flex-row items-start">
           <div className="w-full lg:w-1/2 mb-6 lg:mb-0">
-            {item.imageUrl ? (
-              <Image
-                src={item.imageUrl}
-                alt={item.name}
-                width={300}
-                height={400}
-                className="w-full h-auto object-cover rounded-lg shadow-md"
-              />
-            ) : (
-              <div className="w-full h-[400px] flex items-center justify-center bg-gray-100 rounded-lg shadow-md">
-                <p className="text-gray-500">No image available</p>
-              </div>
-            )}
+            <Image
+              src={item.imageUrl || defaultImageUrl}
+              alt={item.name}
+              width={300}
+              height={400}
+              className="w-full h-auto object-cover rounded-lg shadow-md"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = defaultImageUrl;
+              }}
+            />
           </div>
           <div className="w-full lg:w-1/2 lg:pl-6">
             <h2 className="text-2xl font-semibold mb-4 text-gray-900">{item.name}</h2>
@@ -411,7 +411,7 @@ export default function Overview() {
             </div>
             <div className="mt-2">
               <h3 className="text-md font-medium text-gray-900">Category:</h3>
-              <p className="text-sm text-gray-600">{item.subCategory || "School Books"}</p>
+              <p className="text-sm text-gray-600">{item.subCategory || "Non-Academics"}</p>
             </div>
             <div className="mt-2">
               <h3 className="text-md font-medium text-gray-900">Author:</h3>
@@ -428,7 +428,8 @@ export default function Overview() {
             <div className="mt-4">
               <h3 className="text-md font-medium text-gray-900">Stock Availability:</h3>
               <p className="text-sm text-gray-600">
-                New: {item.quantityNew} {item.quantityNew === 0 ? "(Out of Stock)" : ""}, Old: {item.quantityOld} {item.quantityOld === 0 ? "(Out of Stock)" : ""}
+                New: {item.quantityNew} {item.quantityNew === 0 ? "(Out of Stock)" : ""}, 
+                Old: {item.quantityOld} {item.quantityOld === 0 ? "(Out of Stock)" : ""}
               </p>
             </div>
             <div className="mt-4">

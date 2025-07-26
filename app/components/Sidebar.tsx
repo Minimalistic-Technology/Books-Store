@@ -74,7 +74,7 @@ export default function Sidebar() {
                     : "hover:bg-yellow-200 hover:shadow-md animate__pulse"
                 }`}
               >
-                Order & Product Management
+                Orders
               </Link>
             </li>
             <li>

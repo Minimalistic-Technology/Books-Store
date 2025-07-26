@@ -5,14 +5,28 @@ import OrderList from "./components/OrderList";
 import { API_BASE_URL } from '../../../utils/api';
 
 export interface Order {
-     id: string
-    customerName: string
-    totalAmount: number 
-    status: "Pending" | "Processing" | "Shipped" | "Delivered" | "Cancelled"
-    createdAt: string
-    updatedAt?: string
+  id: string;
+  customerName: string;
+  totalAmount: number;
+  status: "Pending" | "Processing" | "Shipped" | "Delivered" | "Cancelled";
+  createdAt: string;
+  updatedAt?: string;
+  email: string;
+  mobileNumber: string;
+  address: {
+    street: string;
+    city: string;
+    state: string;
+    country: string;
+    pinCode: string;
+  };
+  paymentType: "Credit Card" | "Debit Card" | "UPI" | "Cash on Delivery";
+  quantity: number;
+  price: number;
+  condition: "New" | "Old";
+  title: string;
+  imageUrl?: string;
 }
-
 
 export default function OrderManagement() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -37,6 +51,15 @@ export default function OrderManagement() {
         status: item.status || "Pending",
         createdAt: item.createdAt || new Date().toISOString(),
         updatedAt: item.updatedAt,
+        email: item.email || "",
+        mobileNumber: item.mobileNumber || "",
+        address: item.address || { street: "", city: "", state: "", country: "", pinCode: "" },
+        paymentType: item.paymentType || "UPI",
+        quantity: item.quantity || 0,
+        price: item.price || 0,
+        condition: item.condition || "New",
+        title: item.title || "",
+        imageUrl: item.imageUrl || "",
       }));
       setOrders(mappedOrders);
       setError(null);
@@ -78,6 +101,15 @@ export default function OrderManagement() {
           status: updatedOrder.status,
           createdAt: updatedOrder.createdAt,
           updatedAt: updatedOrder.updatedAt || new Date().toISOString(),
+          email: updatedOrder.email,
+          mobileNumber: updatedOrder.mobileNumber,
+          address: updatedOrder.address,
+          paymentType: updatedOrder.paymentType,
+          quantity: updatedOrder.quantity,
+          price: updatedOrder.price,
+          condition: updatedOrder.condition,
+          title: updatedOrder.title,
+          imageUrl: updatedOrder.imageUrl,
         }),
       });
       if (!response.ok) throw new Error("Failed to update order");

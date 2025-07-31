@@ -1,4 +1,3 @@
-
 "use client";
 import Header from "../components/header/page";
 import Footer from "../components/footer/page";
@@ -7,16 +6,18 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faThLarge, faList } from "@fortawesome/free-solid-svg-icons";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { API_BASE_URL } from '../../utils/api';
 
 export default function CategoryPage() {
   const { category } = useParams();  
+  const searchParams = useSearchParams();
+  const tagFromUrl = searchParams.get("tag");
   const [books, setBooks] = useState<any[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(tagFromUrl ? [tagFromUrl] : []);
   const [priceRange, setPriceRange] = useState<string>("");
   const [status, setStatus] = useState<string>("");
   const [booksToShow, setBooksToShow] = useState<number>(0);
@@ -157,6 +158,7 @@ export default function CategoryPage() {
                     id={tag}
                     className="mr-2 accent-orange-500"
                     onChange={handleCategoryChange}
+                    checked={selectedCategories.includes(tag)}
                   />
                   <label htmlFor={tag} className="text-gray-800 text-sm">
                     {bookCountPerCategory[tag] > 0

@@ -1,21 +1,14 @@
-
 "use client";
 
 import Link from "next/link";
 import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUser, faShoppingCart, faBars, faSearch } from "@fortawesome/free-solid-svg-icons";
+import { faUser, faShoppingCart, faBars, faSearch, faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { API_BASE_URL } from '../../../utils/api';
-import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-} from "@/components/ui/navigation-menu";
 
 interface Category {
   _id: string;
@@ -35,9 +28,13 @@ interface SiteSettings {
   __v: number;
 }
 
+interface Tag {
+  tags: string[];
+}
+
 export default function Header() {
   const router = useRouter();
-  const [isMenuOpen, setIsMenuOpen] = useState(true);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,6 +42,9 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [tagsByCategory, setTagsByCategory] = useState<{ [key: string]: string[] }>({});
+  const [expandedMobileCategory, setExpandedMobileCategory] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -106,6 +106,21 @@ export default function Header() {
     fetchCategories();
   }, []);
 
+  const fetchTagsForCategory = async (categoryName: string) => {
+    if (tagsByCategory[categoryName]) return;
+    try {
+      const response = await fetch(`${API_BASE_URL}/book-categories/${encodeURIComponent(categoryName)}/tags`);
+      if (!response.ok) throw new Error(`Failed to fetch tags for ${categoryName}`);
+      const data: Tag = await response.json();
+      setTagsByCategory((prev) => ({
+        ...prev,
+        [categoryName]: data.tags || [],
+      }));
+    } catch (err) {
+      console.error(`Error fetching tags for ${categoryName}:`, err);
+    }
+  };
+
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) {
@@ -134,6 +149,17 @@ export default function Header() {
       setSearchError("Failed to perform search. Please try again later.");
     } finally {
       setSearchLoading(false);
+    }
+  };
+
+  const handleMobileCategoryToggle = (categoryName: string) => {
+    if (categoryName === "Request Your Book") return;
+    
+    if (expandedMobileCategory === categoryName) {
+      setExpandedMobileCategory(null);
+    } else {
+      setExpandedMobileCategory(categoryName);
+      fetchTagsForCategory(categoryName);
     }
   };
 
@@ -221,7 +247,8 @@ export default function Header() {
       </div>
 
       <nav className="bg-yellow-200 p-2 sm:p-4">
-        <div className="lg:hidden flex justify-end px-4">
+        {/* Mobile/Tablet Menu Toggle */}
+        <div className="xl:hidden flex justify-end px-4">
           <Button
             variant="ghost"
             size="icon"
@@ -231,6 +258,7 @@ export default function Header() {
             <FontAwesomeIcon icon={faBars} size="lg" className="text-2xl" />
           </Button>
         </div>
+        
         {loading ? (
           <div className="flex items-center justify-center p-4">
             <svg
@@ -256,43 +284,134 @@ export default function Header() {
             <span>Loading...</span>
           </div>
         ) : error ? (
-          <p className="text-red-500 textಮ text-center p-4">{error}</p>
+          <p className="text-red-500 text-center p-4">{error}</p>
         ) : (
           <>
+            {/* Mobile/Tablet Menu */}
             <ul
               className={`${
                 isMenuOpen ? "block" : "hidden"
-              } lg:hidden p-2 space-y-2 bg-yellow-200`}
+              } xl:hidden p-4 space-y-2 bg-yellow-200`}
             >
               {categories.map(({ _id, name }) => (
                 <li key={_id}>
-                  <Link
-                    href={name === "Request Your Book" ? "/request-book" : `/${name.toLowerCase().replace(/ /g, '-')}`}
-                    className={`block text-gray-800 font-bold text-sm p-2 hover:bg-orange-500 hover:text-white rounded transition-colors duration-300 ${
-                      name === "Request Your Book" ? "bg-black text-white" : ""
-                    }`}
-                  >
-                    {name}
-                  </Link>
+                  <div className="flex items-center justify-between">
+                    <Link
+                      href={name === "Request Your Book" ? "/request-book" : `/${name.toLowerCase().replace(/ /g, '-')}`}
+                      className={`flex-1 text-gray-800 font-medium text-sm p-2 transition-all duration-300 ${
+                        name === "Request Your Book" 
+                          ? "bg-black text-white hover:bg-gray-800" 
+                          : "hover:bg-orange-500 hover:text-white"
+                      }`}
+                      onClick={() => {
+                        if (name === "Request Your Book") {
+                          setIsMenuOpen(false);
+                        }
+                      }}
+                    >
+                      {name}
+                    </Link>
+                    {name !== "Request Your Book" && (
+                      <button
+                        onClick={() => handleMobileCategoryToggle(name)}
+                        className="p-2 text-gray-600 hover:text-orange-600"
+                        aria-label={`Toggle ${name} subcategories`}
+                      >
+                        <FontAwesomeIcon
+                          icon={expandedMobileCategory === name ? faChevronUp : faChevronDown}
+                          className="h-3 w-3"
+                        />
+                      </button>
+                    )}
+                  </div>
+                  {expandedMobileCategory === name && tagsByCategory[name] && (
+                    <div className="mt-2 bg-white shadow-lg">
+                      <ul className="py-2">
+                        {tagsByCategory[name].length > 0 ? (
+                          tagsByCategory[name].map((tag) => (
+                            <li key={tag}>
+                              <Link
+                                href={`/${name.toLowerCase().replace(/ /g, '-')}/?tag=${encodeURIComponent(tag)}`}
+                                className="block text-gray-600 text-sm p-2 hover:text-white hover:bg-orange-50 transition-colors duration-200"
+                                onClick={() => {
+                                  setIsMenuOpen(false);
+                                  setExpandedMobileCategory(null);
+                                }}
+                              >
+                                {tag}
+                              </Link>
+                            </li>
+                          ))
+                        ) : (
+                          <li className="text-gray-500 text-sm p-2 italic">No subcategories available</li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
-            <NavigationMenu className="hidden lg:block">
-              <NavigationMenuList className="flex justify-between p-2 sm:p-4 space-x-2">
+
+            {/* Desktop Menu */}
+            <div className="hidden xl:block relative">
+              <ul className="flex justify-center p-2 space-x-1 flex-wrap">
                 {categories.map(({ _id, name }) => (
-                  <NavigationMenuItem key={_id}>
-                    <NavigationMenuLink
-                      href={name === "Request Your Book" ? "/request-book" : `/${name.toLowerCase().replace(/ /g, '-')}`}
-                      className={`text-gray-800 font-bold text-sm sm:text-base p-2 hover:bg-orange-500 hover:text-white rounded transition-colors duration-300 ${
-                        name === "Request Your Book" ? "bg-black text-white" : ""
-                      }`}
-                    >
-                      {name}
-                    </NavigationMenuLink>
-                  </NavigationMenuItem>
+                  <li 
+                    key={_id} 
+                    className="relative"
+                    onMouseEnter={() => {
+                      if (name !== "Request Your Book") {
+                        setActiveDropdown(name);
+                        fetchTagsForCategory(name);
+                      }
+                    }}
+                    onMouseLeave={() => setActiveDropdown(null)}
+                  >
+                    {name === "Request Your Book" ? (
+                      <Link
+                        href="/request-book"
+                        className="inline-block font-bold text-md  px-3 py-2 bg-black text-white hover:bg-gray-800 transition-all duration-300"
+                      >
+                        {name}
+                      </Link>
+                    ) : (
+                      <>
+                        <Link
+                          href={`/${name.toLowerCase().replace(/ /g, '-')}`}
+                          className={`inline-block text-gray-800 font-bold text-md px-3 py-2 transition-all duration-300 ${
+                            activeDropdown === name 
+                              ? 'bg-orange-500 text-white' 
+                              : 'hover:bg-orange-500 hover:text-white'
+                          }`}
+                        >
+                          {name}
+                        </Link>
+                        {activeDropdown === name && tagsByCategory[name] && (
+                          <div className="absolute top-full left-0 z-50 mt-0 w-[280px] bg-white shadow-2xl overflow-hidden">
+                            <ul className="py-1">
+                              {tagsByCategory[name].length > 0 ? (
+                                tagsByCategory[name].map((tag) => (
+                                  <li key={tag}>
+                                    <Link
+                                      href={`/${name.toLowerCase().replace(/ /g, '-')}/?tag=${encodeURIComponent(tag)}`}
+                                      className="block text-gray-700 font-bold text-md px-3 py-2 hover:bg-orange-600 hover:text-white transition-all duration-200"
+                                    >
+                                      {tag}
+                                    </Link>
+                                  </li>
+                                ))
+                              ) : (
+                                <li className="text-gray-500 font-bold text-md px-3 py-2 italic">No subcategories available</li>
+                              )}
+                            </ul>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </li>
                 ))}
-              </NavigationMenuList>
-            </NavigationMenu>
+              </ul>
+            </div>
           </>
         )}
       </nav>

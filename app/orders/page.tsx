@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import Header from "../components/header/page";
 import Footer from "../components/footer/page";
@@ -7,12 +8,29 @@ import Image from "next/image";
 import { API_BASE_URL } from '../../utils/api';
 
 interface Order {
-  _id: string;
+  id: string;
   customerName: string;
-  price?: number;
-  status: string;
-  title: string;
-  imageUrl: string | null;
+  email: string;
+  mobileNumber: string;
+  address: {
+    street: string;
+    city: string;
+    state: string;
+    country: string;
+    pinCode: string;
+  };
+  paymentType: 'Credit Card' | 'Debit Card' | 'UPI' | 'Cash on Delivery';
+  quantity: number;
+  price: number;
+  status: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
+  condition: 'New' | 'Old';
+  createdAt: string;
+  updatedAt: string;
+  bookId: string;
+  date?: string;
+  title?: string;
+  imageUrl?: string | null;
+  cancelReason?: string | null;
 }
 
 const OrdersPage = () => {
@@ -20,6 +38,25 @@ const OrdersPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [cancelReasons, setCancelReasons] = useState<{ [key: string]: string }>({});
+  const [customReasons, setCustomReasons] = useState<{ [key: string]: string }>({});
+  const [reasonOptions, setReasonOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchCancelReasons = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/cancel-reasons`, {
+          cache: "no-store",
+        });
+        if (!response.ok) throw new Error(`Failed to fetch cancel reasons: ${response.status}`);
+        const data = await response.json();
+        console.log("Cancel reasons response:", data);
+        setReasonOptions(data.reasons || []);
+      } catch (err: any) {
+        console.error("Error fetching cancel reasons:", err);
+      }
+    };
+    fetchCancelReasons();
+  }, []);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -33,9 +70,33 @@ const OrdersPage = () => {
           throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
         }
         const data = await response.json();
-        setOrders(data.orders || []);
+        console.log("Raw orders API response:", data);
+        const ordersArray = Array.isArray(data) ? data : data.orders || [];
+        console.log("Orders array:", ordersArray);
+        const mappedOrders = ordersArray.map((order: any) => ({
+          id: order._id,
+          customerName: order.customerName,
+          email: order.email,
+          mobileNumber: order.mobileNumber,
+          address: order.address,
+          paymentType: order.paymentType,
+          quantity: order.quantity,
+          price: order.price,
+          status: order.status,
+          condition: order.condition,
+          createdAt: order.createdAt,
+          updatedAt: order.updatedAt,
+          bookId: order.bookId,
+          date: order.date,
+          title: order.title || "Unknown Book",
+          imageUrl: order.imageUrl || null,
+          cancelReason: order.cancelReason || null,
+        }));
+        console.log("Mapped orders:", mappedOrders);
+        setOrders(mappedOrders);
         setError(null);
       } catch (err: any) {
+        console.error("Error fetching orders:", err);
         setError(err.message || "Failed to fetch orders. Please try again later.");
       } finally {
         setLoading(false);
@@ -45,20 +106,39 @@ const OrdersPage = () => {
   }, []);
 
   const handleCancelOrder = async (orderId: string) => {
+    console.log("Attempting to cancel order with ID:", orderId);
+    if (!orderId) {
+      console.error("Order ID is undefined");
+      setError("Invalid order ID.");
+      return;
+    }
+    const reason = cancelReasons[orderId] === "Other" ? customReasons[orderId] || "" : cancelReasons[orderId];
+    if (!reason) {
+      setError("Please select or enter a cancellation reason.");
+      return;
+    }
     try {
-      const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
-        method: "PUT",
+      const response = await fetch(`${API_BASE_URL}/orders/${orderId}/cancel`, {
+        method: "POST", 
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "Cancelled", reason: cancelReasons[orderId] || "" }),
+        body: JSON.stringify({ reason }),
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
       }
       const updatedOrder = await response.json();
+      console.log("Cancel order response:", updatedOrder);
       setOrders((prev) =>
         prev.map((order) =>
-          order._id === orderId ? { ...order, status: updatedOrder.order.status } : order
+          order.id === orderId
+            ? {
+                ...order,
+                status: updatedOrder.order.status,
+                cancelReason: updatedOrder.order.cancelReason,
+                updatedAt: updatedOrder.order.updatedAt, 
+              }
+            : order
         )
       );
       setCancelReasons((prev) => {
@@ -66,7 +146,14 @@ const OrdersPage = () => {
         delete newReasons[orderId];
         return newReasons;
       });
+      setCustomReasons((prev) => {
+        const newCustomReasons = { ...prev };
+        delete newCustomReasons[orderId];
+        return newCustomReasons;
+      });
+      setError(null);
     } catch (err: any) {
+      console.error("Error cancelling order:", err);
       setError(err.message || "Failed to cancel order. Please try again.");
     }
   };
@@ -77,7 +164,7 @@ const OrdersPage = () => {
       <main className="flex-grow p-6 w-full max-w-6xl mx-auto">
         <h1 className="text-3xl font-semibold mb-6">Your Orders</h1>
         {loading && <p className="text-yellow-900">Loading...</p>}
-        {error && <p className="text-red-500 mb-4">Failed to fetch orders. Please try again later.</p>}
+        {error && <p className="text-red-500 mb-4">{error}</p>}
         {orders.length === 0 && !loading ? (
           <p className="text-yellow-900">
             No orders found.{" "}
@@ -86,10 +173,10 @@ const OrdersPage = () => {
             </Link>
           </p>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto scrollable-orders">
             <div className="grid grid-cols-1 gap-4">
               {orders.map((order) => (
-                <div key={order._id} className="bg-white p-4 rounded-lg shadow-md flex items-center justify-between w-full">
+                <div key={order.id} className="bg-white p-4 rounded-lg shadow-md flex items-center justify-between w-full">
                   <div className="flex items-center space-x-4">
                     {order.imageUrl ? (
                       <Image
@@ -134,27 +221,46 @@ const OrdersPage = () => {
                           {order.status}
                         </span>
                       </p>
+                      {order.cancelReason && (
+                        <p className="text-sm text-gray-600">
+                          Cancel Reason: {order.cancelReason}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex space-x-2 items-center">
                     {(order.status === "Processing" || order.status === "Shipped") && (
-                      <select
-                        value={cancelReasons[order._id] || ""}
-                        onChange={(e) => setCancelReasons((prev) => ({ ...prev, [order._id]: e.target.value }))}
-                        className="px-2 py-1 border rounded-lg text-gray-900"
-                      >
-                        <option value="" disabled>Select a reason</option>
-                        <option value="I changed my mind">I changed my mind</option>
-                        <option value="Found a better price">Found a better price</option>
-                        <option value="Item not needed">Item not needed</option>
-                        <option value="Other">Other</option>
-                      </select>
+                      <div className="flex flex-col space-y-2">
+                        <select
+                          value={cancelReasons[order.id] || ""}
+                          onChange={(e) => setCancelReasons((prev) => ({ ...prev, [order.id]: e.target.value }))}
+                          className="px-2 py-1 border rounded-lg text-gray-900"
+                        >
+                          <option value="" disabled>Select a reason</option>
+                          {reasonOptions.map((reason) => (
+                            <option key={reason} value={reason}>
+                              {reason}
+                            </option>
+                          ))}
+                        </select>
+                        {cancelReasons[order.id] === "Other" && (
+                          <input
+                            type="text"
+                            value={customReasons[order.id] || ""}
+                            onChange={(e) =>
+                              setCustomReasons((prev) => ({ ...prev, [order.id]: e.target.value }))
+                            }
+                            placeholder="Enter custom reason"
+                            className="px-2 py-1 border rounded-lg text-gray-900"
+                          />
+                        )}
+                      </div>
                     )}
                     <button
-                      onClick={() => handleCancelOrder(order._id)}
-                      disabled={order.status === "Cancelled" || order.status === "Delivered" || !cancelReasons[order._id]}
+                      onClick={() => handleCancelOrder(order.id)}
+                      disabled={order.status === "Cancelled" || order.status === "Delivered" || !cancelReasons[order.id] || (cancelReasons[order.id] === "Other" && !customReasons[order.id])}
                       className={`px-3 py-1 rounded-lg text-white transition-all ${
-                        order.status === "Cancelled" || order.status === "Delivered" || !cancelReasons[order._id]
+                        order.status === "Cancelled" || order.status === "Delivered" || !cancelReasons[order.id] || (cancelReasons[order.id] === "Other" && !customReasons[order.id])
                           ? "bg-gray-400 cursor-not-allowed"
                           : "bg-red-500 hover:bg-red-600"
                       }`}

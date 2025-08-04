@@ -115,30 +115,6 @@ export default function Home() {
           </section>
         ) : (
           <>
-            <section className="mb-8">
-              <h2 className="text-2xl font-semibold mb-4 px-29 text-black">Shop by Class</h2>
-              <div className="w-full max-w-xs mx-auto">
-                <select
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      window.location.href = e.target.value;
-                    }
-                  }}
-                  className="w-full p-2 border-2 border-orange-400 rounded-lg text-black text-center focus:outline-none focus:ring-2 focus:ring-orange-500"
-                >
-                  <option value="">Select a Class</option>
-                  {['Class I', 'Class II', 'Class III', 'Class IV', 'Class V', 'Class VI', 'Class VII', 'Class VIII', 'Class IX', 'Class X', 'Class XI', 'Class XII'].map((className) => (
-                    <option
-                      key={className}
-                      value={`/shop/${className.toLowerCase().replace(' ', '-')}`}
-                    >
-                      {className}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </section>
-
             <section className="mb-20">
               <h2 className="text-2xl font-semibold mb-4 px-29 text-black">Best Sellers</h2>
               <div className="px-29 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">

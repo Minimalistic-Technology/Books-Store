@@ -1,4 +1,3 @@
-// tailwind.config.js
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
@@ -9,8 +8,8 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: 'var(--font-sans)',       // Arial
-        heading: 'var(--font-heading)', // Georgia
+        sans: 'var(--font-sans)',
+        heading: 'var(--font-heading)',
       },
     },
   },

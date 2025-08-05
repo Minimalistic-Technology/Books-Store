@@ -1,15 +1,19 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
-import { Content } from "../page"; 
-import { API_BASE_URL } from '../../../../utils/api';
+import { Content } from "../page";
+import { API_BASE_URL } from "../../../../utils/api";
+
+interface SubCategory {
+  name: string;
+  subSubCategories: string[];
+}
 
 interface ContentFormProps {
   content?: Content;
   onClose: () => void;
   onSave: (data: Content) => Promise<void>;
-  categories: { name: string; tags: string[] }[];
+  categories: { name: string; tags: string[]; subCategories: SubCategory[] }[];
 }
 
 export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSave, categories }) => {
@@ -19,6 +23,7 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
     title: content?.title || "",
     categoryName: content?.categoryName || "",
     subCategory: content?.subCategory || "",
+    subSubCategory: content?.subSubCategory || "",
     tags: content?.tags || "",
     seoTitle: content?.seoTitle || "",
     seoDescription: content?.seoDescription || "",
@@ -34,32 +39,46 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
     discountNew: content?.discountNew || 0,
     discountOld: content?.discountOld || 0,
   });
-  const [tags, setTags] = useState<string[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+  const [subSubCategories, setSubSubCategories] = useState<string[]>([]);
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
 
   useEffect(() => {
-    const fetchTags = async () => {
+    const fetchSubCategories = async () => {
       if (!formData.categoryName) {
-        setTags([]);
+        setSubCategories([]);
+        setSubSubCategories([]);
         return;
       }
       try {
-        const url = `${API_BASE_URL}/book-categories/${encodeURIComponent(formData.categoryName)}/tags`;
+        const url = `${API_BASE_URL}/book-categories/${encodeURIComponent(formData.categoryName)}`;
         const response = await fetch(url);
-        if (!response.ok) throw new Error(`Failed to fetch tags: ${response.statusText}`);
+        if (!response.ok) throw new Error(`Failed to fetch subcategories: ${response.statusText}`);
         const data = await response.json();
-        setTags(data.tags || []);
+        setSubCategories(data.subCategories || []);
         setError("");
+        if (!data.subCategories.find((sub: SubCategory) => sub.name === formData.subCategory)) {
+          setFormData((prev) => ({ ...prev, subCategory: "", subSubCategory: "" }));
+        }
       } catch (err: any) {
-        console.error("Error fetching tags:", err);
-        setError(`Failed to load tags for ${formData.categoryName}: ${err.message}`);
-        setTags([]);
+        console.error("Error fetching subcategories:", err);
+        setError(`Failed to load subcategories for ${formData.categoryName}: ${err.message}`);
+        setSubCategories([]);
+        setSubSubCategories([]);
       }
     };
-    fetchTags();
+    fetchSubCategories();
   }, [formData.categoryName]);
+
+  useEffect(() => {
+    const selectedSubCategory = subCategories.find((sub) => sub.name === formData.subCategory);
+    setSubSubCategories(selectedSubCategory?.subSubCategories || []);
+    if (!selectedSubCategory || !selectedSubCategory.subSubCategories.includes(formData.subSubCategory)) {
+      setFormData((prev) => ({ ...prev, subSubCategory: "" }));
+    }
+  }, [formData.subCategory, subCategories]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -110,9 +129,7 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
         formData.append("upload_preset", uploadPreset);
         formData.append("cloud_name", cloudName);
         formData.append("folder", "bookstore");
-        // Add transformation for consistent height (300px) and crop to maintain aspect ratio
         formData.append("transformation", JSON.stringify([{ height: 300, crop: "fill" }]));
-
         const response = await fetch(
           `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
           {
@@ -147,6 +164,7 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
         "title",
         "categoryName",
         "subCategory",
+        "subSubCategory",
         "tags",
         "price",
         "description",
@@ -193,7 +211,7 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
         return;
       }
 
-      if (imageUrl !== defaultImageUrl && !imageUrl.startsWith('https://res.cloudinary.com/')) {
+      if (imageUrl !== defaultImageUrl && !imageUrl.startsWith("https://res.cloudinary.com/")) {
         setError("Image URL must be a valid Cloudinary URL or the default image");
         setIsSubmitting(false);
         return;
@@ -208,6 +226,7 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
         discountNew: formData.discountNew ?? 0,
         discountOld: formData.discountOld ?? 0,
         categoryName: formData.categoryName,
+        subSubCategory: formData.subSubCategory,
       };
 
       console.log("Data being sent:", dataToSend);
@@ -287,9 +306,30 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
                 <option value="" disabled>
                   Select a subcategory
                 </option>
-                {tags.map((tag) => (
-                  <option key={tag} value={tag}>
-                    {tag}
+                {subCategories.map((sub) => (
+                  <option key={sub.name} value={sub.name}>
+                    {sub.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Sub-Subcategory *</label>
+              <select
+                name="subSubCategory"
+                value={formData.subSubCategory}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                required
+                disabled={isSubmitting || !formData.subCategory}
+              >
+                <option value="" disabled>
+                  Select a sub-subcategory
+                </option>
+                {subSubCategories.map((subSub) => (
+                  <option key={subSub} value={subSub}>
+                    {subSub}
                   </option>
                 ))}
               </select>
@@ -443,7 +483,7 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
                 <img
                   src={formData.imageUrl || defaultImageUrl}
                   alt="Preview"
-                  className="h-48 w-auto object-cover rounded-md" // Adjusted to 300px height for preview
+                  className="h-48 w-auto object-cover rounded-md"
                 />
               </div>
             </div>

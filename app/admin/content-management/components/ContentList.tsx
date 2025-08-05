@@ -1,6 +1,5 @@
-
 import React from "react";
-import { Content } from "../page"; 
+import { Content } from "../page";
 
 interface ContentListProps {
   contents: Content[];
@@ -21,6 +20,7 @@ const ContentList: React.FC<ContentListProps> = ({ contents, onEdit, onDelete })
               <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Title</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Category</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Subcategory</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Sub-Subcategory</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Tags</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Author</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Publisher</th>
@@ -53,6 +53,7 @@ const ContentList: React.FC<ContentListProps> = ({ contents, onEdit, onDelete })
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.title}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.categoryName}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.subCategory}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.subSubCategory}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.tags}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.author}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.publisher}</td>

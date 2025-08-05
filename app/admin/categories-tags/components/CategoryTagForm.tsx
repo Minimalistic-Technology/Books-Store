@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { API_BASE_URL } from '../../../../utils/api';
 
 type CategoryTagFormProps = {
@@ -9,14 +9,14 @@ type CategoryTagFormProps = {
     name?: string;
     seoTitle?: string;
     seoDescription?: string;
-    tags?: string[]; 
+    tags?: string[];
   };
   onClose: () => void;
   onSave: (data: {
     id?: string;
     name: string;
-    seoTitle: string;
-    seoDescription: string;
+    seoTitle?: string; // Made optional
+    seoDescription?: string; // Made optional
   }) => void;
 };
 
@@ -26,23 +26,22 @@ export default function CategoryTagForm({ item, onClose, onSave }: CategoryTagFo
     name: item?.name || "",
     seoTitle: item?.seoTitle || "",
     seoDescription: item?.seoDescription || "",
-    tags: item?.tags || [], 
+    tags: item?.tags || [],
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    setErrors((prev) => ({ ...prev, [name]: "" })); 
+    setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const newErrors: { [key: string]: string } = {};
     if (!formData.name.trim()) newErrors.name = "Name is required";
-    if (!formData.seoTitle.trim()) newErrors.seoTitle = "SEO Title is required";
-    if (!formData.seoDescription.trim()) newErrors.seoDescription = "SEO Description is required";
 
+    // Removed required validation for seoTitle and seoDescription
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -51,9 +50,9 @@ export default function CategoryTagForm({ item, onClose, onSave }: CategoryTagFo
     const dataToSave = {
       id: formData.id,
       name: formData.name,
-      seoTitle: formData.seoTitle,
-      seoDescription: formData.seoDescription,
-      tags: formData.tags, 
+      seoTitle: formData.seoTitle || undefined, // Send undefined if empty
+      seoDescription: formData.seoDescription || undefined, // Send undefined if empty
+      tags: formData.tags,
     };
 
     try {
@@ -68,7 +67,7 @@ export default function CategoryTagForm({ item, onClose, onSave }: CategoryTagFo
         response = await fetch(`${API_BASE_URL}/book-categories`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify([dataToSave]), 
+          body: JSON.stringify(dataToSave), // Removed array wrapping
         });
       }
       if (!response.ok) {
@@ -76,9 +75,8 @@ export default function CategoryTagForm({ item, onClose, onSave }: CategoryTagFo
         throw new Error(errorData.error || "Failed to save category");
       }
       const savedData = await response.json();
-      const savedCategory = Array.isArray(savedData) ? savedData[0] : savedData;
       onSave({
-        id: savedCategory._id || formData.id || Date.now().toString(),
+        id: savedData._id || formData.id || Date.now().toString(),
         name: formData.name,
         seoTitle: formData.seoTitle,
         seoDescription: formData.seoDescription,
@@ -117,7 +115,6 @@ export default function CategoryTagForm({ item, onClose, onSave }: CategoryTagFo
                 onChange={handleChange}
                 placeholder="SEO Title (e.g., Fiction Books 2025)"
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                required
               />
               {errors.seoTitle && <p className="text-red-500 text-sm mt-1">{errors.seoTitle}</p>}
             </div>
@@ -128,7 +125,6 @@ export default function CategoryTagForm({ item, onClose, onSave }: CategoryTagFo
                 onChange={handleChange}
                 placeholder="SEO Description (e.g., Explore Fiction Books 2025)"
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 h-20 resize-y"
-                required
               />
               {errors.seoDescription && <p className="text-red-500 text-sm mt-1">{errors.seoDescription}</p>}
             </div>

@@ -4,14 +4,20 @@ import { useState, useEffect, useCallback } from "react";
 import ContentList from "./components/ContentList";
 import { ContentForm } from "./components/ContentForm";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faAngleDoubleLeft, faAngleLeft, faAngleRight, faAngleDoubleRight } from "@fortawesome/free-solid-svg-icons";
-import { API_BASE_URL } from '../../../utils/api';
+import {
+  faAngleDoubleLeft,
+  faAngleLeft,
+  faAngleRight,
+  faAngleDoubleRight,
+} from "@fortawesome/free-solid-svg-icons";
+import { API_BASE_URL } from "../../../utils/api";
 
 export interface Content {
   id?: string;
   title: string;
   categoryName: string;
   subCategory: string;
+  subSubCategory: string;
   tags: string;
   seoTitle: string;
   seoDescription: string;
@@ -31,10 +37,16 @@ export interface Content {
   updatedAt?: string;
 }
 
+interface SubCategory {
+  name: string;
+  subSubCategories: string[];
+}
+
 interface Category {
   _id: string;
   name: string;
   tags: string[];
+  subCategories: SubCategory[];
 }
 
 export const updateProducts = (
@@ -48,14 +60,19 @@ export default function ContentManagement() {
   const [contents, setContents] = useState<Content[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingContent, setEditingContent] = useState<Content | undefined>(undefined);
+  const [editingContent, setEditingContent] = useState<Content | undefined>(
+    undefined
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>("");
   const [successMessage, setSuccessMessage] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [newTag, setNewTag] = useState<string>("");
-  const [tagToEdit, setTagToEdit] = useState<string>("");
-  const [editTag, setEditTag] = useState<string>("");
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string>("");
+  const [newSubCategory, setNewSubCategory] = useState<string>("");
+  const [newSubSubCategory, setNewSubSubCategory] = useState<string>("");
+  const [subCategoryToDelete, setSubCategoryToDelete] = useState<string>("");
+  const [subSubCategoryToDelete, setSubSubCategoryToDelete] =
+    useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const itemsPerPage = 10;
@@ -72,7 +89,9 @@ export default function ContentManagement() {
       const fetchPromises = categoriesData.map(async (category: Category) => {
         try {
           const booksResponse = await fetch(
-            `${API_BASE_URL}/book-categories/${encodeURIComponent(category.name)}`
+            `${API_BASE_URL}/book-categories/${encodeURIComponent(
+              category.name
+            )}`
           );
           if (!booksResponse.ok) {
             console.warn(`Failed to fetch books for ${category.name}`);
@@ -82,10 +101,13 @@ export default function ContentManagement() {
           const books = Array.isArray(booksData.books) ? booksData.books : [];
           return books.map((book: any) => ({
             id: book._id,
-            title: book.title || "",
+            title: book.bookName || book.title || "",
             categoryName: category.name,
             subCategory: book.subCategory || "",
-            tags: Array.isArray(book.tags) ? book.tags.join(", ") : book.tags || "",
+            subSubCategory: book.subSubCategory || "",
+            tags: Array.isArray(book.tags)
+              ? book.tags.join(", ")
+              : book.tags || "",
             seoTitle: book.seoTitle || "",
             seoDescription: book.seoDescription || "",
             price: book.price || 0,
@@ -104,7 +126,10 @@ export default function ContentManagement() {
             updatedAt: book.updatedAt || "",
           }));
         } catch (error) {
-          console.error(`Error fetching books for category ${category.name}:`, error);
+          console.error(
+            `Error fetching books for category ${category.name}:`,
+            error
+          );
           return [];
         }
       });
@@ -125,29 +150,42 @@ export default function ContentManagement() {
   }, [fetchCategoriesAndContents]);
 
   useEffect(() => {
-    const fetchTags = async () => {
-      if (!selectedCategory) return;
+    if (!selectedCategory) {
+      setSelectedSubCategory("");
+      setSubCategoryToDelete("");
+      setSubSubCategoryToDelete("");
+      return;
+    }
+    const fetchCategoryData = async () => {
       try {
         const response = await fetch(
-          `${API_BASE_URL}/book-categories/${encodeURIComponent(selectedCategory)}/tags`
+          `${API_BASE_URL}/book-categories/${encodeURIComponent(
+            selectedCategory
+          )}`
         );
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || "Failed to fetch tags");
+          throw new Error(errorData.error || "Failed to fetch category data");
         }
         const data = await response.json();
         setCategories((prev) =>
           prev.map((cat) =>
-            cat.name === selectedCategory ? { ...cat, tags: data.tags || [] } : cat
+            cat.name === selectedCategory
+              ? {
+                  ...cat,
+                  tags: data.tags || [],
+                  subCategories: data.subCategories || [],
+                }
+              : cat
           )
         );
         setError("");
       } catch (err: any) {
-        setError(err.message || `Failed to load tags for ${selectedCategory}`);
+        setError(err.message || `Failed to load data for ${selectedCategory}`);
         setTimeout(() => setError(""), 5000);
       }
     };
-    fetchTags();
+    fetchCategoryData();
   }, [selectedCategory]);
 
   const handleSave = async (data: Content) => {
@@ -155,22 +193,37 @@ export default function ContentManagement() {
       setIsLoading(true);
       const isUpdate = Boolean(data.id);
       const url = isUpdate
-        ? `${API_BASE_URL}/book-categories/${encodeURIComponent(data.categoryName)}/${data.id}`
-        : `${API_BASE_URL}/book-categories/${encodeURIComponent(data.categoryName)}`;
+        ? `${API_BASE_URL}/book-categories/${encodeURIComponent(
+            data.categoryName
+          )}/${encodeURIComponent(data.subCategory)}/${encodeURIComponent(
+            data.subSubCategory
+          )}/${data.id}`
+        : `${API_BASE_URL}/book-categories/${encodeURIComponent(
+            data.categoryName
+          )}/${encodeURIComponent(data.subCategory)}/${encodeURIComponent(
+            data.subSubCategory
+          )}`;
       const response = await fetch(url, {
         method: isUpdate ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...data,
-          tags: typeof data.tags === "string" ? data.tags.split(",").map((tag) => tag.trim()) : data.tags,
+          title: data.title, // Ensure title is sent as title
+          tags:
+            typeof data.tags === "string"
+              ? data.tags.split(",").map((tag) => tag.trim())
+              : data.tags,
           discountNew: data.discountNew ?? 0,
           discountOld: data.discountOld ?? 0,
+          subSubCategory: data.subSubCategory,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to ${isUpdate ? "update" : "create"} book`);
+        throw new Error(
+          errorData.error || `Failed to ${isUpdate ? "update" : "create"} book`
+        );
       }
 
       const savedBook = await response.json();
@@ -178,10 +231,13 @@ export default function ContentManagement() {
 
       const updatedBook: Content = {
         id: bookData._id,
-        title: bookData.title,
+        title: bookData.bookName || bookData.title,
         categoryName: data.categoryName,
         subCategory: bookData.subCategory,
-        tags: Array.isArray(bookData.tags) ? bookData.tags.join(", ") : bookData.tags || "",
+        subSubCategory: bookData.subSubCategory,
+        tags: Array.isArray(bookData.tags)
+          ? bookData.tags.join(", ")
+          : bookData.tags || "",
         seoTitle: bookData.seoTitle || "",
         seoDescription: bookData.seoDescription || "",
         price: bookData.price,
@@ -202,16 +258,22 @@ export default function ContentManagement() {
 
       setContents((prev) =>
         isUpdate
-          ? prev.map((content) => (content.id === data.id ? updatedBook : content))
+          ? prev.map((content) =>
+              content.id === data.id ? updatedBook : content
+            )
           : [...prev, updatedBook]
       );
-      setSuccessMessage(`Book ${isUpdate ? "updated" : "created"} successfully`);
+      setSuccessMessage(
+        `Book ${isUpdate ? "updated" : "created"} successfully`
+      );
       setTimeout(() => setSuccessMessage(""), 3000);
       setIsFormOpen(false);
       setEditingContent(undefined);
-      await fetchCategoriesAndContents(); // Refresh categories to include new tags
+      await fetchCategoriesAndContents();
     } catch (err: any) {
-      setError(err.message || `Failed to ${data.id ? "update" : "create"} book`);
+      setError(
+        err.message || `Failed to ${data.id ? "update" : "create"} book`
+      );
       setTimeout(() => setError(""), 5000);
     } finally {
       setIsLoading(false);
@@ -227,8 +289,16 @@ export default function ContentManagement() {
     if (!confirm("Are you sure you want to delete this book?")) return;
     try {
       setIsLoading(true);
+      const content = contents.find(
+        (c) => c.id === id && c.categoryName === categoryName
+      );
+      if (!content) throw new Error("Book not found");
       const response = await fetch(
-        `${API_BASE_URL}/book-categories/${encodeURIComponent(categoryName)}/${id}`,
+        `${API_BASE_URL}/book-categories/${encodeURIComponent(
+          categoryName
+        )}/${encodeURIComponent(content.subCategory)}/${encodeURIComponent(
+          content.subSubCategory
+        )}/${id}`,
         { method: "DELETE" }
       );
       if (!response.ok) throw new Error("Failed to delete book");
@@ -243,112 +313,191 @@ export default function ContentManagement() {
     }
   };
 
-  const handleCreateTag = async () => {
-    if (!selectedCategory || !newTag.trim()) {
-      setError("Please select a category and enter a tag");
+  const handleCreateSubCategory = async () => {
+    if (!selectedCategory || !newSubCategory.trim()) {
+      setError("Please select a category and enter a subcategory name");
       setTimeout(() => setError(""), 3000);
       return;
     }
     try {
       setIsLoading(true);
       const response = await fetch(
-        `${API_BASE_URL}/book-categories/${encodeURIComponent(selectedCategory)}/tags`,
+        `${API_BASE_URL}/book-categories/${encodeURIComponent(
+          selectedCategory
+        )}/subcategories`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tag: newTag.trim() }),
+          body: JSON.stringify({
+            name: newSubCategory.trim(),
+            subSubCategories: [],
+          }),
         }
       );
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create tag");
+        throw new Error(errorData.error || "Failed to create subcategory");
       }
       const data = await response.json();
       setCategories((prev) =>
         prev.map((cat) =>
-          cat.name === selectedCategory ? { ...cat, tags: data.tags || [] } : cat
+          cat.name === selectedCategory
+            ? { ...cat, subCategories: data.subCategories || [] }
+            : cat
         )
       );
-      setNewTag("");
-      setSuccessMessage(`Tag '${newTag}' added successfully`);
+      setNewSubCategory("");
+      setSuccessMessage(`Subcategory '${newSubCategory}' added successfully`);
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (err: any) {
-      setError(err.message || "Failed to create tag");
+      setError(err.message || "Failed to create subcategory");
       setTimeout(() => setError(""), 3000);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleUpdateTag = async () => {
-    if (!selectedCategory || !tagToEdit || !editTag.trim()) {
-      setError("Please select a category, tag to edit, and new tag value");
+  const handleDeleteSubCategory = async () => {
+    if (!selectedCategory || !subCategoryToDelete) {
+      setError("Please select a category and subcategory to delete");
       setTimeout(() => setError(""), 3000);
       return;
     }
-    try {
-      setIsLoading(true);
-      const response = await fetch(
-        `${API_BASE_URL}/book-categories/${encodeURIComponent(selectedCategory)}/tags/${encodeURIComponent(tagToEdit)}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ newTag: editTag.trim() }),
-        }
-      );
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update tag");
-      }
-      const data = await response.json();
-      setCategories((prev) =>
-        prev.map((cat) =>
-          cat.name === selectedCategory ? { ...cat, tags: data.tags || [] } : cat
-        )
-      );
-      setTagToEdit("");
-      setEditTag("");
-      setSuccessMessage(`Tag updated to '${editTag}' successfully`);
-      setTimeout(() => setSuccessMessage(""), 3000);
-    } catch (err: any) {
-      setError(err.message || "Failed to update tag");
-      setTimeout(() => setError(""), 3000);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDeleteTag = async () => {
-    if (!selectedCategory || !tagToEdit) {
-      setError("Please select a category and tag to delete");
-      setTimeout(() => setError(""), 3000);
+    if (
+      !confirm(
+        `Are you sure you want to delete the subcategory '${subCategoryToDelete}'?`
+      )
+    )
       return;
-    }
-    if (!confirm(`Are you sure you want to delete the tag '${tagToEdit}'?`)) return;
     try {
       setIsLoading(true);
       const response = await fetch(
-        `${API_BASE_URL}/book-categories/${encodeURIComponent(selectedCategory)}/tags/${encodeURIComponent(tagToEdit)}`,
+        `${API_BASE_URL}/book-categories/${encodeURIComponent(
+          selectedCategory
+        )}/subcategories/${encodeURIComponent(subCategoryToDelete)}`,
         {
           method: "DELETE",
         }
       );
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete tag");
+        throw new Error(errorData.error || "Failed to delete subcategory");
       }
       const data = await response.json();
       setCategories((prev) =>
         prev.map((cat) =>
-          cat.name === selectedCategory ? { ...cat, tags: data.tags || [] } : cat
+          cat.name === selectedCategory
+            ? { ...cat, subCategories: data.subCategories || [] }
+            : cat
         )
       );
-      setTagToEdit("");
-      setEditTag("");
-      setSuccessMessage(`Tag '${tagToEdit}' deleted successfully`);
+      setSubCategoryToDelete("");
+      setSuccessMessage(
+        `Subcategory '${subCategoryToDelete}' deleted successfully`
+      );
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (err: any) {
-      setError(err.message || "Failed to delete tag");
+      setError(err.message || "Failed to delete subcategory");
+      setTimeout(() => setError(""), 3000);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCreateSubSubCategory = async () => {
+    if (
+      !selectedCategory ||
+      !selectedSubCategory ||
+      !newSubSubCategory.trim()
+    ) {
+      setError(
+        "Please select a category, subcategory, and enter a sub-subcategory name"
+      );
+      setTimeout(() => setError(""), 3000);
+      return;
+    }
+    try {
+      setIsLoading(true);
+      const response = await fetch(
+        `${API_BASE_URL}/book-categories/${encodeURIComponent(
+          selectedCategory
+        )}/${encodeURIComponent(selectedSubCategory)}/subsubcategories`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: newSubSubCategory.trim() }),
+        }
+      );
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create sub-subcategory");
+      }
+      const data = await response.json();
+      setCategories((prev) =>
+        prev.map((cat) =>
+          cat.name === selectedCategory
+            ? { ...cat, subCategories: data.subCategories || [] }
+            : cat
+        )
+      );
+      setNewSubSubCategory("");
+      setSuccessMessage(
+        `Sub-subcategory '${newSubSubCategory}' added successfully`
+      );
+      setTimeout(() => setSuccessMessage(""), 3000);
+    } catch (err: any) {
+      setError(err.message || "Failed to create sub-subcategory");
+      setTimeout(() => setError(""), 3000);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteSubSubCategory = async () => {
+    if (!selectedCategory || !selectedSubCategory || !subSubCategoryToDelete) {
+      setError(
+        "Please select a category, subcategory, and sub-subcategory to delete"
+      );
+      setTimeout(() => setError(""), 3000);
+      return;
+    }
+    if (
+      !confirm(
+        `Are you sure you want to delete the sub-subcategory '${subSubCategoryToDelete}'?`
+      )
+    )
+      return;
+    try {
+      setIsLoading(true);
+      const response = await fetch(
+        `${API_BASE_URL}/book-categories/${encodeURIComponent(
+          selectedCategory
+        )}/${encodeURIComponent(
+          selectedSubCategory
+        )}/subsubcategories/${encodeURIComponent(subSubCategoryToDelete)}`,
+        {
+          method: "DELETE",
+        }
+      );
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to delete sub-subcategory");
+      }
+      const data = await response.json();
+      setCategories((prev) =>
+        prev.map((cat) =>
+          cat.name === selectedCategory
+            ? { ...cat, subCategories: data.subCategories || [] }
+            : cat
+        )
+      );
+      setSubSubCategoryToDelete("");
+      setSuccessMessage(
+        `Sub-subcategory '${subSubCategoryToDelete}' deleted successfully`
+      );
+      setTimeout(() => setSuccessMessage(""), 3000);
+    } catch (err: any) {
+      setError(err.message || "Failed to delete sub-subcategory");
       setTimeout(() => setError(""), 3000);
     } finally {
       setIsLoading(false);
@@ -369,7 +518,6 @@ export default function ContentManagement() {
     setCurrentPage(page);
   };
 
-  // Generate page numbers to display
   const getPageNumbers = () => {
     const pageNumbers = [];
     const maxVisiblePages = 5;
@@ -405,7 +553,7 @@ export default function ContentManagement() {
             setEditingContent(undefined);
             setIsFormOpen(true);
           }}
-          className="px-4 py-2 bg-teal-500 text-black rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+          className="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
           disabled={isLoading}
         >
           Create New Book
@@ -419,7 +567,7 @@ export default function ContentManagement() {
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              setCurrentPage(1); // Reset to first page on search
+              setCurrentPage(1);
             }}
             placeholder="Search by title (e.g., physics)..."
             className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 w-full max-w-xs"
@@ -444,13 +592,22 @@ export default function ContentManagement() {
       )}
 
       <div className="mb-6 bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Manage Tags</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          Manage Categories
+        </h2>
         <div className="space-y-4">
           <div>
-            <label className="block text-gray-800 font-medium mb-2">Select Category</label>
+            <label className="block text-gray-800 font-medium mb-2">
+              Select Category
+            </label>
             <select
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
+              onChange={(e) => {
+                setSelectedCategory(e.target.value);
+                setSelectedSubCategory("");
+                setSubCategoryToDelete("");
+                setSubSubCategoryToDelete("");
+              }}
               className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
               disabled={isLoading}
             >
@@ -464,67 +621,160 @@ export default function ContentManagement() {
               ))}
             </select>
           </div>
+
           <div>
-            <label className="block text-gray-800 font-medium mb-2">Add New Tag</label>
+            <label className="block text-gray-800 font-medium mb-2">
+              Add New Subcategory
+            </label>
             <div className="flex gap-2">
               <input
                 type="text"
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
+                value={newSubCategory}
+                onChange={(e) => setNewSubCategory(e.target.value)}
                 className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                placeholder="Enter new tag"
+                placeholder="Enter new subcategory"
                 disabled={isLoading || !selectedCategory}
               />
               <button
-                onClick={handleCreateTag}
-                disabled={isLoading || !selectedCategory || !newTag.trim()}
-                className="px-4 py-2 bg-teal-600 text-black rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={handleCreateSubCategory}
+                disabled={
+                  isLoading || !selectedCategory || !newSubCategory.trim()
+                }
+                className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Add Tag
+                Add Subcategory
               </button>
             </div>
           </div>
+
           <div>
-            <label className="block text-gray-800 font-medium mb-2">Edit/Delete Tag</label>
+            <label className="block text-gray-800 font-medium mb-2">
+              Delete Subcategory
+            </label>
             <div className="flex gap-2">
               <select
-                value={tagToEdit}
-                onChange={(e) => setTagToEdit(e.target.value)}
+                value={subCategoryToDelete}
+                onChange={(e) => setSubCategoryToDelete(e.target.value)}
                 className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                 disabled={isLoading || !selectedCategory}
               >
                 <option value="" disabled>
-                  Select tag to edit/delete
+                  Select subcategory to delete
                 </option>
                 {categories
                   .find((cat) => cat.name === selectedCategory)
-                  ?.tags.map((tag) => (
-                    <option key={tag} value={tag}>
-                      {tag}
+                  ?.subCategories.map((sub) => (
+                    <option key={sub.name} value={sub.name}>
+                      {sub.name}
                     </option>
                   ))}
               </select>
+              <button
+                onClick={handleDeleteSubCategory}
+                disabled={
+                  isLoading || !selectedCategory || !subCategoryToDelete
+                }
+                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Delete Subcategory
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-gray-800 font-medium mb-2">
+              Select Subcategory for Sub-Subcategory Management
+            </label>
+            <select
+              value={selectedSubCategory}
+              onChange={(e) => {
+                setSelectedSubCategory(e.target.value);
+                setSubSubCategoryToDelete("");
+              }}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              disabled={isLoading || !selectedCategory}
+            >
+              <option value="" disabled>
+                Select a subcategory
+              </option>
+              {categories
+                .find((cat) => cat.name === selectedCategory)
+                ?.subCategories.map((sub) => (
+                  <option key={sub.name} value={sub.name}>
+                    {sub.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-gray-800 font-medium mb-2">
+              Add New Sub-Subcategory
+            </label>
+            <div className="flex gap-2">
               <input
                 type="text"
-                value={editTag}
-                onChange={(e) => setEditTag(e.target.value)}
+                value={newSubSubCategory}
+                onChange={(e) => setNewSubSubCategory(e.target.value)}
                 className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                placeholder="New tag value"
-                disabled={isLoading || !tagToEdit}
+                placeholder="Enter new sub-subcategory"
+                disabled={
+                  isLoading || !selectedCategory || !selectedSubCategory
+                }
               />
               <button
-                onClick={handleUpdateTag}
-                disabled={isLoading || !selectedCategory || !tagToEdit || !editTag.trim()}
-                className="px-4 py-2 bg-yellow-500 text-black rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={handleCreateSubSubCategory}
+                disabled={
+                  isLoading ||
+                  !selectedCategory ||
+                  !selectedSubCategory ||
+                  !newSubSubCategory.trim()
+                }
+                className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Update Tag
+                Add Sub-Subcategory
               </button>
-              <button
-                onClick={handleDeleteTag}
-                disabled={isLoading || !selectedCategory || !tagToEdit}
-                className="px-4 py-2 bg-red-500 text-black rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-gray-800 font-medium mb-2">
+              Delete Sub-Subcategory
+            </label>
+            <div className="flex gap-2">
+              <select
+                value={subSubCategoryToDelete}
+                onChange={(e) => setSubSubCategoryToDelete(e.target.value)}
+                className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                disabled={
+                  isLoading || !selectedCategory || !selectedSubCategory
+                }
               >
-                Delete Tag
+                <option value="" disabled>
+                  Select sub-subcategory to delete
+                </option>
+                {categories
+                  .find((cat) => cat.name === selectedCategory)
+                  ?.subCategories.find(
+                    (sub) => sub.name === selectedSubCategory
+                  )
+                  ?.subSubCategories.map((subSub) => (
+                    <option key={subSub} value={subSub}>
+                      {subSub}
+                    </option>
+                  ))}
+              </select>
+              <button
+                onClick={handleDeleteSubSubCategory}
+                disabled={
+                  isLoading ||
+                  !selectedCategory ||
+                  !selectedSubCategory ||
+                  !subSubCategoryToDelete
+                }
+                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Delete Sub-Subcategory
               </button>
             </div>
           </div>
@@ -537,28 +787,38 @@ export default function ContentManagement() {
         </div>
       ) : (
         <>
-          <ContentList contents={paginatedContents} onEdit={handleEdit} onDelete={handleDelete} />
+          <ContentList
+            contents={paginatedContents}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
           <div className="mt-6 flex justify-center items-center gap-2">
             <button
               onClick={() => handlePageChange(1)}
               disabled={currentPage === 1}
-              className="px-2 py-1 bg-teal-600 text-black rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-2 py-1 bg-teal-600 text-white rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FontAwesomeIcon icon={faAngleDoubleLeft} />
             </button>
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className="px-2 py-1 bg-teal-500 text-black rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-2 py-1 bg-teal-500 text-white rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FontAwesomeIcon icon={faAngleLeft} />
             </button>
             {getPageNumbers().map((page, index) => (
               <button
                 key={index}
-                onClick={() => typeof page === "number" && handlePageChange(page)}
+                onClick={() =>
+                  typeof page === "number" && handlePageChange(page)
+                }
                 disabled={page === "..." || currentPage === page}
-                className={`px-3 py-1 rounded-md ${currentPage === page ? "bg-teal-700 text-white" : "bg-teal-500 text-black hover:bg-teal-700"} focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+                className={`px-3 py-1 rounded-md ${
+                  currentPage === page
+                    ? "bg-teal-700 text-white"
+                    : "bg-teal-500 text-white hover:bg-teal-700"
+                } focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {page}
               </button>
@@ -566,14 +826,14 @@ export default function ContentManagement() {
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="px-2 py-1 bg-teal-500 text-black rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-2 py-1 bg-teal-500 text-white rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FontAwesomeIcon icon={faAngleRight} />
             </button>
             <button
               onClick={() => handlePageChange(totalPages)}
               disabled={currentPage === totalPages}
-              className="px-2 py-1 bg-teal-500 text-black rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-2 py-1 bg-teal-500 text-white rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FontAwesomeIcon icon={faAngleDoubleRight} />
             </button>

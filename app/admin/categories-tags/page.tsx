@@ -8,9 +8,9 @@ import { API_BASE_URL } from '../../../utils/api';
 export interface Category {
   id: string;
   name: string;
-  seoTitle: string;
-  seoDescription: string;
-   type: string; 
+  seoTitle?: string; // Made optional
+  seoDescription?: string; // Made optional
+  type: string;
 }
 
 export default function CategoriesTags() {
@@ -27,8 +27,9 @@ export default function CategoriesTags() {
           data.map((item: any) => ({
             id: item._id,
             name: item.name,
-            seoTitle: item.seoTitle || "",
-            seoDescription: item.seoDescription || "",
+            seoTitle: item.seoTitle,
+            seoDescription: item.seoDescription,
+            type: "category",
           }))
         );
       } catch (error) {
@@ -56,8 +57,8 @@ export default function CategoriesTags() {
   const handleSave = async (data: {
     id?: string;
     name: string;
-    seoTitle: string;
-    seoDescription: string;
+    seoTitle?: string; // Made optional
+    seoDescription?: string; // Made optional
   }) => {
     const newItem: Category = {
       id: data.id || Date.now().toString(),

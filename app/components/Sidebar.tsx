@@ -124,6 +124,18 @@ export default function Sidebar() {
                 Import/Export
               </Link>
             </li>
+            <li>
+              <Link
+                href="/admin/DiscountManagement"
+                className={`block p-3 text-gray-800 rounded-lg transition-all duration-200 font-medium ${
+                  isActive("/admin/import-export")
+                    ? "bg-yellow-200 text-yellow-900 shadow-md"
+                    : "hover:bg-yellow-200 hover:shadow-md animate__pulse"
+                }`}
+              >
+                Discount Management
+              </Link>
+            </li>
           </ul>
         </nav>
       </div>

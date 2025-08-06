@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUser, faShoppingCart, faBars, faSearch, faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
+import { faUser, faShoppingCart, faBars, faSearch, faChevronDown, faChevronUp, faChevronRight } from "@fortawesome/free-solid-svg-icons";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,15 @@ import { API_BASE_URL } from '../../../utils/api';
 interface Category {
   _id: string;
   name: string;
+  subCategories?: SubCategory[];
+}
+
+interface SubCategory {
+  _id: string;
+  name: string;
+  subSubCategories: string[];
+  books: string[];
+  subCategoryDiscount: number;
 }
 
 interface SiteSettings {
@@ -43,8 +52,11 @@ export default function Header() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [activeSubDropdown, setActiveSubDropdown] = useState<string | null>(null);
   const [tagsByCategory, setTagsByCategory] = useState<{ [key: string]: string[] }>({});
+  const [subCategoriesByCategory, setSubCategoriesByCategory] = useState<{ [key: string]: SubCategory[] }>({});
   const [expandedMobileCategory, setExpandedMobileCategory] = useState<string | null>(null);
+  const [expandedMobileSubCategory, setExpandedMobileSubCategory] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -67,16 +79,17 @@ export default function Header() {
         const fetchedCategories = data.map((item: any) => ({
           _id: item._id,
           name: item.name,
+          subCategories: item.subCategories || [],
         }));
         const combinedCategories = [
           ...[
-            { _id: "static-competitive", name: "Competitive-Exam-Books" },
-            { _id: "static-school", name: "School-Books" },
-            { _id: "static-college", name: "College-Books" },
-            { _id: "static-ref", name: "Ref-Books-Guides" },
-            { _id: "static-entrance", name: "Entrance-Exam-Books" },
-            { _id: "static-stationary", name: "Stationary" },
-            { _id: "static-non-academics", name: "Non-Academics" },
+            { _id: "static-competitive", name: "Competitive-Exam-Books", subCategories: [] },
+            { _id: "static-school", name: "School-Books", subCategories: [] },
+            { _id: "static-college", name: "College-Books", subCategories: [] },
+            { _id: "static-ref", name: "Ref-Books-Guides", subCategories: [] },
+            { _id: "static-entrance", name: "Entrance-Exam-Books", subCategories: [] },
+            { _id: "static-stationary", name: "Stationary", subCategories: [] },
+            { _id: "static-non-academics", name: "Non-Academics", subCategories: [] },
           ],
           ...fetchedCategories.filter(
             (cat: Category) => ![
@@ -91,9 +104,19 @@ export default function Header() {
           ),
         ];
         if (!combinedCategories.some((cat: Category) => cat.name === "Request Your Book")) {
-          combinedCategories.push({ _id: "static-request", name: "Request Your Book" });
+          combinedCategories.push({ _id: "static-request", name: "Request Your Book", subCategories: [] });
         }
-        setCategories(combinedCategories);
+        
+        // Update categories with subcategories from API
+        const updatedCategories = combinedCategories.map(cat => {
+          const apiCategory = fetchedCategories.find((apiCat: Category) => apiCat.name === cat.name);
+          return {
+            ...cat,
+            subCategories: apiCategory?.subCategories || []
+          };
+        });
+        
+        setCategories(updatedCategories);
       } catch (err) {
         setError("Error loading categories. Please try again later.");
         console.error(err);
@@ -118,6 +141,21 @@ export default function Header() {
       }));
     } catch (err) {
       console.error(`Error fetching tags for ${categoryName}:`, err);
+    }
+  };
+
+  const fetchSubCategoriesForCategory = async (categoryName: string) => {
+    if (subCategoriesByCategory[categoryName]) return;
+    try {
+      const response = await fetch(`${API_BASE_URL}/book-categories/${encodeURIComponent(categoryName)}`);
+      if (!response.ok) throw new Error(`Failed to fetch subcategories for ${categoryName}`);
+      const data = await response.json();
+      setSubCategoriesByCategory((prev) => ({
+        ...prev,
+        [categoryName]: data.subCategories || [],
+      }));
+    } catch (err) {
+      console.error(`Error fetching subcategories for ${categoryName}:`, err);
     }
   };
 
@@ -157,10 +195,25 @@ export default function Header() {
     
     if (expandedMobileCategory === categoryName) {
       setExpandedMobileCategory(null);
+      setExpandedMobileSubCategory(null);
     } else {
       setExpandedMobileCategory(categoryName);
+      setExpandedMobileSubCategory(null);
       fetchTagsForCategory(categoryName);
+      fetchSubCategoriesForCategory(categoryName);
     }
+  };
+
+  const handleMobileSubCategoryToggle = (subCategoryName: string) => {
+    if (expandedMobileSubCategory === subCategoryName) {
+      setExpandedMobileSubCategory(null);
+    } else {
+      setExpandedMobileSubCategory(subCategoryName);
+    }
+  };
+
+  const hasSubSubCategories = (subCategory: SubCategory) => {
+    return subCategory.subSubCategories && subCategory.subSubCategories.length > 0;
   };
 
   return (
@@ -324,7 +377,71 @@ export default function Header() {
                       </button>
                     )}
                   </div>
-                  {expandedMobileCategory === name && tagsByCategory[name] && (
+                  {/* Mobile Subcategories */}
+                  {expandedMobileCategory === name && subCategoriesByCategory[name] && (
+                    <div className="mt-2 bg-white shadow-lg">
+                      <ul className="py-2">
+                        {subCategoriesByCategory[name].length > 0 ? (
+                          subCategoriesByCategory[name].map((subCategory) => (
+                            <li key={subCategory._id}>
+                              <div className="flex items-center justify-between">
+                                <Link
+                                  href={`/${name.toLowerCase().replace(/ /g, '-')}/${subCategory.name.toLowerCase().replace(/ /g, '-')}`}
+                                  className="flex-1 text-gray-600 text-sm p-2 hover:text-white hover:bg-orange-50 transition-colors duration-200"
+                                  onClick={() => {
+                                    if (!hasSubSubCategories(subCategory)) {
+                                      setIsMenuOpen(false);
+                                      setExpandedMobileCategory(null);
+                                    }
+                                  }}
+                                >
+                                  {subCategory.name}
+                                </Link>
+                                {hasSubSubCategories(subCategory) && (
+                                  <button
+                                    onClick={() => handleMobileSubCategoryToggle(subCategory.name)}
+                                    className="p-2 text-gray-600 hover:text-orange-600"
+                                    aria-label={`Toggle ${subCategory.name} sub-subcategories`}
+                                  >
+                                    <FontAwesomeIcon
+                                      icon={expandedMobileSubCategory === subCategory.name ? faChevronUp : faChevronDown}
+                                      className="h-3 w-3"
+                                    />
+                                  </button>
+                                )}
+                              </div>
+                              {/* Mobile Sub-subcategories */}
+                              {expandedMobileSubCategory === subCategory.name && hasSubSubCategories(subCategory) && (
+                                <div className="mt-2 ml-4 bg-gray-50 shadow-lg">
+                                  <ul className="py-2">
+                                    {subCategory.subSubCategories.map((subSubCategory) => (
+                                      <li key={subSubCategory}>
+                                        <Link
+                                          href={`/${name.toLowerCase().replace(/ /g, '-')}/${subCategory.name.toLowerCase().replace(/ /g, '-')}/${subSubCategory.toLowerCase().replace(/ /g, '-')}`}
+                                          className="block text-gray-500 text-sm p-2 pl-4 hover:text-white hover:bg-orange-400 transition-colors duration-200"
+                                          onClick={() => {
+                                            setIsMenuOpen(false);
+                                            setExpandedMobileCategory(null);
+                                            setExpandedMobileSubCategory(null);
+                                          }}
+                                        >
+                                          {subSubCategory}
+                                        </Link>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </li>
+                          ))
+                        ) : (
+                          <li className="text-gray-500 text-sm p-2 italic">No subcategories available</li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
+                  {/* Mobile Tags (fallback if no subcategories) */}
+                  {expandedMobileCategory === name && (!subCategoriesByCategory[name] || subCategoriesByCategory[name].length === 0) && tagsByCategory[name] && (
                     <div className="mt-2 bg-white shadow-lg">
                       <ul className="py-2">
                         {tagsByCategory[name].length > 0 ? (
@@ -362,15 +479,20 @@ export default function Header() {
                     onMouseEnter={() => {
                       if (name !== "Request Your Book") {
                         setActiveDropdown(name);
+                        setActiveSubDropdown(null);
                         fetchTagsForCategory(name);
+                        fetchSubCategoriesForCategory(name);
                       }
                     }}
-                    onMouseLeave={() => setActiveDropdown(null)}
+                    onMouseLeave={() => {
+                      setActiveDropdown(null);
+                      setActiveSubDropdown(null);
+                    }}
                   >
                     {name === "Request Your Book" ? (
                       <Link
                         href="/request-book"
-                        className="inline-block font-bold text-md  px-3 py-2 bg-black text-white hover:bg-gray-800 transition-all duration-300"
+                        className="inline-block font-bold text-md px-3 py-2 bg-black text-white hover:bg-gray-800 transition-all duration-300"
                       >
                         {name}
                       </Link>
@@ -386,7 +508,77 @@ export default function Header() {
                         >
                           {name}
                         </Link>
-                        {activeDropdown === name && tagsByCategory[name] && (
+                        {/* Desktop Dropdown - Subcategories */}
+                        {activeDropdown === name && subCategoriesByCategory[name] && subCategoriesByCategory[name].length > 0 && (
+                          <div 
+                            className="absolute top-full left-0 z-50 mt-0 w-[280px] bg-white shadow-2xl overflow-hidden"
+                            onMouseLeave={() => {
+                              setActiveSubDropdown(null);
+                            }}
+                          >
+                            <ul className="py-1">
+                              {subCategoriesByCategory[name].map((subCategory) => (
+                                <li 
+                                  key={subCategory._id} 
+                                  className="relative"
+                                  onMouseEnter={() => setActiveSubDropdown(subCategory.name)}
+                                  onMouseLeave={(e) => {
+                                    // Only clear if not moving to the sub-dropdown
+                                    if (!hasSubSubCategories(subCategory)) {
+                                      setActiveSubDropdown(null);
+                                    }
+                                  }}
+                                >
+                                  <div 
+                                    className={`flex items-center justify-between transition-all duration-200 ${
+                                      activeSubDropdown === subCategory.name 
+                                        ? 'bg-orange-600 text-white' 
+                                        : 'hover:bg-orange-600 hover:text-white'
+                                    }`}
+                                  >
+                                    <Link
+                                      href={`/${name.toLowerCase().replace(/ /g, '-')}/${subCategory.name.toLowerCase().replace(/ /g, '-')}`}
+                                      className="flex-1 text-gray-700 font-bold text-md px-3 py-2"
+                                    >
+                                      {subCategory.name}
+                                    </Link>
+                                    {hasSubSubCategories(subCategory) && (
+                                      <div className="px-2">
+                                        <FontAwesomeIcon
+                                          icon={faChevronRight}
+                                          className="h-3 w-3 text-gray-500"
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                  {/* Desktop Sub-subcategories Dropdown */}
+                                  {activeSubDropdown === subCategory.name && hasSubSubCategories(subCategory) && (
+                                    <div 
+                                      className="absolute top-0 left-full z-60 w-[250px] bg-white shadow-2xl overflow-hidden border-l"
+                                      onMouseEnter={() => setActiveSubDropdown(subCategory.name)}
+                                      onMouseLeave={() => setActiveSubDropdown(null)}
+                                    >
+                                      <ul className="py-1">
+                                        {subCategory.subSubCategories.map((subSubCategory) => (
+                                          <li key={subSubCategory}>
+                                            <Link
+                                              href={`/${name.toLowerCase().replace(/ /g, '-')}/${subCategory.name.toLowerCase().replace(/ /g, '-')}/${subSubCategory.toLowerCase().replace(/ /g, '-')}`}
+                                              className="block text-gray-700 font-bold text-md px-3 py-2 hover:bg-orange-600 hover:text-white transition-all duration-200"
+                                            >
+                                              {subSubCategory}
+                                            </Link>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {/* Desktop Dropdown - Tags (fallback if no subcategories) */}
+                        {activeDropdown === name && (!subCategoriesByCategory[name] || subCategoriesByCategory[name].length === 0) && tagsByCategory[name] && (
                           <div className="absolute top-full left-0 z-50 mt-0 w-[280px] bg-white shadow-2xl overflow-hidden">
                             <ul className="py-1">
                               {tagsByCategory[name].length > 0 ? (

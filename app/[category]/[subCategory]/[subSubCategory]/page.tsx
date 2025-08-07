@@ -1,16 +1,17 @@
 "use client";
 
-import Header from "../components/header/page";
-import Footer from "../components/footer/page";
+import Header from "../../../components/header/page";
+import Footer from "../../../components/footer/page";
 import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faThLarge, faList } from "@fortawesome/free-solid-svg-icons";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { API_BASE_URL, normalizeUrlParam, normalizeDisplayName } from "@/utils/api";
 import type { JSX } from "react";
 
+// Define interfaces
 interface SubCategory {
   name: string;
   subSubCategories: string[];
@@ -37,22 +38,30 @@ interface CategoryData {
   books: Book[];
 }
 
+// Define params type for useParams
 interface Params {
+  [key: string]: string | string[] | undefined;
   category?: string | string[];
-  [key: string]: string | string[] | undefined; // Index signature to satisfy Next.js Params
+  subCategory?: string | string[];
+  subSubCategory?: string | string[];
 }
 
-export default function CategoryPage(): JSX.Element {
+export default function DynamicCategoryPage(): JSX.Element {
   const params = useParams<Params>();
-  const router = useRouter();
   const category = Array.isArray(params.category) ? params.category[0] : params.category || "";
+  const subCategory = Array.isArray(params.subCategory) ? params.subCategory[0] : params.subCategory || "";
+  const subSubCategory = Array.isArray(params.subSubCategory) ? params.subSubCategory[0] : params.subSubCategory || "";
 
   const [categoryData, setCategoryData] = useState<CategoryData | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedSubCategory, setSelectedSubCategory] = useState<string>("");
-  const [selectedSubSubCategory, setSelectedSubSubCategory] = useState<string>("");
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string>(
+    subCategory ? normalizeUrlParam(subCategory) : ""
+  );
+  const [selectedSubSubCategory, setSelectedSubSubCategory] = useState<string>(
+    subSubCategory ? normalizeUrlParam(subSubCategory) : ""
+  );
   const [priceRange, setPriceRange] = useState<string>("");
   const [status, setStatus] = useState<string>("");
   const [booksToShow, setBooksToShow] = useState<number>(0);
@@ -63,43 +72,48 @@ export default function CategoryPage(): JSX.Element {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!category) {
-        setError("Category not specified");
+      if (!category || !subCategory || !subSubCategory) {
+        setError("Category, subcategory, or sub-subcategory not specified");
         setLoading(false);
         return;
       }
 
       try {
         const normalizedCategory = normalizeUrlParam(category);
-        const url = `${API_BASE_URL}/book-categories/${encodeURIComponent(normalizedCategory)}`;
+        const normalizedSubCategory = normalizeUrlParam(subCategory);
+        const normalizedSubSubCategory = normalizeUrlParam(subSubCategory);
+        const url = `${API_BASE_URL}/book-categories/${encodeURIComponent(normalizedCategory)}/${encodeURIComponent(normalizedSubCategory)}/${encodeURIComponent(normalizedSubSubCategory)}`;
 
         console.log(`Fetching data for: ${url}`);
-        const response = await fetch(url);
-        if (!response.ok) {
-          if (response.status === 404) {
-            throw new Error(`Not found: '${normalizedCategory}'`);
+        const booksResponse = await fetch(url);
+        if (!booksResponse.ok) {
+          if (booksResponse.status === 404) {
+            throw new Error(`Not found: '${normalizedCategory}/${normalizedSubCategory}/${normalizedSubSubCategory}'`);
           }
           throw new Error("Failed to fetch data");
         }
-        const data: CategoryData = await response.json();
-        console.log(`Fetched data for ${normalizedCategory}:`, data);
+        const data: CategoryData = await booksResponse.json();
+        console.log(`Fetched data for ${normalizedCategory}/${normalizedSubCategory}/${normalizedSubSubCategory}:`, data);
         setCategoryData({
           ...data,
-          subCategories: data.subCategories || [],
-          books: data.books || [],
+          subCategories: data.subCategories || [], // Ensure subCategories is an array
+          books: data.books || [], // Ensure books is an array
         });
         setBooks(data.books || []);
         setBooksToShow(data.books?.length || 0);
       } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : "Unknown error occurred";
-        setError(errorMessage || `Error loading data for ${category}. Please try again later.`);
+        setError(
+          errorMessage ||
+            `Error loading data for ${category}/${subCategory}/${subSubCategory}. Please try again later.`
+        );
         console.error("Fetch error:", err);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [category]);
+  }, [category, subCategory, subSubCategory]);
 
   useEffect(() => {
     const initialImageUrls = books.length > 0
@@ -114,47 +128,18 @@ export default function CategoryPage(): JSX.Element {
     setBookImageUrls(initialImageUrls);
   }, [books]);
 
-  const bookCountPerSubCategory = (categoryData?.subCategories || []).reduce<Record<string, number>>(
-    (acc, subCat) => {
-      acc[subCat.name] = books.filter(
-        (book) => book.subCategory.toLowerCase() === subCat.name.toLowerCase()
-      ).length;
-      return acc;
-    },
-    {}
-  );
-
-  const bookCountPerSubSubCategory = (categoryData?.subCategories || []).reduce<Record<string, number>>(
-    (acc, subCat) => {
-      subCat.subSubCategories.forEach((subSubCat) => {
-        acc[subSubCat] = books.filter(
-          (book) => book.subSubCategory?.toLowerCase() === subSubCat.toLowerCase()
-        ).length;
-      });
-      return acc;
-    },
-    {}
-  );
-
   const filteredBooks = books
     .filter((book) => {
       const matchesSubCategory =
         !selectedSubCategory || book.subCategory.toLowerCase() === selectedSubCategory.toLowerCase();
       const matchesSubSubCategory =
-        !selectedSubSubCategory ||
-        book.subSubCategory?.toLowerCase() === selectedSubSubCategory.toLowerCase();
+        !selectedSubSubCategory || book.subSubCategory?.toLowerCase() === selectedSubSubCategory.toLowerCase();
       const matchesPrice =
         priceRange === "" ||
         (priceRange === "0to500" && (book.discountedPrice || book.price) <= 500) ||
-        (priceRange === "500to1000" &&
-          (book.discountedPrice || book.price) > 500 &&
-          (book.discountedPrice || book.price) <= 1000) ||
-        (priceRange === "1000to1500" &&
-          (book.discountedPrice || book.price) > 1000 &&
-          (book.discountedPrice || book.price) <= 1500) ||
-        (priceRange === "1500to2000" &&
-          (book.discountedPrice || book.price) > 1500 &&
-          (book.discountedPrice || book.price) <= 2000);
+        (priceRange === "500to1000" && (book.discountedPrice || book.price) > 500 && (book.discountedPrice || book.price) <= 1000) ||
+        (priceRange === "1000to1500" && (book.discountedPrice || book.price) > 1000 && (book.discountedPrice || book.price) <= 1500) ||
+        (priceRange === "1500to2000" && (book.discountedPrice || book.price) > 1500 && (book.discountedPrice || book.price) <= 2000);
       const matchesStatus =
         status === "" ||
         (status === "inStock" && ((book.quantityNew || 0) + (book.quantityOld || 0) > 0)) ||
@@ -168,27 +153,6 @@ export default function CategoryPage(): JSX.Element {
       return 0;
     })
     .slice(0, booksToShow);
-
-  const handleSubCategoryChange = (subCat: string) => {
-    setSelectedSubCategory(subCat);
-    setSelectedSubSubCategory("");
-    if (subCat) {
-      router.push(`/${normalizeUrlParam(category)}/${normalizeUrlParam(subCat)}`);
-    } else {
-      router.push(`/${normalizeUrlParam(category)}`);
-    }
-  };
-
-  const handleSubSubCategoryChange = (subSubCat: string) => {
-    setSelectedSubSubCategory(subSubCat);
-    if (subSubCat) {
-      router.push(
-        `/${normalizeUrlParam(category)}/${normalizeUrlParam(selectedSubCategory)}/${normalizeUrlParam(subSubCat)}`
-      );
-    } else {
-      router.push(`/${normalizeUrlParam(category)}/${normalizeUrlParam(selectedSubCategory)}`);
-    }
-  };
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPriceRange(e.target.id);
@@ -228,61 +192,6 @@ export default function CategoryPage(): JSX.Element {
       <main className="flex-grow px-6 sm:px-8 md:px-12 py-6">
         <div className="flex flex-col lg:flex-row">
           <aside className="w-full lg:w-1/4 pr-0 lg:pr-6 mb-6 lg:mb-0">
-            <h2 className="text-xl font-semibold mb-4 text-gray-900">Subcategories</h2>
-            <div className="border rounded-lg p-4 bg-gray-50 shadow-md mb-6">
-              {(categoryData?.subCategories || []).map((subCat) => (
-                <div key={subCat.name} className="mb-2">
-                  <div className="flex items-center">
-                    <input
-                      type="radio"
-                      id={subCat.name}
-                      name="subCategory"
-                      className="mr-2 accent-orange-500"
-                      onChange={() => handleSubCategoryChange(subCat.name)}
-                      checked={selectedSubCategory.toLowerCase() === subCat.name.toLowerCase()}
-                    />
-                    <label htmlFor={subCat.name} className="text-gray-800 text-sm">
-                      {bookCountPerSubCategory[subCat.name] > 0
-                        ? `${normalizeDisplayName(subCat.name)} - ${bookCountPerSubCategory[subCat.name]} books`
-                        : normalizeDisplayName(subCat.name)}
-                    </label>
-                  </div>
-                  {subCat.subSubCategories.length > 0 &&
-                    selectedSubCategory.toLowerCase() === subCat.name.toLowerCase() && (
-                      <div className="pl-4 mt-2">
-                        {subCat.subSubCategories.map((subSubCat) => (
-                          <div key={subSubCat} className="flex items-center mb-2">
-                            <input
-                              type="radio"
-                              id={subSubCat}
-                              name="subSubCategory"
-                              className="mr-2 accent-orange-500"
-                              onChange={() => handleSubSubCategoryChange(subSubCat)}
-                              checked={selectedSubSubCategory.toLowerCase() === subSubCat.toLowerCase()}
-                            />
-                            <label htmlFor={subSubCat} className="text-gray-800 text-xs">
-                              {bookCountPerSubSubCategory[subSubCat] > 0
-                                ? `${normalizeDisplayName(subSubCat)} - ${bookCountPerSubSubCategory[subSubCat]} books`
-                                : normalizeDisplayName(subSubCat)}
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                </div>
-              ))}
-              <div className="flex items-center">
-                <input
-                  type="radio"
-                  id=""
-                  name="subCategory"
-                  className="mr-2 accent-orange-500"
-                  onChange={() => handleSubCategoryChange("")}
-                  checked={selectedSubCategory === ""}
-                />
-                <label className="text-gray-800 text-sm">All</label>
-              </div>
-            </div>
             <h2 className="text-xl font-semibold mb-4 text-gray-900">Filter by Price</h2>
             <div className="border rounded-lg p-4 bg-gray-50 shadow-md mb-6">
               {["0to500", "500to1000", "1000to1500", "1500to2000"].map((range) => (
@@ -397,8 +306,11 @@ export default function CategoryPage(): JSX.Element {
               <p className="text-center text-red-500">{error}</p>
             ) : filteredBooks.length === 0 ? (
               <p className="text-center text-gray-800">
-                No books found for '{normalizeDisplayName(normalizeUrlParam(category))}'. Add books in the admin panel to
-                display them.
+                No books found for '
+                {normalizeDisplayName(normalizeUrlParam(category))}
+                {subCategory ? `/${normalizeDisplayName(normalizeUrlParam(subCategory))}` : ""}
+                {subSubCategory ? `/${normalizeDisplayName(normalizeUrlParam(subSubCategory))}` : ""}'. Add books in the admin
+                panel to display them.
               </p>
             ) : (
               <div
@@ -410,10 +322,6 @@ export default function CategoryPage(): JSX.Element {
                   <Link
                     href={`/overview1/${book._id}?category=${encodeURIComponent(
                       normalizeUrlParam(category)
-                    )}&subCategory=${encodeURIComponent(
-                      normalizeUrlParam(book.subCategory)
-                    )}&subSubCategory=${encodeURIComponent(
-                      normalizeUrlParam(book.subSubCategory || "")
                     )}&imageUrl=${encodeURIComponent(bookImageUrls[book._id] || defaultImageUrl)}`}
                     key={book._id}
                     passHref
@@ -441,9 +349,6 @@ export default function CategoryPage(): JSX.Element {
                           ) : null}
                         </p>
                         <p className="text-gray-600 text-xs mt-1">{normalizeDisplayName(book.subCategory)}</p>
-                        {book.subSubCategory && (
-                          <p className="text-gray-600 text-xs mt-1">{normalizeDisplayName(book.subSubCategory)}</p>
-                        )}
                       </div>
                     </div>
                   </Link>

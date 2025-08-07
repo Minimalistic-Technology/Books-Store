@@ -1,7 +1,7 @@
 "use client";
 
-import Header from "../components/header/page";
-import Footer from "../components/footer/page";
+import Header from "../../components/header/page";
+import Footer from "../../components/footer/page";
 import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faThLarge, faList } from "@fortawesome/free-solid-svg-icons";
@@ -39,19 +39,24 @@ interface CategoryData {
 
 interface Params {
   category?: string | string[];
+  subCategory?: string | string[];
+  subSubCategory?: string | string[];
   [key: string]: string | string[] | undefined; // Index signature to satisfy Next.js Params
 }
 
-export default function CategoryPage(): JSX.Element {
+export default function DynamicCategoryPage(): JSX.Element {
   const params = useParams<Params>();
   const router = useRouter();
   const category = Array.isArray(params.category) ? params.category[0] : params.category || "";
+  const subCategory = Array.isArray(params.subCategory) ? params.subCategory[0] : params.subCategory || "";
 
   const [categoryData, setCategoryData] = useState<CategoryData | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedSubCategory, setSelectedSubCategory] = useState<string>("");
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string>(
+    subCategory ? normalizeUrlParam(subCategory) : ""
+  );
   const [selectedSubSubCategory, setSelectedSubSubCategory] = useState<string>("");
   const [priceRange, setPriceRange] = useState<string>("");
   const [status, setStatus] = useState<string>("");
@@ -63,14 +68,15 @@ export default function CategoryPage(): JSX.Element {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!category) {
-        setError("Category not specified");
+      if (!category || !subCategory) {
+        setError("Category or subcategory not specified");
         setLoading(false);
         return;
       }
 
       try {
         const normalizedCategory = normalizeUrlParam(category);
+        const normalizedSubCategory = normalizeUrlParam(subCategory);
         const url = `${API_BASE_URL}/book-categories/${encodeURIComponent(normalizedCategory)}`;
 
         console.log(`Fetching data for: ${url}`);
@@ -92,25 +98,26 @@ export default function CategoryPage(): JSX.Element {
         setBooksToShow(data.books?.length || 0);
       } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : "Unknown error occurred";
-        setError(errorMessage || `Error loading data for ${category}. Please try again later.`);
+        setError(errorMessage || `Error loading data for ${category}/${subCategory}. Please try again later.`);
         console.error("Fetch error:", err);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [category]);
+  }, [category, subCategory]);
 
   useEffect(() => {
-    const initialImageUrls = books.length > 0
-      ? books.reduce<Record<string, string>>(
-          (acc, book) => ({
-            ...acc,
-            [book._id]: book.imageUrl || defaultImageUrl,
-          }),
-          {}
-        )
-      : {};
+    const initialImageUrls =
+      books.length > 0
+        ? books.reduce<Record<string, string>>(
+            (acc, book) => ({
+              ...acc,
+              [book._id]: book.imageUrl || defaultImageUrl,
+            }),
+            {}
+          )
+        : {};
     setBookImageUrls(initialImageUrls);
   }, [books]);
 
@@ -395,10 +402,12 @@ export default function CategoryPage(): JSX.Element {
               <p className="text-center text-gray-800">Loading books...</p>
             ) : error ? (
               <p className="text-center text-red-500">{error}</p>
-            ) : filteredBooks.length === 0 ? (
+            ) : !categoryData || filteredBooks.length === 0 ? (
               <p className="text-center text-gray-800">
-                No books found for '{normalizeDisplayName(normalizeUrlParam(category))}'. Add books in the admin panel to
-                display them.
+                No books found for '
+                {normalizeDisplayName(normalizeUrlParam(category))}
+                {subCategory ? `/${normalizeDisplayName(normalizeUrlParam(subCategory))}` : ""}
+                '. Add books in the admin panel to display them.
               </p>
             ) : (
               <div
@@ -411,7 +420,7 @@ export default function CategoryPage(): JSX.Element {
                     href={`/overview1/${book._id}?category=${encodeURIComponent(
                       normalizeUrlParam(category)
                     )}&subCategory=${encodeURIComponent(
-                      normalizeUrlParam(book.subCategory)
+                      normalizeUrlParam(subCategory)
                     )}&subSubCategory=${encodeURIComponent(
                       normalizeUrlParam(book.subSubCategory || "")
                     )}&imageUrl=${encodeURIComponent(bookImageUrls[book._id] || defaultImageUrl)}`}

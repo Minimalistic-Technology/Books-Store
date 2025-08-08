@@ -40,8 +40,7 @@ interface CategoryData {
 interface Params {
   category?: string | string[];
   subCategory?: string | string[];
-  subSubCategory?: string | string[];
-  [key: string]: string | string[] | undefined; // Index signature to satisfy Next.js Params
+  [key: string]: string | string[] | undefined;
 }
 
 export default function DynamicCategoryPage(): JSX.Element {
@@ -77,18 +76,18 @@ export default function DynamicCategoryPage(): JSX.Element {
       try {
         const normalizedCategory = normalizeUrlParam(category);
         const normalizedSubCategory = normalizeUrlParam(subCategory);
-        const url = `${API_BASE_URL}/book-categories/${encodeURIComponent(normalizedCategory)}`;
+        const url = `${API_BASE_URL}/book-categories/${encodeURIComponent(normalizedCategory)}/${encodeURIComponent(normalizedSubCategory)}`;
 
         console.log(`Fetching data for: ${url}`);
-        const response = await fetch(url);
+        const response = await fetch(url, { cache: "no-store" });
         if (!response.ok) {
           if (response.status === 404) {
-            throw new Error(`Not found: '${normalizedCategory}'`);
+            throw new Error(`Not found: '${normalizedCategory}/${normalizedSubCategory}'`);
           }
           throw new Error("Failed to fetch data");
         }
         const data: CategoryData = await response.json();
-        console.log(`Fetched data for ${normalizedCategory}:`, data);
+        console.log(`Fetched data for ${normalizedCategory}/${normalizedSubCategory}:`, data);
         setCategoryData({
           ...data,
           subCategories: data.subCategories || [],
@@ -171,7 +170,7 @@ export default function DynamicCategoryPage(): JSX.Element {
     })
     .sort((a, b) => {
       if (sortOption === "price-low-high") return (a.discountedPrice || a.price) - (b.discountedPrice || b.price);
-      if (sortOption === "price-high-low") return (b.discountedPrice || b.price) - (a.discountedPrice || a.price);
+      if (sortOption === "price-high-low") return (b.discountedPrice || b.price) - (a.discountedPrice || b.price);
       return 0;
     })
     .slice(0, booksToShow);
@@ -419,10 +418,6 @@ export default function DynamicCategoryPage(): JSX.Element {
                   <Link
                     href={`/overview1/${book._id}?category=${encodeURIComponent(
                       normalizeUrlParam(category)
-                    )}&subCategory=${encodeURIComponent(
-                      normalizeUrlParam(subCategory)
-                    )}&subSubCategory=${encodeURIComponent(
-                      normalizeUrlParam(book.subSubCategory || "")
                     )}&imageUrl=${encodeURIComponent(bookImageUrls[book._id] || defaultImageUrl)}`}
                     key={book._id}
                     passHref
@@ -444,9 +439,12 @@ export default function DynamicCategoryPage(): JSX.Element {
                       <div className={`p-2 ${viewMode === "grid" ? "text-center" : "text-left flex-1"}`}>
                         <h3 className="text-lg font-semibold text-gray-900">{book.title}</h3>
                         <p className="text-orange-500 font-bold mt-1">
-                          ₹{book.discountedPrice || book.price}
+                          ₹{(book.discountedPrice || book.price).toFixed(2)}
                           {book.effectiveDiscount ? (
-                            <span className="text-gray-500 text-sm line-through ml-2">₹{book.price}</span>
+                            <>
+                              <span className="text-gray-500 text-sm line-through ml-2">₹{book.price.toFixed(2)}</span>
+                              <span className="text-gray-600 text-sm ml-2">({book.effectiveDiscount}% off)</span>
+                            </>
                           ) : null}
                         </p>
                         <p className="text-gray-600 text-xs mt-1">{normalizeDisplayName(book.subCategory)}</p>

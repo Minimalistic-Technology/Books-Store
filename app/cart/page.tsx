@@ -1,4 +1,3 @@
-
 "use client";
 
 import Header from "../components/header/page";
@@ -9,7 +8,7 @@ import { useForm } from "react-hook-form";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faShoppingCart } from "@fortawesome/free-solid-svg-icons";
-import { API_BASE_URL } from '../../utils/api';
+import { API_BASE_URL } from "../../utils/api";
 
 const defaultImageUrl = "https://images.pexels.com/photos/373465/pexels-photo-373465.jpeg";
 
@@ -97,7 +96,7 @@ const CartPage: React.FC = () => {
   }, [searchParams]);
 
   const getEffectivePrice = (item: CartItem) => {
-    return item.condition === "Old" && item.discountedPrice > 0 ? item.discountedPrice : item.price;
+    return item.discountedPrice > 0 ? item.discountedPrice : item.price;
   };
 
   const getTotal = () => {
@@ -153,7 +152,7 @@ const CartPage: React.FC = () => {
   const mapConditionToOrderSchema = (bookCondition: string): string => {
     if (bookCondition === "NEW - ORIGINAL PRICE" || bookCondition === "New") return "New";
     if (bookCondition === "OLD " || bookCondition === "Old" || bookCondition === "OLD - 35% OFF") return "Old";
-    if (bookCondition === "BOTH") return "New"; 
+    if (bookCondition === "BOTH") return "New";
     throw new Error(`Invalid book condition: ${bookCondition}`);
   };
 
@@ -180,10 +179,11 @@ const CartPage: React.FC = () => {
 
     for (const item of cartItems) {
       try {
-        const categoryName = item.categoryName || "Non-Academics";
-        const response = await fetch(`${API_BASE_URL}/book-categories/${encodeURIComponent(categoryName)}/${item._id}?t=${new Date().getTime()}`, {
-          cache: "no-store",
-        });
+        // Use the direct book fetch endpoint instead of category-based endpoint
+        const response = await fetch(
+          `${API_BASE_URL}/books/${item._id}?t=${new Date().getTime()}`,
+          { cache: "no-store" }
+        );
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
@@ -205,7 +205,7 @@ const CartPage: React.FC = () => {
         }
       } catch (err: any) {
         console.error(`Error checking stock for item ${item._id}:`, err);
-        setError(`Failed to verify stock availability for ${item.name}. Please try again.`);
+        setError(`Unable to verify stock for ${item.name}. Please try again or contact support.`);
         return;
       }
     }
@@ -294,10 +294,13 @@ const CartPage: React.FC = () => {
                   <div className="flex-1 ml-4">
                     <h3 className="text-lg font-semibold">{item.name}</h3>
                     <div className="flex items-center space-x-2">
-                      {item.condition === "Old" && item.discountedPrice > 0 ? (
+                      {item.discountedPrice > 0 && item.discountedPrice < item.price ? (
                         <>
                           <span className="text-sm text-gray-500 line-through">₹{item.price.toFixed(2)}</span>
                           <span className="text-orange-500 font-bold">₹{item.discountedPrice.toFixed(2)}</span>
+                          <span className="text-sm text-gray-600">
+                            ({((1 - item.discountedPrice / item.price) * 100).toFixed(0)}% off)
+                          </span>
                         </>
                       ) : (
                         <span className="text-orange-500 font-bold">₹{item.price.toFixed(2)}</span>

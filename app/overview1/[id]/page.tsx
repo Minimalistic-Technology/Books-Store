@@ -28,6 +28,8 @@ interface Item {
   quantityOld: number;
   discountNew: number;
   discountOld: number;
+  effectiveDiscount: number; // Added to match backend response
+  discountedPrice: number; // Added to match backend response
 }
 
 interface BookstoreReview {
@@ -62,6 +64,8 @@ export default function Overview() {
     quantityOld: 0,
     discountNew: 0,
     discountOld: 0,
+    effectiveDiscount: 0, // Initialize new field
+    discountedPrice: 0, // Initialize new field
   });
   const [condition, setCondition] = useState("New");
   const [discountedPrice, setDiscountedPrice] = useState(0);
@@ -81,9 +85,9 @@ export default function Overview() {
     const fetchItemDetails = async () => {
       if (id) {
         try {
-          console.log(`Fetching item with ID: ${id} from category: ${category}`);
+          console.log(`Fetching item with ID: ${id}`);
           const response = await fetch(
-            `${API_BASE_URL}/book-categories/${encodeURIComponent(category)}/${id}?t=${new Date().getTime()}`,
+            `${API_BASE_URL}/books/${id}?t=${new Date().getTime()}`,
             { cache: "no-store" }
           );
           if (!response.ok) {
@@ -107,13 +111,15 @@ export default function Overview() {
             quantityOld: data.quantityOld ?? 0,
             discountNew: data.discountNew ?? 0,
             discountOld: data.discountOld ?? 0,
+            effectiveDiscount: data.effectiveDiscount ?? 0, // Use backend-provided discount
+            discountedPrice: data.discountedPrice ?? data.price, // Use backend-provided discounted price
           };
           setItem(newItem);
-          setCondition(newItem.condition === "BOTH" ? "New" : newItem.condition === "NEW - ORIGINAL PRICE" ? "New" : "Old");
-          setDiscountedPrice(
-            newItem.condition === "OLD " ? newItem.price * (1 - newItem.discountOld / 100) :
-            newItem.price * (1 - newItem.discountNew / 100)
-          );
+          const selectedCondition = newItem.condition === "BOTH" ? "New" : 
+                                    newItem.condition === "NEW - ORIGINAL PRICE" ? "New" : 
+                                    newItem.quantityNew > 0 ? "New" : "Old";
+          setCondition(selectedCondition);
+          setDiscountedPrice(newItem.discountedPrice); // Use backend-provided discountedPrice
           setIsOutOfStock(newItem.quantityNew === 0 && newItem.quantityOld === 0);
           const conditions = [];
           if (newItem.quantityNew > 0) conditions.push("New");
@@ -125,7 +131,6 @@ export default function Overview() {
             message: err.message,
             stack: err.stack,
             id,
-            category,
           });
           setError(`Item not found. Please check the item ID (${id}) or try a different one.`);
           setItem({
@@ -144,6 +149,8 @@ export default function Overview() {
             quantityOld: 0,
             discountNew: 0,
             discountOld: 0,
+            effectiveDiscount: 0,
+            discountedPrice: 0,
           });
           setCondition("New");
           setDiscountedPrice(0);
@@ -153,7 +160,7 @@ export default function Overview() {
       }
     };
     fetchItemDetails();
-  }, [id, category]);
+  }, [id]);
 
   useEffect(() => {
     const fetchReviews = async () => {
@@ -200,11 +207,8 @@ export default function Overview() {
   const handleConditionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedCondition = e.target.value;
     setCondition(selectedCondition);
-    setDiscountedPrice(
-      selectedCondition === "Old"
-        ? item.price * (1 - item.discountOld / 100)
-        : item.price * (1 - item.discountNew / 100)
-    );
+    // Since discountedPrice is provided by backend, we don't recalculate it
+    setDiscountedPrice(item.discountedPrice); // Maintain backend-provided price
   };
 
   const handleRating = (rate: number) => {
@@ -269,7 +273,7 @@ export default function Overview() {
 
   const handleAddToCart = () => {
     if (!error && item._id && !isOutOfStock) {
-      const effectivePrice = condition === "Old" ? discountedPrice : item.price * (1 - item.discountNew / 100);
+      const effectivePrice = item.discountedPrice; // Use backend-provided discountedPrice
       const query = new URLSearchParams({
         _id: item._id,
         name: item.name,
@@ -286,7 +290,7 @@ export default function Overview() {
 
   const handleBuyNow = () => {
     if (!error && item._id && !isOutOfStock) {
-      const effectivePrice = condition === "Old" ? discountedPrice : item.price * (1 - item.discountNew / 100);
+      const effectivePrice = item.discountedPrice; // Use backend-provided discountedPrice
       const query = new URLSearchParams({
         _id: item._id,
         name: item.name,

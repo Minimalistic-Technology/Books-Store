@@ -4,16 +4,18 @@ import { useState, useEffect } from "react";
 import { Content } from "../page";
 import { API_BASE_URL } from "../../../../utils/api";
 
-interface SubCategory {
+interface Category {
+  _id: string;
   name: string;
-  subSubCategories: string[];
+  path: string;
+  children: Category[];
 }
 
 interface ContentFormProps {
   content?: Content;
   onClose: () => void;
   onSave: (data: Content) => Promise<void>;
-  categories: { name: string; tags: string[]; subCategories: SubCategory[] }[];
+  categories: Category[];
 }
 
 export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSave, categories }) => {
@@ -21,9 +23,9 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
   const [formData, setFormData] = useState<Content>({
     id: content?.id || "",
     title: content?.title || "",
+    categoryPath: content?.categoryPath || "",
     categoryName: content?.categoryName || "",
     subCategory: content?.subCategory || "",
-    subSubCategory: content?.subSubCategory || "",
     tags: content?.tags || "",
     seoTitle: content?.seoTitle || "",
     seoDescription: content?.seoDescription || "",
@@ -39,46 +41,30 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
     discountNew: content?.discountNew || 0,
     discountOld: content?.discountOld || 0,
   });
-  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
-  const [subSubCategories, setSubSubCategories] = useState<string[]>([]);
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [categoryLevels, setCategoryLevels] = useState<string[]>(formData.categoryPath ? formData.categoryPath.split("/") : []);
 
   useEffect(() => {
-    const fetchSubCategories = async () => {
-      if (!formData.categoryName) {
-        setSubCategories([]);
-        setSubSubCategories([]);
-        return;
-      }
-      try {
-        const url = `${API_BASE_URL}/book-categories/${encodeURIComponent(formData.categoryName)}`;
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`Failed to fetch subcategories: ${response.statusText}`);
-        const data = await response.json();
-        setSubCategories(data.subCategories || []);
-        setError("");
-        if (!data.subCategories.find((sub: SubCategory) => sub.name === formData.subCategory)) {
-          setFormData((prev) => ({ ...prev, subCategory: "", subSubCategory: "" }));
-        }
-      } catch (err: any) {
-        console.error("Error fetching subcategories:", err);
-        setError(`Failed to load subcategories for ${formData.categoryName}: ${err.message}`);
-        setSubCategories([]);
-        setSubSubCategories([]);
-      }
-    };
-    fetchSubCategories();
-  }, [formData.categoryName]);
+    setCategoryLevels(formData.categoryPath ? formData.categoryPath.split("/") : []);
+  }, [formData.categoryPath]);
 
-  useEffect(() => {
-    const selectedSubCategory = subCategories.find((sub) => sub.name === formData.subCategory);
-    setSubSubCategories(selectedSubCategory?.subSubCategories || []);
-    if (!selectedSubCategory || !selectedSubCategory.subSubCategories.includes(formData.subSubCategory)) {
-      setFormData((prev) => ({ ...prev, subSubCategory: "" }));
+  const handleCategoryChange = (level: number, value: string) => {
+    const newLevels = [...categoryLevels.slice(0, level), value];
+    setCategoryLevels(newLevels);
+    setFormData((prev) => ({ ...prev, categoryPath: newLevels.join("/") }));
+  };
+
+  const getCategoriesForLevel = (level: number): Category[] => {
+    let currentCategories = categories;
+    for (let i = 0; i < level && i < categoryLevels.length; i++) {
+      const selected = categoryLevels[i];
+      const parent = currentCategories.find((cat) => cat.name === selected);
+      currentCategories = parent ? (parent.children || []) : [];
     }
-  }, [formData.subCategory, subCategories]);
+    return currentCategories;
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -95,7 +81,7 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
       if (name === "condition") {
         if (value === "NEW - ORIGINAL PRICE") {
           return { ...newData, quantityOld: 0, discountOld: 0 };
-        } else if (value === "OLD ") {
+        } else if (value === "OLD") {
           return { ...newData, quantityNew: 0, discountNew: 0 };
         }
       }
@@ -162,9 +148,7 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
     try {
       const requiredFields = [
         "title",
-        "categoryName",
-        "subCategory",
-        "subSubCategory",
+        "categoryPath",
         "tags",
         "price",
         "description",
@@ -186,19 +170,19 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
         return;
       }
 
-      if (!["NEW - ORIGINAL PRICE", "OLD ", "BOTH"].includes(formData.condition)) {
+      if (!["NEW - ORIGINAL PRICE", "OLD", "BOTH"].includes(formData.condition)) {
         setError("Invalid condition selected");
         setIsSubmitting(false);
         return;
       }
 
-      if (formData.discountNew < 0 || formData.discountNew > 100) {
+      if ((formData.discountNew ?? 0) < 0 || (formData.discountNew ?? 0) > 100) {
         setError("Discount for new books must be between 0 and 100 percent");
         setIsSubmitting(false);
         return;
       }
 
-      if (formData.discountOld < 0 || formData.discountOld > 100) {
+      if ((formData.discountOld ?? 0) < 0 || (formData.discountOld ?? 0) > 100) {
         setError("Discount for old books must be between 0 and 100 percent");
         setIsSubmitting(false);
         return;
@@ -211,12 +195,6 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
         return;
       }
 
-      if (imageUrl !== defaultImageUrl && !imageUrl.startsWith("https://res.cloudinary.com/")) {
-        setError("Image URL must be a valid Cloudinary URL or the default image");
-        setIsSubmitting(false);
-        return;
-      }
-
       const dataToSend: Content = {
         ...formData,
         tags: formData.tags,
@@ -225,11 +203,8 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
         quantityOld: formData.quantityOld ?? 0,
         discountNew: formData.discountNew ?? 0,
         discountOld: formData.discountOld ?? 0,
-        categoryName: formData.categoryName,
-        subSubCategory: formData.subSubCategory,
+        categoryPath: formData.categoryPath,
       };
-
-      console.log("Data being sent:", dataToSend);
 
       await onSave(dataToSend);
       setError("");
@@ -273,66 +248,43 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
-              <select
-                name="categoryName"
-                value={formData.categoryName}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                required
-                disabled={isSubmitting}
-              >
-                <option value="" disabled>
-                  Select a category
-                </option>
-                {categories.map((cat) => (
-                  <option key={cat.name} value={cat.name}>
-                    {cat.name}
+              <label className="block text-sm font-medium text-gray-700 mb-2">Category Path *</label>
+              {categoryLevels.map((levelValue, index) => (
+                <select
+                  key={`category-level-${index}`}
+                  value={levelValue || ""}
+                  onChange={(e) => handleCategoryChange(index, e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent mb-2"
+                  required
+                  disabled={isSubmitting}
+                >
+                  <option value="" disabled>
+                    Select level {index + 1} category
                   </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Subcategory *</label>
-              <select
-                name="subCategory"
-                value={formData.subCategory}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                required
-                disabled={isSubmitting || !formData.categoryName}
-              >
-                <option value="" disabled>
-                  Select a subcategory
-                </option>
-                {subCategories.map((sub) => (
-                  <option key={sub.name} value={sub.name}>
-                    {sub.name}
+                  {getCategoriesForLevel(index).map((cat) => (
+                    <option key={cat._id} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              ))}
+              {getCategoriesForLevel(categoryLevels.length).length > 0 && (
+                <select
+                  value=""
+                  onChange={(e) => handleCategoryChange(categoryLevels.length, e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  disabled={isSubmitting}
+                >
+                  <option value="" disabled>
+                    Select next level category (optional)
                   </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Sub-Subcategory *</label>
-              <select
-                name="subSubCategory"
-                value={formData.subSubCategory}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                required
-                disabled={isSubmitting || !formData.subCategory}
-              >
-                <option value="" disabled>
-                  Select a sub-subcategory
-                </option>
-                {subSubCategories.map((subSub) => (
-                  <option key={subSub} value={subSub}>
-                    {subSub}
-                  </option>
-                ))}
-              </select>
+                  {getCategoriesForLevel(categoryLevels.length).map((cat) => (
+                    <option key={cat._id} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div>
@@ -401,7 +353,7 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
                 disabled={isSubmitting}
               >
                 <option value="NEW - ORIGINAL PRICE">NEW - ORIGINAL PRICE</option>
-                <option value="OLD ">OLD </option>
+                <option value="OLD">OLD</option>
                 <option value="BOTH">BOTH</option>
               </select>
             </div>
@@ -438,7 +390,7 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
               </>
             ) : null}
 
-            {formData.condition === "OLD " || formData.condition === "BOTH" ? (
+            {formData.condition === "OLD" || formData.condition === "BOTH" ? (
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Old Quantity</label>

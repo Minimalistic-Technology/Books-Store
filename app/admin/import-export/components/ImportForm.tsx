@@ -132,7 +132,8 @@ export default function ImportForm({ onImport }: ImportFormProps) {
             throw new Error(`Missing one or more required columns: ${requiredHeaders.join(", ")}`);
           }
 
-          parsedData = [];
+          // Explicitly type parsedData as Content[]
+          parsedData = [] as Content[];
           for (const [index, row] of dataLines.entries()) {
             const category = row.category;
             if (!categories.includes(category)) {
@@ -220,6 +221,7 @@ export default function ImportForm({ onImport }: ImportFormProps) {
               description: row.description,
               seoTitle: row["seo title"] || row.title,
               seoDescription: row["seo description"] || row.description,
+              categoryPath: `${category}/${row.subcategory}`,
             };
 
             if (product.price <= 0) {
@@ -227,7 +229,7 @@ export default function ImportForm({ onImport }: ImportFormProps) {
               continue;
             }
 
-            parsedData.push(product);
+            (parsedData as Content[]).push(product);
           }
         }
 

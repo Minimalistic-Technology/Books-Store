@@ -28,8 +28,8 @@ interface Item {
   quantityOld: number;
   discountNew: number;
   discountOld: number;
-  effectiveDiscount: number; // Added to match backend response
-  discountedPrice: number; // Added to match backend response
+  effectiveDiscount: number;
+  discountedPrice: number;
 }
 
 interface BookstoreReview {
@@ -40,14 +40,14 @@ interface BookstoreReview {
   comment: string;
   createdAt: string;
   bookId: { _id: string; title: string };
-  status: 'pending' | 'approved' | 'disapproved';
+  status: "pending" | "approved" | "disapproved";
 }
 
 export default function Overview() {
   const { id } = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const category = searchParams.get("category") || "Non-Academics"; // Updated default
+  const category = searchParams.get("category") || "Non-Academics";
   const [item, setItem] = useState<Item>({
     _id: "",
     name: "Loading...",
@@ -64,8 +64,8 @@ export default function Overview() {
     quantityOld: 0,
     discountNew: 0,
     discountOld: 0,
-    effectiveDiscount: 0, // Initialize new field
-    discountedPrice: 0, // Initialize new field
+    effectiveDiscount: 0,
+    discountedPrice: 0,
   });
   const [condition, setCondition] = useState("New");
   const [discountedPrice, setDiscountedPrice] = useState(0);
@@ -78,8 +78,8 @@ export default function Overview() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [reviewError, setReviewError] = useState<string | null>(null);
-  const [reviews, setReviews] = useState<BookstoreReview[]>([]);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [reviews, setReviews] = useState<BookstoreReview[]>([]);
 
   useEffect(() => {
     const fetchItemDetails = async () => {
@@ -97,29 +97,32 @@ export default function Overview() {
           const data = await response.json();
           const newItem = {
             _id: data._id || "",
-            name: data.title || "Unknown Title",
+            name: data.bookName || data.title || "Unknown Title",
             price: data.price || 0,
             imageUrl: data.imageUrl || defaultImageUrl,
             description: data.description || "",
             estimatedDelivery: data.estimatedDelivery || "",
             tags: data.tags || [],
-            condition: data.condition || "New",
-            subCategory: data.subCategory || "",
+            condition: data.condition || "new",
+            subCategory: data.categoryPath ? data.categoryPath.split("/").pop() || "Non-Academics" : "Non-Academics",
             author: data.author || "",
             publisher: data.publisher || "",
             quantityNew: data.quantityNew ?? 0,
             quantityOld: data.quantityOld ?? 0,
             discountNew: data.discountNew ?? 0,
             discountOld: data.discountOld ?? 0,
-            effectiveDiscount: data.effectiveDiscount ?? 0, // Use backend-provided discount
-            discountedPrice: data.discountedPrice ?? data.price, // Use backend-provided discounted price
+            effectiveDiscount: data.effectiveDiscount ?? 0,
+            discountedPrice: (data.discountedPrice ?? data.price) || 0,
           };
           setItem(newItem);
-          const selectedCondition = newItem.condition === "BOTH" ? "New" : 
-                                    newItem.condition === "NEW - ORIGINAL PRICE" ? "New" : 
-                                    newItem.quantityNew > 0 ? "New" : "Old";
+          const selectedCondition = newItem.condition === "BOTH" ? "New" :
+            newItem.condition === "new" ? "New" :
+            newItem.quantityNew > 0 ? "New" : "Old";
           setCondition(selectedCondition);
-          setDiscountedPrice(newItem.discountedPrice); // Use backend-provided discountedPrice
+          // Calculate initial discounted price based on selected condition
+          const initialDiscount = selectedCondition === "New" ? newItem.discountNew : newItem.discountOld;
+          const initialDiscountedPrice = newItem.price * (1 - initialDiscount / 100);
+          setDiscountedPrice(initialDiscountedPrice);
           setIsOutOfStock(newItem.quantityNew === 0 && newItem.quantityOld === 0);
           const conditions = [];
           if (newItem.quantityNew > 0) conditions.push("New");
@@ -207,8 +210,10 @@ export default function Overview() {
   const handleConditionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedCondition = e.target.value;
     setCondition(selectedCondition);
-    // Since discountedPrice is provided by backend, we don't recalculate it
-    setDiscountedPrice(item.discountedPrice); // Maintain backend-provided price
+    // Calculate discounted price based on selected condition
+    const discount = selectedCondition === "New" ? item.discountNew : item.discountOld;
+    const newDiscountedPrice = item.price * (1 - discount / 100);
+    setDiscountedPrice(newDiscountedPrice);
   };
 
   const handleRating = (rate: number) => {
@@ -273,15 +278,14 @@ export default function Overview() {
 
   const handleAddToCart = () => {
     if (!error && item._id && !isOutOfStock) {
-      const effectivePrice = item.discountedPrice; // Use backend-provided discountedPrice
       const query = new URLSearchParams({
         _id: item._id,
         name: item.name,
-        price: item.price.toFixed(2), // Original price
+        price: item.price.toFixed(2),
         imageUrl: item.imageUrl || defaultImageUrl,
         condition,
-        discountedPrice: effectivePrice.toFixed(2),
-        category, // Include category in query
+        discountedPrice: discountedPrice.toFixed(2),
+        category,
       }).toString();
       console.log("Navigating to cart with query:", query);
       router.push(`/cart?${query}`);
@@ -290,14 +294,13 @@ export default function Overview() {
 
   const handleBuyNow = () => {
     if (!error && item._id && !isOutOfStock) {
-      const effectivePrice = item.discountedPrice; // Use backend-provided discountedPrice
       const query = new URLSearchParams({
         _id: item._id,
         name: item.name,
-        price: item.price.toFixed(2), // Original price
+        price: item.price.toFixed(2),
         imageUrl: item.imageUrl || defaultImageUrl,
         condition,
-        discountedPrice: effectivePrice.toFixed(2),
+        discountedPrice: discountedPrice.toFixed(2),
         category,
       }).toString();
       console.log("Navigating to cart with query:", query);
@@ -355,7 +358,7 @@ export default function Overview() {
                   <span className="text-2xl text-green-500">₹{discountedPrice.toFixed(2)}</span>
                   <span className="text-sm text-gray-600">({item.discountOld}% off)</span>
                 </>
-              ) : item.discountNew > 0 && condition === "New" ? (
+              ) : condition === "New" && item.discountNew > 0 ? (
                 <>
                   <span className="text-sm text-gray-500 line-through">₹{item.price.toFixed(2)}</span>
                   <span className="text-2xl text-green-500">₹{discountedPrice.toFixed(2)}</span>
@@ -432,7 +435,7 @@ export default function Overview() {
             <div className="mt-4">
               <h3 className="text-md font-medium text-gray-900">Stock Availability:</h3>
               <p className="text-sm text-gray-600">
-                New: {item.quantityNew} {item.quantityNew === 0 ? "(Out of Stock)" : ""}, 
+                New: {item.quantityNew} {item.quantityNew === 0 ? "(Out of Stock)" : ""},
                 Old: {item.quantityOld} {item.quantityOld === 0 ? "(Out of Stock)" : ""}
               </p>
             </div>

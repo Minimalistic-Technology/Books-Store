@@ -1,12 +1,11 @@
-export const API_BASE_URL= "http://localhost:5000/api/bookstore";
 
-// Normalize URL parameters (used in both Header and DynamicCategoryPage)
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+
 export const normalizeUrlParam = (param: string | undefined): string => {
   if (!param) return "";
   return decodeURIComponent(param).replace(/\s+/g, "-").toLowerCase();
 };
 
-// Normalize display names (used for UI rendering)
 export const normalizeDisplayName = (name: string): string => {
   const classMatch = name.match(/Class-(\d+)/i);
   if (classMatch) {

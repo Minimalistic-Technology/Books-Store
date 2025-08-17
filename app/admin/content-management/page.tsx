@@ -12,41 +12,36 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { API_BASE_URL } from "../../../utils/api";
 
-export interface Content {
+export type Content = {
   id?: string;
   title: string;
   categoryName: string;
   subCategory: string;
-  subSubCategory: string;
+  categoryPath: string; // Added property
   tags: string;
-  seoTitle: string;
-  seoDescription: string;
-  price: number;
-  description: string;
-  estimatedDelivery: string;
-  condition: string;
   author: string;
   publisher: string;
+  price: number;
+  condition: string;
+  quantityNew?: number;
+  discountNew?: number;
+  quantityOld?: number;
+  discountOld?: number;
   imageUrl: string;
-  quantityNew: number;
-  quantityOld: number;
-  discountNew: number;
-  discountOld: number;
-  bookName?: string;
+  estimatedDelivery: string;
+  description: string;
+  seoTitle?: string;
+  seoDescription?: string;
   createdAt?: string;
   updatedAt?: string;
-}
-
-interface SubCategory {
-  name: string;
-  subSubCategories: string[];
-}
+};
 
 interface Category {
   _id: string;
   name: string;
+  path: string;
   tags: string[];
-  subCategories: SubCategory[];
+  children: Category[];
 }
 
 export const updateProducts = (
@@ -56,23 +51,31 @@ export const updateProducts = (
   callback(newProducts);
 };
 
+// Helper function to flatten category hierarchy for dropdown
+const flattenCategories = (categories: Category[], parentPath: string = ""): { id: string; path: string; display: string }[] => {
+  let result: { id: string; path: string; display: string }[] = [];
+  categories.forEach((cat) => {
+    if (!cat.path) return; // Skip categories with undefined path
+    const currentPath = parentPath ? `${parentPath}/${cat.name}` : cat.name;
+    result.push({ id: cat._id, path: cat.path, display: currentPath });
+    if (cat.children && cat.children.length > 0) {
+      result = result.concat(flattenCategories(cat.children, currentPath));
+    }
+  });
+  return result;
+};
+
 export default function ContentManagement() {
   const [contents, setContents] = useState<Content[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingContent, setEditingContent] = useState<Content | undefined>(
-    undefined
-  );
+  const [editingContent, setEditingContent] = useState<Content | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>("");
   const [successMessage, setSuccessMessage] = useState<string>("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [selectedSubCategory, setSelectedSubCategory] = useState<string>("");
-  const [newSubCategory, setNewSubCategory] = useState<string>("");
-  const [newSubSubCategory, setNewSubSubCategory] = useState<string>("");
-  const [subCategoryToDelete, setSubCategoryToDelete] = useState<string>("");
-  const [subSubCategoryToDelete, setSubSubCategoryToDelete] =
-    useState<string>("");
+  const [newCategoryName, setNewCategoryName] = useState<string>("");
+  const [parentPath, setParentPath] = useState<string>("");
+  const [categoryToDelete, setCategoryToDelete] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const itemsPerPage = 10;
@@ -83,28 +86,26 @@ export default function ContentManagement() {
       const categoriesResponse = await fetch(`${API_BASE_URL}/book-categories`);
       if (!categoriesResponse.ok) throw new Error("Failed to fetch categories");
       const categoriesData = await categoriesResponse.json();
+      console.log('Categories Data:', categoriesData); // Debug
       setCategories(categoriesData);
 
       const allBooks: Content[] = [];
       const fetchPromises = categoriesData.map(async (category: Category) => {
+        if (!category.path) return []; // Skip invalid categories
         try {
           const booksResponse = await fetch(
-            `${API_BASE_URL}/book-categories/${encodeURIComponent(
-              category.name
-            )}`
+            `${API_BASE_URL}/books/${encodeURIComponent(category.path)}`
           );
           if (!booksResponse.ok) {
-            console.warn(`Failed to fetch books for ${category.name}`);
+            console.warn(`Failed to fetch books for ${category.path}`);
             return [];
           }
           const booksData = await booksResponse.json();
-          const books = Array.isArray(booksData.books) ? booksData.books : [];
+          const books = Array.isArray(booksData) ? booksData : [];
           return books.map((book: any) => ({
             id: book._id,
             title: book.bookName || book.title || "",
-            categoryName: category.name,
-            subCategory: book.subCategory || "",
-            subSubCategory: book.subSubCategory || "",
+            categoryPath: book.categoryPath || category.path,
             tags: Array.isArray(book.tags)
               ? book.tags.join(", ")
               : book.tags || "",
@@ -113,7 +114,7 @@ export default function ContentManagement() {
             price: book.price || 0,
             description: book.description || "",
             estimatedDelivery: book.estimatedDelivery || "",
-            condition: book.condition || "NEW - ORIGINAL PRICE",
+            condition: book.condition === "new" ? "NEW - ORIGINAL PRICE" : book.condition === "used" ? "OLD" : "BOTH",
             author: book.author || "",
             publisher: book.publisher || "",
             imageUrl: book.imageUrl || "",
@@ -127,7 +128,7 @@ export default function ContentManagement() {
           }));
         } catch (error) {
           console.error(
-            `Error fetching books for category ${category.name}:`,
+            `Error fetching books for category ${category.path}:`,
             error
           );
           return [];
@@ -149,73 +150,28 @@ export default function ContentManagement() {
     fetchCategoriesAndContents();
   }, [fetchCategoriesAndContents]);
 
-  useEffect(() => {
-    if (!selectedCategory) {
-      setSelectedSubCategory("");
-      setSubCategoryToDelete("");
-      setSubSubCategoryToDelete("");
-      return;
-    }
-    const fetchCategoryData = async () => {
-      try {
-        const response = await fetch(
-          `${API_BASE_URL}/book-categories/${encodeURIComponent(
-            selectedCategory
-          )}`
-        );
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Failed to fetch category data");
-        }
-        const data = await response.json();
-        setCategories((prev) =>
-          prev.map((cat) =>
-            cat.name === selectedCategory
-              ? {
-                  ...cat,
-                  tags: data.tags || [],
-                  subCategories: data.subCategories || [],
-                }
-              : cat
-          )
-        );
-        setError("");
-      } catch (err: any) {
-        setError(err.message || `Failed to load data for ${selectedCategory}`);
-        setTimeout(() => setError(""), 5000);
-      }
-    };
-    fetchCategoryData();
-  }, [selectedCategory]);
-
   const handleSave = async (data: Content) => {
     try {
       setIsLoading(true);
       const isUpdate = Boolean(data.id);
       const url = isUpdate
-        ? `${API_BASE_URL}/book-categories/${encodeURIComponent(
-            data.categoryName
-          )}/${encodeURIComponent(data.subCategory)}/${encodeURIComponent(
-            data.subSubCategory
-          )}/${data.id}`
-        : `${API_BASE_URL}/book-categories/${encodeURIComponent(
-            data.categoryName
-          )}/${encodeURIComponent(data.subCategory)}/${encodeURIComponent(
-            data.subSubCategory
-          )}`;
+        ? `${API_BASE_URL}/books/${encodeURIComponent(data.categoryPath)}/${data.id}`
+        : `${API_BASE_URL}/books/${encodeURIComponent(data.categoryPath)}`;
+      const backendCondition = data.condition === "NEW - ORIGINAL PRICE" ? "new" : data.condition === "OLD" ? "used" : data.condition;
       const response = await fetch(url, {
         method: isUpdate ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...data,
-          title: data.title, // Ensure title is sent as title
+          title: data.title,
           tags:
             typeof data.tags === "string"
               ? data.tags.split(",").map((tag) => tag.trim())
               : data.tags,
+          condition: backendCondition,
           discountNew: data.discountNew ?? 0,
           discountOld: data.discountOld ?? 0,
-          subSubCategory: data.subSubCategory,
+          categoryPath: data.categoryPath,
         }),
       });
 
@@ -232,9 +188,9 @@ export default function ContentManagement() {
       const updatedBook: Content = {
         id: bookData._id,
         title: bookData.bookName || bookData.title,
-        categoryName: data.categoryName,
-        subCategory: bookData.subCategory,
-        subSubCategory: bookData.subSubCategory,
+        categoryName: bookData.categoryName || "", // Add categoryName
+        subCategory: bookData.subCategory || "",   // Add subCategory
+        categoryPath: bookData.categoryPath,
         tags: Array.isArray(bookData.tags)
           ? bookData.tags.join(", ")
           : bookData.tags || "",
@@ -243,7 +199,7 @@ export default function ContentManagement() {
         price: bookData.price,
         description: bookData.description,
         estimatedDelivery: bookData.estimatedDelivery,
-        condition: bookData.condition,
+        condition: bookData.condition === "new" ? "NEW - ORIGINAL PRICE" : bookData.condition === "used" ? "OLD" : "BOTH",
         author: bookData.author,
         publisher: bookData.publisher,
         imageUrl: bookData.imageUrl,
@@ -251,7 +207,6 @@ export default function ContentManagement() {
         quantityOld: bookData.quantityOld || 0,
         discountNew: bookData.discountNew || 0,
         discountOld: bookData.discountOld || 0,
-        bookName: bookData.bookName || "",
         createdAt: bookData.createdAt || "",
         updatedAt: bookData.updatedAt || "",
       };
@@ -285,20 +240,12 @@ export default function ContentManagement() {
     setIsFormOpen(true);
   };
 
-  const handleDelete = async (id: string, categoryName: string) => {
+  const handleDelete = async (id: string, categoryPath: string) => {
     if (!confirm("Are you sure you want to delete this book?")) return;
     try {
       setIsLoading(true);
-      const content = contents.find(
-        (c) => c.id === id && c.categoryName === categoryName
-      );
-      if (!content) throw new Error("Book not found");
       const response = await fetch(
-        `${API_BASE_URL}/book-categories/${encodeURIComponent(
-          categoryName
-        )}/${encodeURIComponent(content.subCategory)}/${encodeURIComponent(
-          content.subSubCategory
-        )}/${id}`,
+        `${API_BASE_URL}/books/${encodeURIComponent(categoryPath)}/${id}`,
         { method: "DELETE" }
       );
       if (!response.ok) throw new Error("Failed to delete book");
@@ -313,191 +260,99 @@ export default function ContentManagement() {
     }
   };
 
-  const handleCreateSubCategory = async () => {
-    if (!selectedCategory || !newSubCategory.trim()) {
-      setError("Please select a category and enter a subcategory name");
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) {
+      setError("Please enter a category name");
       setTimeout(() => setError(""), 3000);
       return;
     }
     try {
       setIsLoading(true);
-      const response = await fetch(
-        `${API_BASE_URL}/book-categories/${encodeURIComponent(
-          selectedCategory
-        )}/subcategories`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: newSubCategory.trim(),
-            subSubCategories: [],
-          }),
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/book-categories`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newCategoryName.trim(),
+          parentPath: parentPath || undefined,
+        }),
+      });
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create subcategory");
+        throw new Error(errorData.error || "Failed to create category");
       }
       const data = await response.json();
-      setCategories((prev) =>
-        prev.map((cat) =>
-          cat.name === selectedCategory
-            ? { ...cat, subCategories: data.subCategories || [] }
-            : cat
-        )
-      );
-      setNewSubCategory("");
-      setSuccessMessage(`Subcategory '${newSubCategory}' added successfully`);
+      setCategories((prev) => {
+        if (!parentPath) {
+          return [...prev, data];
+        }
+        const updateChildren = (categories: Category[]): Category[] => {
+          return categories.map((cat) => {
+            if (cat.path === parentPath) {
+              return { ...cat, children: [...cat.children, data] };
+            }
+            return { ...cat, children: updateChildren(cat.children) };
+          });
+        };
+        return updateChildren(prev);
+      });
+      setNewCategoryName("");
+      setParentPath("");
+      setSuccessMessage(`Category '${newCategoryName}' added successfully`);
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (err: any) {
-      setError(err.message || "Failed to create subcategory");
+      setError(err.message || "Failed to create category");
       setTimeout(() => setError(""), 3000);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleDeleteSubCategory = async () => {
-    if (!selectedCategory || !subCategoryToDelete) {
-      setError("Please select a category and subcategory to delete");
+  const handleDeleteCategory = async () => {
+    if (!categoryToDelete) {
+      setError("Please select a category to delete");
       setTimeout(() => setError(""), 3000);
       return;
     }
     if (
       !confirm(
-        `Are you sure you want to delete the subcategory '${subCategoryToDelete}'?`
+        `Are you sure you want to delete the category '${categoryToDelete}' and all its descendants?`
       )
     )
       return;
     try {
       setIsLoading(true);
       const response = await fetch(
-        `${API_BASE_URL}/book-categories/${encodeURIComponent(
-          selectedCategory
-        )}/subcategories/${encodeURIComponent(subCategoryToDelete)}`,
-        {
-          method: "DELETE",
-        }
+        `${API_BASE_URL}/book-categories/${encodeURIComponent(categoryToDelete)}`,
+        { method: "DELETE" }
       );
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete subcategory");
+        throw new Error(errorData.error || "Failed to delete category");
       }
-      const data = await response.json();
-      setCategories((prev) =>
-        prev.map((cat) =>
-          cat.name === selectedCategory
-            ? { ...cat, subCategories: data.subCategories || [] }
-            : cat
-        )
-      );
-      setSubCategoryToDelete("");
-      setSuccessMessage(
-        `Subcategory '${subCategoryToDelete}' deleted successfully`
-      );
+      setCategories((prev) => {
+        const removeCategory = (categories: Category[]): Category[] => {
+          return categories
+            .filter((cat) => {
+              const path = cat.path || ''; // Fallback for undefined path
+              return (
+                path &&
+                path !== categoryToDelete &&
+                !path.startsWith(`${categoryToDelete}/`)
+              );
+            })
+            .map((cat) => ({
+              ...cat,
+              children: removeCategory(cat.children),
+            }));
+        };
+        return removeCategory(prev);
+      });
+      setCategoryToDelete("");
+      setSuccessMessage(`Category '${categoryToDelete}' deleted successfully`);
       setTimeout(() => setSuccessMessage(""), 3000);
+      await fetchCategoriesAndContents();
     } catch (err: any) {
-      setError(err.message || "Failed to delete subcategory");
-      setTimeout(() => setError(""), 3000);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleCreateSubSubCategory = async () => {
-    if (
-      !selectedCategory ||
-      !selectedSubCategory ||
-      !newSubSubCategory.trim()
-    ) {
-      setError(
-        "Please select a category, subcategory, and enter a sub-subcategory name"
-      );
-      setTimeout(() => setError(""), 3000);
-      return;
-    }
-    try {
-      setIsLoading(true);
-      const response = await fetch(
-        `${API_BASE_URL}/book-categories/${encodeURIComponent(
-          selectedCategory
-        )}/${encodeURIComponent(selectedSubCategory)}/subsubcategories`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: newSubSubCategory.trim() }),
-        }
-      );
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create sub-subcategory");
-      }
-      const data = await response.json();
-      setCategories((prev) =>
-        prev.map((cat) =>
-          cat.name === selectedCategory
-            ? { ...cat, subCategories: data.subCategories || [] }
-            : cat
-        )
-      );
-      setNewSubSubCategory("");
-      setSuccessMessage(
-        `Sub-subcategory '${newSubSubCategory}' added successfully`
-      );
-      setTimeout(() => setSuccessMessage(""), 3000);
-    } catch (err: any) {
-      setError(err.message || "Failed to create sub-subcategory");
-      setTimeout(() => setError(""), 3000);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDeleteSubSubCategory = async () => {
-    if (!selectedCategory || !selectedSubCategory || !subSubCategoryToDelete) {
-      setError(
-        "Please select a category, subcategory, and sub-subcategory to delete"
-      );
-      setTimeout(() => setError(""), 3000);
-      return;
-    }
-    if (
-      !confirm(
-        `Are you sure you want to delete the sub-subcategory '${subSubCategoryToDelete}'?`
-      )
-    )
-      return;
-    try {
-      setIsLoading(true);
-      const response = await fetch(
-        `${API_BASE_URL}/book-categories/${encodeURIComponent(
-          selectedCategory
-        )}/${encodeURIComponent(
-          selectedSubCategory
-        )}/subsubcategories/${encodeURIComponent(subSubCategoryToDelete)}`,
-        {
-          method: "DELETE",
-        }
-      );
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete sub-subcategory");
-      }
-      const data = await response.json();
-      setCategories((prev) =>
-        prev.map((cat) =>
-          cat.name === selectedCategory
-            ? { ...cat, subCategories: data.subCategories || [] }
-            : cat
-        )
-      );
-      setSubSubCategoryToDelete("");
-      setSuccessMessage(
-        `Sub-subcategory '${subSubCategoryToDelete}' deleted successfully`
-      );
-      setTimeout(() => setSuccessMessage(""), 3000);
-    } catch (err: any) {
-      setError(err.message || "Failed to delete sub-subcategory");
+      setError(err.message || "Failed to delete category");
       setTimeout(() => setError(""), 3000);
     } finally {
       setIsLoading(false);
@@ -519,7 +374,7 @@ export default function ContentManagement() {
   };
 
   const getPageNumbers = () => {
-    const pageNumbers = [];
+    const pageNumbers: (number | string)[] = [];
     const maxVisiblePages = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
     let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
@@ -543,6 +398,9 @@ export default function ContentManagement() {
 
     return pageNumbers;
   };
+
+  // Get flattened categories for dropdown
+  const flattenedCategories = flattenCategories(categories);
 
   return (
     <div className="p-6">
@@ -598,183 +456,66 @@ export default function ContentManagement() {
         <div className="space-y-4">
           <div>
             <label className="block text-gray-800 font-medium mb-2">
-              Select Category
-            </label>
-            <select
-              value={selectedCategory}
-              onChange={(e) => {
-                setSelectedCategory(e.target.value);
-                setSelectedSubCategory("");
-                setSubCategoryToDelete("");
-                setSubSubCategoryToDelete("");
-              }}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-              disabled={isLoading}
-            >
-              <option value="" disabled>
-                Select a category
-              </option>
-              {categories.map((cat) => (
-                <option key={cat._id} value={cat.name}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-gray-800 font-medium mb-2">
-              Add New Subcategory
+              Add New Category
             </label>
             <div className="flex gap-2">
               <input
                 type="text"
-                value={newSubCategory}
-                onChange={(e) => setNewSubCategory(e.target.value)}
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
                 className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                placeholder="Enter new subcategory"
-                disabled={isLoading || !selectedCategory}
+                placeholder="Enter new category name"
+                disabled={isLoading}
               />
-              <button
-                onClick={handleCreateSubCategory}
-                disabled={
-                  isLoading || !selectedCategory || !newSubCategory.trim()
-                }
-                className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Add Subcategory
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-gray-800 font-medium mb-2">
-              Delete Subcategory
-            </label>
-            <div className="flex gap-2">
               <select
-                value={subCategoryToDelete}
-                onChange={(e) => setSubCategoryToDelete(e.target.value)}
+                value={parentPath}
+                onChange={(e) => setParentPath(e.target.value)}
                 className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                disabled={isLoading || !selectedCategory}
+                disabled={isLoading}
               >
-                <option value="" disabled>
-                  Select subcategory to delete
-                </option>
-                {categories
-                  .find((cat) => cat.name === selectedCategory)
-                  ?.subCategories.map((sub) => (
-                    <option key={sub.name} value={sub.name}>
-                      {sub.name}
-                    </option>
-                  ))}
-              </select>
-              <button
-                onClick={handleDeleteSubCategory}
-                disabled={
-                  isLoading || !selectedCategory || !subCategoryToDelete
-                }
-                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Delete Subcategory
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-gray-800 font-medium mb-2">
-              Select Subcategory for Sub-Subcategory Management
-            </label>
-            <select
-              value={selectedSubCategory}
-              onChange={(e) => {
-                setSelectedSubCategory(e.target.value);
-                setSubSubCategoryToDelete("");
-              }}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-              disabled={isLoading || !selectedCategory}
-            >
-              <option value="" disabled>
-                Select a subcategory
-              </option>
-              {categories
-                .find((cat) => cat.name === selectedCategory)
-                ?.subCategories.map((sub) => (
-                  <option key={sub.name} value={sub.name}>
-                    {sub.name}
+                <option value="">Select Parent Category (Root)</option>
+                {flattenedCategories.map((cat) => (
+                  <option key={cat.id} value={cat.path}>
+                    {cat.display}
                   </option>
                 ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-gray-800 font-medium mb-2">
-              Add New Sub-Subcategory
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newSubSubCategory}
-                onChange={(e) => setNewSubSubCategory(e.target.value)}
-                className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                placeholder="Enter new sub-subcategory"
-                disabled={
-                  isLoading || !selectedCategory || !selectedSubCategory
-                }
-              />
+              </select>
               <button
-                onClick={handleCreateSubSubCategory}
-                disabled={
-                  isLoading ||
-                  !selectedCategory ||
-                  !selectedSubCategory ||
-                  !newSubSubCategory.trim()
-                }
+                onClick={handleCreateCategory}
+                disabled={isLoading || !newCategoryName.trim()}
                 className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Add Sub-Subcategory
+                Add Category
               </button>
             </div>
           </div>
 
           <div>
             <label className="block text-gray-800 font-medium mb-2">
-              Delete Sub-Subcategory
+              Delete Category
             </label>
             <div className="flex gap-2">
               <select
-                value={subSubCategoryToDelete}
-                onChange={(e) => setSubSubCategoryToDelete(e.target.value)}
+                value={categoryToDelete}
+                onChange={(e) => setCategoryToDelete(e.target.value)}
                 className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                disabled={
-                  isLoading || !selectedCategory || !selectedSubCategory
-                }
+                disabled={isLoading}
               >
                 <option value="" disabled>
-                  Select sub-subcategory to delete
+                  Select category to delete
                 </option>
-                {categories
-                  .find((cat) => cat.name === selectedCategory)
-                  ?.subCategories.find(
-                    (sub) => sub.name === selectedSubCategory
-                  )
-                  ?.subSubCategories.map((subSub) => (
-                    <option key={subSub} value={subSub}>
-                      {subSub}
-                    </option>
-                  ))}
+                {flattenedCategories.map((cat) => (
+                  <option key={cat.id} value={cat.path}>
+                    {cat.display}
+                  </option>
+                ))}
               </select>
               <button
-                onClick={handleDeleteSubSubCategory}
-                disabled={
-                  isLoading ||
-                  !selectedCategory ||
-                  !selectedSubCategory ||
-                  !subSubCategoryToDelete
-                }
+                onClick={handleDeleteCategory}
+                disabled={isLoading || !categoryToDelete}
                 className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Delete Sub-Subcategory
+                Delete Category
               </button>
             </div>
           </div>
@@ -809,10 +550,8 @@ export default function ContentManagement() {
             </button>
             {getPageNumbers().map((page, index) => (
               <button
-                key={index}
-                onClick={() =>
-                  typeof page === "number" && handlePageChange(page)
-                }
+                key={typeof page === "number" ? `page-${page}` : `ellipsis-${index}`}
+                onClick={() => typeof page === "number" && handlePageChange(page)}
                 disabled={page === "..." || currentPage === page}
                 className={`px-3 py-1 rounded-md ${
                   currentPage === page

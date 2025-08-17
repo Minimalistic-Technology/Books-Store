@@ -4,9 +4,13 @@ import { useState, useEffect } from "react";
 import { API_BASE_URL } from '../../../utils/api';
 
 interface Category {
+  _id: string;
   name: string;
-  subCategories: { name: string }[];
+  path: string;
+  children: Category[];
 }
+
+const normalizeDisplayName = (name: string) => name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
 export default function DiscountManagement() {
   const [selectionType, setSelectionType] = useState<"category" | "subcategory" | null>(null);
@@ -30,6 +34,32 @@ export default function DiscountManagement() {
     };
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    const fetchDiscount = async () => {
+      if (selectionType === "category" && selectedCategory) {
+        try {
+          const response = await fetch(`${API_BASE_URL}/book-categories/${selectedCategory}`);
+          const data = await response.json();
+          setDiscount(data.discount.toString() || "0");
+        } catch (error) {
+          console.error("Failed to fetch discount:", error);
+        }
+      } else if (selectionType === "subcategory" && selectedSubCategory) {
+        const path = `${selectedCategory}/${selectedSubCategory}`;
+        try {
+          const response = await fetch(`${API_BASE_URL}/book-categories/${path}`);
+          const data = await response.json();
+          setDiscount(data.discount.toString() || "0");
+        } catch (error) {
+          console.error("Failed to fetch discount:", error);
+        }
+      } else {
+        setDiscount("");
+      }
+    };
+    fetchDiscount();
+  }, [selectedCategory, selectedSubCategory, selectionType]);
 
   const handleSelectionType = (type: "category" | "subcategory") => {
     setSelectionType(type);
@@ -58,10 +88,10 @@ export default function DiscountManagement() {
     try {
       const url =
         selectionType === "category"
-          ? `${API_BASE_URL}/book-categories/${selectedCategory}/discount`
-          : `${API_BASE_URL}/book-categories/${selectedCategory}/${selectedSubCategory}/discount`;
+          ? `${API_BASE_URL}/book-categories/${selectedCategory}`
+          : `${API_BASE_URL}/book-categories/${selectedCategory}/${selectedSubCategory}`;
       const response = await fetch(url, {
-        method: "POST",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ discount: Number(discount) }),
       });
@@ -72,7 +102,7 @@ export default function DiscountManagement() {
       }
 
       setSuccessMessage(
-        `Discount of ${discount}% applied to ${selectionType === "category" ? selectedCategory : `${selectedCategory} - ${selectedSubCategory}`}`
+        `Discount of ${discount}% applied to ${selectionType === "category" ? normalizeDisplayName(selectedCategory) : `${normalizeDisplayName(selectedCategory)} - ${normalizeDisplayName(selectedSubCategory)}`}`
       );
       setDiscount("");
     } catch (error: any) {
@@ -118,8 +148,8 @@ export default function DiscountManagement() {
               >
                 <option value="">Select Category</option>
                 {categories.map((cat) => (
-                  <option key={cat.name} value={cat.name}>
-                    {cat.name}
+                  <option key={cat._id} value={cat.name}>
+                    {normalizeDisplayName(cat.name)}
                   </option>
                 ))}
               </select>
@@ -139,9 +169,9 @@ export default function DiscountManagement() {
                   <option value="">Select Subcategory</option>
                   {categories
                     .find((cat) => cat.name === selectedCategory)
-                    ?.subCategories.map((sub) => (
-                      <option key={sub.name} value={sub.name}>
-                        {sub.name}
+                    ?.children.map((sub) => (
+                      <option key={sub._id} value={sub.name}>
+                        {normalizeDisplayName(sub.name)}
                       </option>
                     ))}
                 </select>

@@ -4,7 +4,7 @@ import { Content } from "../page";
 interface ContentListProps {
   contents: Content[];
   onEdit: (content: Content) => void;
-  onDelete: (id: string, categoryName: string) => void;
+  onDelete: (id: string, categoryPath: string) => void;
 }
 
 const ContentList: React.FC<ContentListProps> = ({ contents, onEdit, onDelete }) => {
@@ -18,9 +18,7 @@ const ContentList: React.FC<ContentListProps> = ({ contents, onEdit, onDelete })
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Image</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Title</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Category</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Subcategory</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Sub-Subcategory</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Category Path</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Tags</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Author</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Publisher</th>
@@ -51,9 +49,7 @@ const ContentList: React.FC<ContentListProps> = ({ contents, onEdit, onDelete })
                   />
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.title}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.categoryName}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.subCategory}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.subSubCategory}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.categoryPath}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.tags}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.author}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.publisher}</td>
@@ -66,7 +62,7 @@ const ContentList: React.FC<ContentListProps> = ({ contents, onEdit, onDelete })
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.estimatedDelivery}</td>
                 <td className="px-6 py-4 text-sm text-gray-900">{content.description.substring(0, 50)}...</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.seoTitle}</td>
-                <td className="px-6 py-4 text-sm text-gray-900">{content.seoDescription.substring(0, 50)}...</td>
+                <td className="px-6 py-4 text-sm text-gray-900">{content.seoDescription ? content.seoDescription.substring(0, 50) + "..." : ""}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button
                     onClick={() => onEdit(content)}
@@ -75,7 +71,7 @@ const ContentList: React.FC<ContentListProps> = ({ contents, onEdit, onDelete })
                     Edit
                   </button>
                   <button
-                    onClick={() => onDelete(content.id!, content.categoryName)}
+                    onClick={() => onDelete(content.id!, content.categoryPath)}
                     className="text-red-600 hover:text-red-900"
                   >
                     Delete

@@ -40,7 +40,7 @@ export default function Sidebar() {
                 Content Management
               </Link>
             </li>
-            <li>
+            {/* <li>
               <Link
                 href="/admin/categories-tags"
                 className={`block p-3 text-gray-800 rounded-lg transition-all duration-200 font-medium ${
@@ -51,7 +51,7 @@ export default function Sidebar() {
               >
                 Categories & Tags
               </Link>
-            </li>
+            </li> */}
             <li>
               <Link
                 href="/admin/comments-reviews"
@@ -61,7 +61,7 @@ export default function Sidebar() {
                     : "hover:bg-yellow-200 hover:shadow-md animate__pulse"
                 }`}
               >
-                Comments & Reviews
+                Comments
               </Link>
             </li>
             <li>

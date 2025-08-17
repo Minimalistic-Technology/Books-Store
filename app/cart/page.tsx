@@ -1,13 +1,13 @@
-
 "use client";
 import Header from "../components/header/page";
 import Footer from "../components/footer/page";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faShoppingCart } from "@fortawesome/free-solid-svg-icons";
+import { API_BASE_URL } from '../../utils/api';
 
 interface CartItem {
   _id: string;
@@ -17,6 +17,17 @@ interface CartItem {
   condition: string;
   discountedPrice: number;
   quantity: number;
+}
+
+interface FormData {
+  paymentMethod: string;
+  cardNumber: string;
+  cardholderName: string;
+  cvv: string;
+  expiryDate: string;
+  bankName: string;
+  accountNumber: string;
+  upiId: string;
 }
 
 const CartPage: React.FC = () => {
@@ -32,11 +43,26 @@ const CartPage: React.FC = () => {
     postalCode: "",
     country: "",
   });
+  const [customerName, setCustomerName] = useState("");
+  const [email, setEmail] = useState("");
+  const [mobileNumber, setMobileNumber] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const { register, handleSubmit, watch, formState: { errors } } = useForm<FormData>({
+    defaultValues: {
+      paymentMethod: "",
+      cardNumber: "",
+      cardholderName: "",
+      cvv: "",
+      expiryDate: "",
+      bankName: "",
+      accountNumber: "",
+      upiId: "",
+    },
+  });
 
   useEffect(() => {
     const storedItems = JSON.parse(localStorage.getItem("cart") || "[]");
-    setCartItems(storedItems);
-
     const id = searchParams.get("_id");
     const name = searchParams.get("name");
     const price = searchParams.get("price");
@@ -50,19 +76,21 @@ const CartPage: React.FC = () => {
         name,
         price: parseFloat(price),
         imageUrl: imageUrl || "",
-        condition: condition || "NEW - ORIGINAL PRICE",
-        discountedPrice: discountedPrice ? parseFloat(discountedPrice) : 0,
+        condition: condition || "New",
+        discountedPrice: discountedPrice ? parseFloat(discountedPrice) : parseFloat(price),
         quantity: 1,
       };
       const updatedCart = [...storedItems, newItem];
       setCartItems(updatedCart);
       localStorage.setItem("cart", JSON.stringify(updatedCart));
       console.log("Added new item to cart:", newItem);
+    } else {
+      setCartItems(storedItems);
     }
   }, [searchParams]);
 
   const getEffectivePrice = (item: CartItem) => {
-    return item.condition === "OLD - 30% OFF" && item.discountedPrice > 0 ? item.discountedPrice : item.price;
+    return item.condition === "Old" && item.discountedPrice > 0 ? item.discountedPrice : item.price;
   };
 
   const getTotal = () => {
@@ -93,40 +121,119 @@ const CartPage: React.FC = () => {
 
   const handleAddressSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!customerName.trim()) {
+      setError("Customer name is required.");
+      return;
+    }
+    if (!email.match(/^\S+@\S+\.\S+$/)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    if (!mobileNumber.match(/^\+?[1-9]\d{1,14}$/)) {
+      setError("Please enter a valid mobile number.");
+      return;
+    }
+    if (!address.street || !address.city || !address.state || !address.country || !address.postalCode) {
+      setError("Please fill in all address fields.");
+      return;
+    }
     console.log("Submitted address:", address);
+    setError(null);
     setShowAddressForm(false);
     setShowPaymentForm(true);
   };
 
-  const paymentForm = useForm({
-    defaultValues: {
-      paymentMethod: "",
-      cardNumber: "",
-      cardholderName: "",
-      cvv: "",
-      expiryDate: "",
-      bankName: "",
-      accountNumber: "",
-      upiId: "",
-    },
-  });
+  const mapConditionToOrderSchema = (bookCondition: string): string => {
+    if (bookCondition === "NEW - ORIGINAL PRICE" || bookCondition === "New") return "New";
+    if (bookCondition === "OLD " || bookCondition === "Old" || bookCondition === "OLD - 35% OFF") return "Old";
+    if (bookCondition === "BOTH") return cartItems[0]?.condition || "New";
+    throw new Error(`Invalid book condition: ${bookCondition}`);
+  };
 
-  const onPaymentSubmit = (data: any) => {
+  const onPaymentSubmit = async (data: FormData) => {
     console.log("Payment details submitted:", data);
-    const cartItems = JSON.parse(localStorage.getItem("cart") || "[]");
-    const orderItems = cartItems.map((item: CartItem) => ({
-      ...item,
-      status: ["Delivered", "Shipping", "On the Way", "Out for Delivery"][Math.floor(Math.random() * 4)],
-    }));
-    localStorage.setItem("orders", JSON.stringify(orderItems));
-    localStorage.removeItem("cart");
-    setCartItems([]);
-    setShowPaymentForm(false);
-    router.push("/orders");
+    if (cartItems.length === 0) {
+      setError("Cart is empty.");
+      return;
+    }
+
+
+    const paymentMethod = data.paymentMethod;
+    if (!["creditCard", "debitCard", "upi", "cod"].includes(paymentMethod)) {
+      setError("Please select a valid payment method.");
+      return;
+    }
+
+    const paymentTypeMap: { [key: string]: string } = {
+      creditCard: "Credit Card",
+      debitCard: "Debit Card",
+      upi: "UPI",
+      cod: "Cash on Delivery",
+    };
+    const paymentType = paymentTypeMap[paymentMethod] || "Cash on Delivery";
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/book-categories/School-Books/${cartItems[0]._id}`);
+      if (!response.ok) throw new Error("Failed to fetch book details");
+      const book = await response.json();
+      if (cartItems[0].condition === "New" && book.quantityNew < cartItems[0].quantity) {
+        setError(`Insufficient new stock. Only ${book.quantityNew} available.`);
+        return;
+      }
+      if (cartItems[0].condition === "Old" && book.quantityOld < cartItems[0].quantity) {
+        setError(`Insufficient old stock. Only ${book.quantityOld} available.`);
+        return;
+      }
+    } catch (err) {
+      console.error("Error checking stock:", err);
+      setError("Failed to verify stock availability. Please try again.");
+      return;
+    }
+
+    try {
+      const orderCondition = mapConditionToOrderSchema(cartItems[0].condition);
+      const orderData = {
+        customerName,
+        email,
+        mobileNumber,
+        address: {
+          street: address.street,
+          city: address.city,
+          state: address.state,
+          country: address.country,
+          pinCode: address.postalCode,
+        },
+        paymentType,
+        quantity: cartItems[0].quantity || 1,
+        price: getTotal(),
+        status: "Shipped",
+        condition: orderCondition,
+        bookId: cartItems[0]._id,
+      };
+
+      const response = await fetch(`${API_BASE_URL}/orders`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderData),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to place order: HTTP ${response.status}`);
+      }
+      const newOrder = await response.json();
+      console.log("Order placed:", newOrder);
+      localStorage.removeItem("cart");
+      setCartItems([]);
+      setShowPaymentForm(false);
+      router.push("/orders");
+    } catch (err: any) {
+      console.error("Error placing order:", err.message);
+      setError(err.message || "Failed to place order. Please try again.");
+    }
   };
 
   const handleUpiVerify = () => {
-    const upiId = paymentForm.getValues("upiId");
+    const upiId = watch("upiId");
     console.log("Verifying UPI ID:", upiId);
     alert("UPI verification simulated. Please integrate with a UPI API for real validation.");
   };
@@ -139,6 +246,7 @@ const CartPage: React.FC = () => {
           <Link href="/" className="hover:underline">Home</Link> / <span>Cart</span>
         </nav>
         <h1 className="text-4xl font-semibold mb-6 text-black">Your Book Cart</h1>
+        {error && <p className="text-red-500 mb-4">{error}</p>}
         {cartItems.length === 0 ? (
           <p className="text-gray-600">
             Your cart is empty.{" "}
@@ -159,13 +267,13 @@ const CartPage: React.FC = () => {
                     alt={item.name}
                     className="w-24 h-32 object-cover rounded-md"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = "/placeholder-image.jpg"; // Fallback image
+                      (e.target as HTMLImageElement).src = "/placeholder-image.jpg";
                     }}
                   />
                   <div className="flex-1 ml-4">
                     <h3 className="text-lg font-semibold">{item.name}</h3>
                     <div className="flex items-center space-x-2">
-                      {item.condition === "OLD - 30% OFF" && item.discountedPrice > 0 ? (
+                      {item.condition === "Old" && item.discountedPrice > 0 ? (
                         <>
                           <span className="text-sm text-gray-500 line-through">₹{item.price.toFixed(2)}</span>
                           <span className="text-orange-500 font-bold">₹{item.discountedPrice.toFixed(2)}</span>
@@ -213,11 +321,37 @@ const CartPage: React.FC = () => {
                     <div>
                       <input
                         type="text"
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                        placeholder="Customer Name"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Email"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="text"
+                        value={mobileNumber}
+                        onChange={(e) => setMobileNumber(e.target.value)}
+                        placeholder="Mobile Number"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="text"
                         name="street"
                         value={address.street}
                         onChange={handleAddressChange}
                         placeholder="Street Address"
-                        required
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                       />
                     </div>
@@ -229,7 +363,6 @@ const CartPage: React.FC = () => {
                           value={address.city}
                           onChange={handleAddressChange}
                           placeholder="City"
-                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                         />
                       </div>
@@ -240,7 +373,6 @@ const CartPage: React.FC = () => {
                           value={address.state}
                           onChange={handleAddressChange}
                           placeholder="State"
-                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                         />
                       </div>
@@ -253,7 +385,6 @@ const CartPage: React.FC = () => {
                           value={address.postalCode}
                           onChange={handleAddressChange}
                           placeholder="Postal Code"
-                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                         />
                       </div>
@@ -264,7 +395,6 @@ const CartPage: React.FC = () => {
                           value={address.country}
                           onChange={handleAddressChange}
                           placeholder="Country"
-                          required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                         />
                       </div>
@@ -281,13 +411,12 @@ const CartPage: React.FC = () => {
                 </form>
               ) : showPaymentForm ? (
                 <form
-                  onSubmit={paymentForm.handleSubmit(onPaymentSubmit)}
+                  onSubmit={handleSubmit(onPaymentSubmit)}
                   className="mt-4 space-y-4"
                 >
                   <div>
                     <select
-                      value={paymentForm.watch("paymentMethod") || ""}
-                      onChange={(e) => paymentForm.setValue("paymentMethod", e.target.value)}
+                      {...register("paymentMethod", { required: "Payment method is required" })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                     >
                       <option value="" disabled>
@@ -296,74 +425,59 @@ const CartPage: React.FC = () => {
                       <option value="creditCard">Credit Card</option>
                       <option value="debitCard">Debit Card</option>
                       <option value="upi">UPI</option>
-                      <option value="netBanking">Net Banking</option>
-                      <option value="cod">Cash on Delivery</option>
+                      <option value="cod Holycow">Cash on Delivery</option>
                     </select>
+                    {errors.paymentMethod && <p className="text-red-500 text-sm">{errors.paymentMethod.message}</p>}
                   </div>
-                  {(paymentForm.watch("paymentMethod") === "creditCard" ||
-                    paymentForm.watch("paymentMethod") === "debitCard") && (
+                  {(watch("paymentMethod") === "creditCard" || watch("paymentMethod") === "debitCard") && (
                     <>
                       <input
                         type="text"
-                        {...paymentForm.register("cardNumber")}
+                        {...register("cardNumber", { required: "Card number is required" })}
                         placeholder="1234 5678 9012 3456"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                       />
+                      {errors.cardNumber && <p className="text-red-500 text-sm">{errors.cardNumber.message}</p>}
                       <input
                         type="text"
-                        {...paymentForm.register("cardholderName")}
+                        {...register("cardholderName", { required: "Cardholder name is required" })}
                         placeholder="John Doe"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                       />
+                      {errors.cardholderName && <p className="text-red-500 text-sm">{errors.cardholderName.message}</p>}
                       <div className="grid grid-cols-2 gap-4">
-                        <input
-                          type="text"
-                          {...paymentForm.register("cvv")}
-                          placeholder="123"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        />
-                        <input
-                          type="text"
-                          {...paymentForm.register("expiryDate")}
-                          placeholder="MM/YY"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        />
+                        <div>
+                          <input
+                            type="text"
+                            {...register("cvv", { required: "CVV is required" })}
+                            placeholder="123"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                          />
+                          {errors.cvv && <p className="text-red-500 text-sm">{errors.cvv.message}</p>}
+                        </div>
+                        <div>
+                          <input
+                            type="text"
+                            {...register("expiryDate", { required: "Expiry date is required" })}
+                            placeholder="MM/YY"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                          />
+                          {errors.expiryDate && <p className="text-red-500 text-sm">{errors.expiryDate.message}</p>}
+                        </div>
                       </div>
                     </>
                   )}
-                  {paymentForm.watch("paymentMethod") === "netBanking" && (
-                    <>
-                      <select
-                        value={paymentForm.watch("bankName") || ""}
-                        onChange={(e) => paymentForm.setValue("bankName", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      >
-                        <option value="" disabled>
-                          Select Bank Name
-                        </option>
-                        <option value="hdfc">HDFC Bank</option>
-                        <option value="icici">ICICI Bank</option>
-                        <option value="sbi">State Bank of India</option>
-                        <option value="axis">Axis Bank</option>
-                        <option value="kotak">Kotak Mahindra Bank</option>
-                      </select>
-                      <input
-                        type="text"
-                        {...paymentForm.register("accountNumber")}
-                        placeholder="Enter account number"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      />
-                    </>
-                  )}
-                  {paymentForm.watch("paymentMethod") === "upi" && (
+                  {watch("paymentMethod") === "upi" && (
                     <div className="flex space-x-2">
                       <input
                         type="text"
-                        {...paymentForm.register("upiId")}
+                        {...register("upiId", { required: "UPI ID is required" })}
                         placeholder="example@upi"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                       />
+                      {errors.upiId && <p className="text-red-500 text-sm">{errors.upiId.message}</p>}
                       <button
+                        type="button"
                         onClick={handleUpiVerify}
                         className="bg-gray-200 text-black rounded-full py-2 px-4 hover:bg-gray-300"
                       >

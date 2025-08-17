@@ -1,4 +1,3 @@
-// components/SiteSettingsForm.tsx
 "use client";
 
 import { useState } from "react";
@@ -24,10 +23,16 @@ export default function SiteSettingsForm({ settings, onSave }: SiteSettingsFormP
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    setFormData((prev) => ({
-      ...prev,
-      logo: file ? URL.createObjectURL(file) : prev.logo,
-    }));
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => ({
+          ...prev,
+          logo: reader.result as string, // Convert to base64 for API
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {

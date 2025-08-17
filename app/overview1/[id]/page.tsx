@@ -1,5 +1,5 @@
-
 "use client";
+
 import dynamic from "next/dynamic";
 import Footer from "../../components/footer/page";
 import Image from "next/image";
@@ -7,8 +7,8 @@ import { FaStar } from "react-icons/fa";
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
+import { API_BASE_URL } from "../../../utils/api";
 
-// Dynamically import Header with SSR disabled to avoid hydration mismatch
 const Header = dynamic(() => import("../../components/header/page"), { ssr: false });
 
 interface Item {
@@ -21,45 +21,59 @@ interface Item {
   tags: string[];
   condition: string;
   subCategory: string;
+  author: string;
+  publisher: string;
+  quantityNew: number;
+  quantityOld: number;
+  discountNew: number;
+  discountOld: number;
 }
 
-interface Review {
+interface BookstoreReview {
   _id: string;
   name: string;
   email: string;
   rating: number;
-  review: string;
+  comment: string;
   createdAt: string;
-  itemId: string;
+  bookId: { _id: string; title: string };
+  status: 'pending' | 'approved' | 'disapproved';
 }
 
 export default function Overview() {
-  const { id } = useParams(); // Extract the dynamic id from the URL
-  const searchParams = useSearchParams(); // Get query params to determine category
+  const { id } = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
-  const category = searchParams.get("category") || "Stationery"; // Default to Stationery
+  const category = searchParams.get("category") || "School-Books";
   const [item, setItem] = useState<Item>({
     _id: "",
     name: "Loading...",
     price: 0,
-    imageUrl: "",
+    imageUrl: "/images/placeholder.jpg",
     description: "",
     estimatedDelivery: "",
     tags: [],
-    condition: "NEW - ORIGINAL PRICE",
+    condition: "New",
     subCategory: "",
+    author: "",
+    publisher: "",
+    quantityNew: 0,
+    quantityOld: 0,
+    discountNew: 0,
+    discountOld: 0,
   });
-  const [condition, setCondition] = useState("NEW - ORIGINAL PRICE");
+  const [condition, setCondition] = useState("New");
   const [discountedPrice, setDiscountedPrice] = useState(0);
-  const [viewers, setViewers] = useState(46);
+  const [isOutOfStock, setIsOutOfStock] = useState(false);
+  const [availableConditions, setAvailableConditions] = useState<string[]>([]);
+  const [viewers, setViewers] = useState(Math.floor(Math.random() * 50) + 1); 
   const [rating, setRating] = useState(0);
   const [reviewDescription, setReviewDescription] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [saveDetails, setSaveDetails] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reviewError, setReviewError] = useState<string | null>(null);
-  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviews, setReviews] = useState<BookstoreReview[]>([]);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   useEffect(() => {
@@ -67,46 +81,73 @@ export default function Overview() {
       if (id) {
         try {
           console.log(`Fetching item with ID: ${id} from category: ${category}`);
-          const response = await fetch(`http://localhost:5000/api/bookstore/categories/${category}/${id}`);
+          const response = await fetch(
+            `${API_BASE_URL}/book-categories/${encodeURIComponent(category)}/${id}?t=${new Date().getTime()}`,
+            { cache: "no-store" }
+          );
           if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
           }
           const data = await response.json();
-          console.log("Item data received:", data);
-          setItem({
-            _id: data._id,
-            name: data.title,
-            price: data.price,
-            imageUrl: data.imageUrl,
-            description: data.description,
-            estimatedDelivery: data.estimatedDelivery,
-            tags: data.tags,
-            condition: data.condition || "NEW - ORIGINAL PRICE",
-            subCategory: data.subCategory,
-          });
-          setCondition(data.condition || "NEW - ORIGINAL PRICE");
-          if (data.condition === "OLD - 30% OFF") {
-            setDiscountedPrice(data.price * 0.7);
-          } else {
-            setDiscountedPrice(0);
-          }
+          const newItem = {
+            _id: data._id || "",
+            name: data.title || "Unknown Title",
+            price: data.price || 0,
+            imageUrl: data.imageUrl || "/images/placeholder.jpg",
+            description: data.description || "",
+            estimatedDelivery: data.estimatedDelivery || "",
+            tags: data.tags || [],
+            condition: data.condition || "New",
+            subCategory: data.subCategory || "",
+            author: data.author || "",
+            publisher: data.publisher || "",
+            quantityNew: data.quantityNew || 0,
+            quantityOld: data.quantityOld || 0,
+            discountNew: data.discountNew || 0,
+            discountOld: data.discountOld || 0,
+          };
+          setItem(newItem);
+          setCondition(newItem.condition === "BOTH" ? "New" : newItem.condition === "NEW - ORIGINAL PRICE" ? "New" : "Old");
+          setDiscountedPrice(
+            newItem.condition === "OLD " ? newItem.price * (1 - newItem.discountOld / 100) :
+            newItem.price * (1 - newItem.discountNew / 100)
+          );
+          setIsOutOfStock(newItem.quantityNew === 0 && newItem.quantityOld === 0);
+          const conditions = [];
+          if (newItem.quantityNew > 0) conditions.push("New");
+          if (newItem.quantityOld > 0) conditions.push("Old");
+          setAvailableConditions(conditions);
           setError(null);
-        } catch (err) {
-          console.error("Fetch error details:", err);
+        } catch (err: any) {
+          console.error("Fetch item error:", {
+            message: err.message,
+            stack: err.stack,
+            id,
+            category,
+          });
           setError(`Item not found. Please check the item ID (${id}) or try a different one.`);
           setItem({
             _id: "",
             name: "Not Found",
             price: 0,
-            imageUrl: "",
+            imageUrl: "/images/placeholder.jpg",
             description: "",
             estimatedDelivery: "",
             tags: [],
-            condition: "NEW - ORIGINAL PRICE",
+            condition: "New",
             subCategory: "",
+            author: "",
+            publisher: "",
+            quantityNew: 0,
+            quantityOld: 0,
+            discountNew: 0,
+            discountOld: 0,
           });
-          setCondition("NEW - ORIGINAL PRICE");
+          setCondition("New");
           setDiscountedPrice(0);
+          setIsOutOfStock(true);
+          setAvailableConditions([]);
         }
       }
     };
@@ -116,40 +157,53 @@ export default function Overview() {
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/bookstore/reviews');
+        const response = await fetch(
+          `${API_BASE_URL}/reviews/book/${id}?t=${new Date().getTime()}`,
+          { cache: "no-store" }
+        );
         if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
+          const errorData = await response.json().catch(() => ({}));
+          console.error("Fetch reviews failed:", { status: response.status, errorData });
+          throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
         }
         const data = await response.json();
-        console.log("Reviews received:", data);
-        const filteredReviews = data.filter((review: Review) => review.itemId === id);
-        setReviews(filteredReviews);
+        const reviews: BookstoreReview[] = data.map((review: any) => ({
+          _id: review._id,
+          name: review.name,
+          email: review.email,
+          rating: review.rating,
+          comment: review.comment,
+          createdAt: review.createdAt,
+          bookId: {
+            _id: review.bookId?._id || review.bookId,
+            title: review.bookId?.title || item.name || "Unknown Book",
+          },
+          status: review.status,
+        }));
+        setReviews(reviews);
         setReviewError(null);
-      } catch (err) {
-        console.error("Fetch reviews error:", err);
-        setReviewError("Failed to load reviews. Please try again later.");
+      } catch (err: any) {
+        console.error("Fetch reviews error:", {
+          message: err.message,
+          stack: err.stack,
+          id,
+        });
+        setReviewError(err.message || "Failed to load reviews. Please try again later.");
       }
     };
     if (id) {
       fetchReviews();
     }
-  }, [id]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setViewers(Math.floor(Math.random() * 100) + 1);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
+  }, [id, item.name]);
 
   const handleConditionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedCondition = e.target.value;
     setCondition(selectedCondition);
-    if (selectedCondition === "OLD - 30% OFF") {
-      setDiscountedPrice(item.price * 0.7);
-    } else {
-      setDiscountedPrice(0);
-    }
+    setDiscountedPrice(
+      selectedCondition === "Old"
+        ? item.price * (1 - item.discountOld / 100)
+        : item.price * (1 - item.discountNew / 100)
+    );
   };
 
   const handleRating = (rate: number) => {
@@ -172,21 +226,23 @@ export default function Overview() {
         return;
       }
       try {
-        const response = await fetch('http://localhost:5000/api/bookstore/reviews', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name,
-            email,
-            rating,
-            review: reviewDescription,
-            itemId: item._id,
-          }),
+        const payload = {
+          bookId: item._id,
+          name,
+          email,
+          rating,
+          comment: reviewDescription,
+          categoryName: category,
+        };
+        const response = await fetch(`${API_BASE_URL}/reviews`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
         });
         if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
+          const errorData = await response.json().catch(() => ({}));
+          console.error("Post review failed:", { status: response.status, errorData });
+          throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
         }
         const newReview = await response.json();
         console.log("Review posted:", newReview);
@@ -195,39 +251,29 @@ export default function Overview() {
         setReviewDescription("");
         setName("");
         setEmail("");
-        setSaveDetails(false);
         setReviewError(null);
-        // Refetch reviews after 5 seconds
-        setTimeout(async () => {
-          try {
-            const reviewsResponse = await fetch('http://localhost:5000/api/bookstore/reviews');
-            if (!reviewsResponse.ok) {
-              throw new Error(`HTTP error! Status: ${reviewsResponse.status}`);
-            }
-            const updatedReviews = await reviewsResponse.json();
-            setReviews(updatedReviews.filter((review: Review) => review.itemId === item._id));
-            setShowSuccessMessage(false);
-          } catch (err) {
-            console.error("Fetch reviews error after submit:", err);
-            setReviewError("Failed to reload reviews. Please refresh the page.");
-            setShowSuccessMessage(false);
-          }
+        setTimeout(() => {
+          setShowSuccessMessage(false);
         }, 5000);
-      } catch (err) {
-        console.error("Post review error:", err);
-        setReviewError("Failed to submit review. Please try again later.");
+      } catch (err: any) {
+        console.error("Post review error:", {
+          message: err.message,
+          stack: err.stack,
+          payload: { bookId: item._id, name, email, rating, comment: reviewDescription, categoryName: category },
+        });
+        setReviewError(err.message || "Failed to submit review. Please try again later.");
       }
     }
   };
 
   const handleAddToCart = () => {
-    if (!error && item._id) {
-      const effectivePrice = condition === "OLD - 30% OFF" ? discountedPrice : item.price;
+    if (!error && item._id && !isOutOfStock) {
+      const effectivePrice = condition === "Old" ? discountedPrice : item.price * (1 - item.discountNew / 100);
       const query = new URLSearchParams({
         _id: item._id,
         name: item.name,
         price: effectivePrice.toFixed(2),
-        imageUrl: item.imageUrl || "",
+        imageUrl: item.imageUrl,
         condition,
         discountedPrice: discountedPrice.toFixed(2),
       }).toString();
@@ -237,13 +283,13 @@ export default function Overview() {
   };
 
   const handleBuyNow = () => {
-    if (!error && item._id) {
-      const effectivePrice = condition === "OLD - 30% OFF" ? discountedPrice : item.price;
+    if (!error && item._id && !isOutOfStock) {
+      const effectivePrice = condition === "Old" ? discountedPrice : item.price * (1 - item.discountNew / 100);
       const query = new URLSearchParams({
         _id: item._id,
         name: item.name,
         price: effectivePrice.toFixed(2),
-        imageUrl: item.imageUrl || "",
+        imageUrl: item.imageUrl,
         condition,
         discountedPrice: discountedPrice.toFixed(2),
       }).toString();
@@ -258,6 +304,18 @@ export default function Overview() {
         <Header />
         <main className="flex-grow px-6 sm:px-8 md:px-12 py-6 flex items-center justify-center">
           <p className="text-center text-red-500 text-xl">{error}</p>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (isOutOfStock) {
+    return (
+      <div className="min-h-screen flex flex-col bg-white">
+        <Header />
+        <main className="flex-grow px-6 sm:px-8 md:px-12 py-6 flex items-center justify-center">
+          <p className="text-center text-red-500 text-xl">This item is out of stock.</p>
         </main>
         <Footer />
       </div>
@@ -287,10 +345,17 @@ export default function Overview() {
           <div className="w-full lg:w-1/2 lg:pl-6">
             <h2 className="text-2xl font-semibold mb-4 text-gray-900">{item.name}</h2>
             <div className="text-xl font-bold mb-4 flex items-center space-x-2">
-              {condition === "OLD - 30% OFF" && discountedPrice > 0 ? (
+              {condition === "Old" && item.discountOld > 0 ? (
                 <>
                   <span className="text-sm text-gray-500 line-through">₹{item.price.toFixed(2)}</span>
                   <span className="text-2xl text-green-500">₹{discountedPrice.toFixed(2)}</span>
+                  <span className="text-sm text-gray-600">({item.discountOld}% off)</span>
+                </>
+              ) : item.discountNew > 0 && condition === "New" ? (
+                <>
+                  <span className="text-sm text-gray-500 line-through">₹{item.price.toFixed(2)}</span>
+                  <span className="text-2xl text-green-500">₹{discountedPrice.toFixed(2)}</span>
+                  <span className="text-sm text-gray-600">({item.discountNew}% off)</span>
                 </>
               ) : (
                 <span className="text-orange-500">₹{item.price.toFixed(2)}</span>
@@ -306,15 +371,37 @@ export default function Overview() {
                 value={condition}
                 onChange={handleConditionChange}
                 className="w-full p-2 border rounded-lg text-gray-800"
+                disabled={availableConditions.length === 0}
               >
-                <option value="NEW - ORIGINAL PRICE">NEW - ORIGINAL PRICE</option>
-                <option value="OLD - 30% OFF">OLD - 30% OFF</option>
+                {availableConditions.map((cond) => {
+                  const isNewOutOfStock = cond === "New" && item.quantityNew === 0;
+                  const isOldOutOfStock = cond === "Old" && item.quantityOld === 0;
+                  const label = `${cond}${isNewOutOfStock || isOldOutOfStock ? " (Out of Stock)" : ""}`;
+                  return (
+                    <option key={cond} value={cond} disabled={isNewOutOfStock || isOldOutOfStock}>
+                      {label}
+                    </option>
+                  );
+                })}
+                {availableConditions.length === 0 && (
+                  <option value="" disabled>
+                    No conditions available
+                  </option>
+                )}
               </select>
             </div>
-            <button onClick={handleAddToCart} className="w-full bg-blue-500 text-white p-2 rounded-lg mb-2 hover:bg-blue-600">
+            <button
+              onClick={handleAddToCart}
+              className="w-full bg-blue-500 text-white p-2 rounded-lg mb-2 hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              disabled={isOutOfStock || (condition === "New" && item.quantityNew === 0) || (condition === "Old" && item.quantityOld === 0)}
+            >
               Add to Cart
             </button>
-            <button onClick={handleBuyNow} className="w-full bg-green-500 text-white p-2 rounded-lg hover:bg-green-600">
+            <button
+              onClick={handleBuyNow}
+              className="w-full bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              disabled={isOutOfStock || (condition === "New" && item.quantityNew === 0) || (condition === "Old" && item.quantityOld === 0)}
+            >
               Buy Now
             </button>
             <p className="mt-4 text-sm text-gray-600">Estimated delivery: {item.estimatedDelivery || "5 days"}</p>
@@ -324,17 +411,31 @@ export default function Overview() {
             </div>
             <div className="mt-2">
               <h3 className="text-md font-medium text-gray-900">Category:</h3>
-              <p className="text-sm text-gray-600">{item.subCategory || "Stationery Items"}</p>
+              <p className="text-sm text-gray-600">{item.subCategory || "School Books"}</p>
+            </div>
+            <div className="mt-2">
+              <h3 className="text-md font-medium text-gray-900">Author:</h3>
+              <p className="text-sm text-gray-600">{item.author || "Unknown"}</p>
+            </div>
+            <div className="mt-2">
+              <h3 className="text-md font-medium text-gray-900">Publisher:</h3>
+              <p className="text-sm text-gray-600">{item.publisher || "Unknown"}</p>
             </div>
             <div className="mt-4">
               <h3 className="text-md font-medium text-gray-900">Description</h3>
               <p className="text-sm text-gray-600">{item.description || "No description available."}</p>
             </div>
             <div className="mt-4">
+              <h3 className="text-md font-medium text-gray-900">Stock Availability:</h3>
+              <p className="text-sm text-gray-600">
+                New: {item.quantityNew} {item.quantityNew === 0 ? "(Out of Stock)" : ""}, Old: {item.quantityOld} {item.quantityOld === 0 ? "(Out of Stock)" : ""}
+              </p>
+            </div>
+            <div className="mt-4">
               <h3 className="text-md font-medium text-gray-900">Reviews ({reviews.length})</h3>
               {showSuccessMessage ? (
                 <p className="text-green-500 text-md mt-4 font-semibold">
-                  Thanks for your feedback. Have a nice day!
+                  Thanks for your feedback. Your review is pending approval.
                 </p>
               ) : (
                 <>
@@ -386,22 +487,10 @@ export default function Overview() {
                         placeholder="Enter your email"
                       />
                     </div>
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        id="saveDetails"
-                        checked={saveDetails}
-                        onChange={(e) => setSaveDetails(e.target.checked)}
-                        className="mr-2 accent-orange-500"
-                      />
-                      <label htmlFor="saveDetails" className="text-sm text-gray-600">
-                        Save my name, email, and website in this browser for the next time I comment.
-                      </label>
-                    </div>
                     <button
                       type="submit"
-                      className="w-full bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600"
-                      disabled={!!error}
+                      className="w-full bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      disabled={!!error || isOutOfStock}
                     >
                       Submit
                     </button>
@@ -420,14 +509,14 @@ export default function Overview() {
                               />
                             ))}
                           </div>
-                          <p className="text-sm text-gray-600 mt-1">{review.review}</p>
+                          <p className="text-sm text-gray-600 mt-1">{review.comment}</p>
                           <p className="text-sm text-gray-500 mt-1">
                             By {review.name} on {new Date(review.createdAt).toLocaleDateString()}
                           </p>
                         </div>
                       ))
                     ) : (
-                      <p className="text-sm text-gray-600 mt-2">No reviews yet. Be the first to review this item!</p>
+                      <p className="text-sm text-gray-600 mt-2">No approved reviews yet. Be the first to review this item!</p>
                     )}
                   </div>
                 </>

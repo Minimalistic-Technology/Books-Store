@@ -1,9 +1,9 @@
-// components/OrderDetails.tsx
 "use client";
 
 import { useState } from "react";
 import { Order } from "../page";
-import { saveAs } from "file-saver"; // For exporting invoice
+import { saveAs } from "file-saver";
+import { API_BASE_URL } from '../../../../utils/api';
 
 type OrderDetailsProps = {
   order: Order;
@@ -18,16 +18,33 @@ export default function OrderDetails({ order, onClose, onUpdateOrder }: OrderDet
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newStatus = e.target.value as Order["status"];
     setStatus(newStatus);
-    const updatedOrder: Order = { ...order, status: newStatus };
+    const updatedOrder: Order = { ...order, status: newStatus, updatedAt: new Date().toISOString() };
     onUpdateOrder(updatedOrder);
   };
 
-  const handleRefundCancel = () => {
+  const handleRefundCancel = async () => {
     if (window.confirm(`Confirm ${isRefundProcessing ? "refund" : "cancel"} for Order #${order.id}?`)) {
-      const updatedOrder = { ...order, status: "Cancelled" as Order["status"] };
-      onUpdateOrder(updatedOrder);
-      setIsRefundProcessing(false);
-      alert(`${isRefundProcessing ? "Refund" : "Cancellation"} processed for Order #${order.id}`);
+      const updatedOrder: Order = { ...order, status: "Cancelled", updatedAt: new Date().toISOString() };
+      try {
+        const response = await fetch(`${API_BASE_URL}/orders/${order.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            customerName: updatedOrder.customerName,
+            totalAmount: updatedOrder.totalAmount,
+            status: updatedOrder.status,
+            createdAt: updatedOrder.createdAt,
+            updatedAt: updatedOrder.updatedAt,
+          }),
+        });
+        if (!response.ok) throw new Error("Failed to cancel/refund order");
+        onUpdateOrder(updatedOrder);
+setIsRefundProcessing(false);
+alert(`${isRefundProcessing ? "Refund" : "Cancellation"} processed for Order #${order.id}`);
+      } catch (error) {
+        console.error("Error processing refund/cancellation:", error);
+        alert("Failed to process refund/cancellation. Please try again.");
+      }
     }
   };
 
@@ -35,22 +52,24 @@ export default function OrderDetails({ order, onClose, onUpdateOrder }: OrderDet
     const invoiceContent = `
       Invoice for Order #${order.id}
       Customer: ${order.customerName}
-      Amount: $${order.totalAmount.toFixed(2)}
+      Amount: ₹${order.totalAmount.toFixed(2)}
       Status: ${order.status}
       Date: ${new Date(order.createdAt).toLocaleDateString()}
+      ${order.updatedAt ? `Updated: ${new Date(order.updatedAt).toLocaleDateString()}` : ""}
     `;
     const blob = new Blob([invoiceContent], { type: "text/plain;charset=utf-8" });
     saveAs(blob, `invoice_order_${order.id}.txt`);
   };
 
   return (
-    <div className="fixed inset-0 bg-yellow-500 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
+    <div className="fixed inset-0 bg-yellow-50 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
       <div className="card p-6 max-w-md w-full animate__zoomIn">
         <h2 className="text-2xl font-semibold mb-4 text-yellow-900">Order Details - #{order.id}</h2>
         <div className="space-y-6">
           <p className="text-gray-800"><strong>Customer:</strong> {order.customerName}</p>
-          <p className="text-gray-800"><strong>Amount:</strong> ${order.totalAmount.toFixed(2)}</p>
+          <p className="text-gray-800"><strong>Amount:</strong> ₹{order.totalAmount.toFixed(2)}</p>
           <p className="text-gray-800"><strong>Date:</strong> {new Date(order.createdAt).toLocaleDateString()}</p>
+          {order.updatedAt && <p className="text-gray-800"><strong>Updated:</strong> {new Date(order.updatedAt).toLocaleDateString()}</p>}
           <div>
             <label className="block text-sm font-medium text-gray-700">Status</label>
             <select
@@ -62,6 +81,7 @@ export default function OrderDetails({ order, onClose, onUpdateOrder }: OrderDet
               <option value="Processing">Processing</option>
               <option value="Shipped">Shipped</option>
               <option value="Delivered">Delivered</option>
+              <option value="Cancelled">Cancelled</option>
             </select>
           </div>
           <div className="flex flex-col sm:flex-row gap-4">

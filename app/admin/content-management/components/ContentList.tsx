@@ -1,41 +1,92 @@
-//Content List.tsx
-// components/ContentList.tsx
-"use client";
 
-import { useState, useEffect } from "react";
-import type { Content } from "../page";
+import React from "react";
+import { Content } from "../page"; 
 
-type ContentListProps = {
-  onEdit: (item: Content) => void;
-  onDelete: (id: string) => void;
+interface ContentListProps {
   contents: Content[];
-};
+  onEdit: (content: Content) => void;
+  onDelete: (id: string, categoryName: string) => void;
+}
 
-export default function ContentList({ onEdit, onDelete, contents }: ContentListProps) {
+const ContentList: React.FC<ContentListProps> = ({ contents, onEdit, onDelete }) => {
+  const defaultImageUrl = "https://images.pexels.com/photos/373465/pexels-photo-373465.jpeg";
+
   return (
-    <div className="card p-6 animate__fadeIn">
-      <h2 className="text-2xl font-semibold mb-4 text-yellow-900">Content List</h2>
-      <ul className="space-y-4">
-        {contents.map((item) => (
-          <li key={item.id} className="border p-4 rounded-lg bg-white shadow-md flex justify-between items-center animate__fadeInUp">
-            <span className="text-gray-800">{item.title} ({item.category || "Uncategorized"})</span>
-            <div>
-              <button
-                onClick={() => onEdit(item)}
-                className="bg-yellow-500 text-white px-3 py-1 rounded-lg mr-2 hover:bg-yellow-600 transition-all"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => onDelete(item.id)}
-                className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition-all"
-              >
-                Delete
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
+    <div className="bg-white shadow-md rounded-lg overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Image</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Title</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Category</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Subcategory</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Tags</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Author</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Publisher</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Price</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Condition</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">New Quantity</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Discount New (%)</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Old Quantity</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Discount Old (%)</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Estimated Delivery</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Description</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">SEO Title</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">SEO Description</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {contents.map((content) => (
+              <tr key={content.id}>
+                <td className="px-2 py-2 whitespace-nowrap">
+                  <img
+                    src={content.imageUrl || defaultImageUrl}
+                    alt={content.title}
+                    className="h-24 w-24 object-cover rounded"
+                    onError={(e) => {
+                      e.currentTarget.src = defaultImageUrl;
+                    }}
+                  />
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.title}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.categoryName}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.subCategory}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.tags}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.author}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.publisher}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${content.price.toFixed(2)}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.condition}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.quantityNew}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.discountNew}%</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.quantityOld}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.discountOld}%</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.estimatedDelivery}</td>
+                <td className="px-6 py-4 text-sm text-gray-900">{content.description.substring(0, 50)}...</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{content.seoTitle}</td>
+                <td className="px-6 py-4 text-sm text-gray-900">{content.seoDescription.substring(0, 50)}...</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <button
+                    onClick={() => onEdit(content)}
+                    className="text-teal-600 hover:text-teal-900 mr-4"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => onDelete(content.id!, content.categoryName)}
+                    className="text-red-600 hover:text-red-900"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
-}
+};
+
+export default ContentList;

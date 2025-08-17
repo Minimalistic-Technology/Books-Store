@@ -1,4 +1,3 @@
-// components/EmailComposer.tsx
 "use client";
 
 import { useState } from "react";
@@ -30,7 +29,7 @@ export default function EmailComposer({ onClose, onSend, onAddSubscriber }: Emai
   };
 
   return (
-    <div className="fixed inset-0 bg-yellow-500 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
+    <div className="fixed inset-0 bg-yellow-50 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
       <div className="card w-full max-w-lg overflow-y-auto" style={{ maxHeight: "80vh" }}>
         <h2 className="text-2xl font-bold mb-4 text-yellow-900 animate__bounceIn">Compose Email</h2>
         <form onSubmit={handleSubmitEmail} className="space-y-6">

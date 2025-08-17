@@ -1,6 +1,6 @@
-/* Updated globals.css */
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "@fortawesome/fontawesome-svg-core/styles.css"; /* Ensure FontAwesome styles are imported */
 
 /* Global font variables */
 :root {
@@ -31,11 +31,19 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
 }
 
-.search-icon {
-  font-size: 1.2rem !important;
-  transition: none !important;
+/* Ensure FontAwesome icons have consistent sizing */
+.fa, .fas, .search-icon {
+  font-size: 0.875rem; /* Fallback size equivalent to text-sm */
+  line-height: 1;
 }
 
+@media (min-width: 640px) {
+  .fa, .fas, .search-icon {
+    font-size: 1rem; /* Equivalent to text-base for sm screens */
+  }
+}
+
+/* Banner styles */
 .banner {
   @apply fixed top-0 left-0 w-full bg-yellow-500 text-white p-4 text-center z-50;
   transition: all 0.3s ease-in-out;

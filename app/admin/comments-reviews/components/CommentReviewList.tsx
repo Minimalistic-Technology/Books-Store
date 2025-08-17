@@ -1,12 +1,11 @@
-// components/CommentReviewList.tsx
 "use client";
 
-import type { CommentReview } from "../page";
+import { BookstoreReview } from "../page";
 
 type CommentReviewListProps = {
-  onEdit: (item: CommentReview) => void;
+  onEdit: (item: BookstoreReview) => void;
   onDelete: (id: string) => void;
-  items: CommentReview[];
+  items: BookstoreReview[];
 };
 
 export default function CommentReviewList({ onEdit, onDelete, items }: CommentReviewListProps) {
@@ -15,16 +14,19 @@ export default function CommentReviewList({ onEdit, onDelete, items }: CommentRe
       <h2 className="text-2xl font-semibold mb-4 text-yellow-900">Comments & Reviews List</h2>
       <ul className="space-y-4">
         {items.map((item) => (
-          <li key={item.id} className="border p-4 rounded-lg bg-white shadow-md flex justify-between items-center animate__fadeInUp">
+          <li
+            key={item.id}
+            className="border p-4 rounded-lg bg-white shadow-md flex justify-between items-center animate__fadeInUp"
+          >
             <span className="text-gray-800">
-              {item.author} - {item.bookName} ({item.isApproved ? "Approved" : "Pending"})
+              {item.name || "Unknown"} - Rating: {item.rating ? `${item.rating}/5` : "N/A"} - Book: {item.bookId.title || "Unknown"} - Status: {item.status}
             </span>
             <div>
               <button
                 onClick={() => onEdit(item)}
                 className="bg-yellow-500 text-white px-3 py-1 rounded-lg mr-2 hover:bg-yellow-600 transition-all"
               >
-                Moderate
+                Edit
               </button>
               <button
                 onClick={() => onDelete(item.id)}

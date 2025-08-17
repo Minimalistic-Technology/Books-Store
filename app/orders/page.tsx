@@ -1,100 +1,154 @@
 "use client";
-
+import { useState, useEffect } from "react";
 import Header from "../components/header/page";
 import Footer from "../components/footer/page";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import Image from "next/image";
+import { API_BASE_URL } from '../../utils/api';
 
-const OrdersPage: React.FC = () => {
-  const [orders, setOrders] = useState<any[]>([]);
+interface Order {
+  _id: string;
+  customerName: string;
+  price?: number;
+  status: string;
+  title: string;
+  imageUrl: string | null;
+}
+
+const OrdersPage = () => {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate retrieving orders from localStorage
-    const savedOrders = JSON.parse(localStorage.getItem("orders") || "[]");
-    if (savedOrders.length === 0) {
-      const cartItems = JSON.parse(localStorage.getItem("cart") || "[]");
-      if (cartItems.length > 0) {
-        // Simulate order data with random status
-        interface CartItem {
-          _id: string;
-          title: string;
-          price: number;
-          quantity: number;
-          imageUrl?: string;
-          condition?: string;
-          discountedPrice?: number;
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`${API_BASE_URL}/orders`, {
+          cache: "no-store",
+        });
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
         }
-
-        type OrderStatus = "Delivered" | "Shipping" | "On the Way" | "Out for Delivery";
-
-        interface OrderItem extends CartItem {
-          status: OrderStatus;
-        }
-
-        const orderItems: OrderItem[] = cartItems.map((item: CartItem) => ({
-          ...item,
-          status: ["Delivered", "Shipping", "On the Way", "Out for Delivery"][Math.floor(Math.random() * 4)] as OrderStatus,
-        }));
-        localStorage.setItem("orders", JSON.stringify(orderItems));
-        setOrders(orderItems);
+        const data = await response.json();
+        console.log("Fetched orders:", data.orders);
+        setOrders(data.orders || []);
+        setError(null);
+      } catch (err: any) {
+        console.error("Fetch orders error:", { message: err.message, stack: err.stack });
+        setError(err.message || "Failed to fetch orders. Please try again later.");
+      } finally {
+        setLoading(false);
       }
-    } else {
-      setOrders(savedOrders);
+    };
+
+    fetchOrders();
+  }, []); 
+
+  const handleCancelOrder = async (orderId: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "Cancelled" }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
+      }
+      const updatedOrder = await response.json();
+      setOrders((prev) =>
+        prev.map((order) =>
+          order._id === orderId ? { ...order, status: updatedOrder.order.status } : order
+        )
+      );
+      console.log("Order cancelled:", orderId);
+    } catch (err: any) {
+      console.error("Cancel order error:", { message: err.message, stack: err.stack, orderId });
+      setError(err.message || "Failed to cancel order. Please try again.");
     }
-  }, []);
+  };
 
   return (
-    <div className="min-h-screen w-full bg-stone-50 text-stone-900 font-serif">
+    <div className="min-h-screen flex flex-col bg-yellow-50 text-yellow-900 font-serif">
       <Header />
-      <main className="max-w-6xl mx-auto py-10 px-4">
-        <nav className="flex items-center text-sm text-gray-500 mb-4">
-          <Link href="/" className="hover:underline">Home</Link> / <span>Orders</span>
-        </nav>
-        <h1 className="text-4xl font-semibold mb-6">Your Orders</h1>
-        {orders.length === 0 ? (
-          <p className="text-gray-600">
-            No orders yet. <Link href="/" className="text-teal-600 hover:underline">Continue shopping</Link>
+      <main className="flex-grow p-6">
+        <h1 className="text-3xl font-semibold mb-6">Your Orders</h1>
+        {loading && <p className="text-yellow-900">Loading...</p>}
+        {error && <p className="text-red-500 mb-4">Failed to fetch orders. Please try again later.</p>}
+        {orders.length === 0 && !loading ? (
+          <p className="text-yellow-900">
+            No orders found.{" "}
+            <Link href="/" className="text-blue-500 hover:underline">
+              Continue shopping
+            </Link>
           </p>
         ) : (
-          <div className="space-y-6">
-            {orders.map((item: any) => (
-              <div key={item._id} className="flex items-center justify-between bg-white p-4 rounded-lg shadow-md">
-                <img
-                  src={item.imageUrl} // No fallback image
-                  alt={item.title}
-                  className="w-24 h-32 object-cover rounded-md"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none"; // Hide if image fails
-                  }}
-                />
-                <div className="flex-1 ml-4">
-                  <h3 className="text-lg font-semibold">{item.title}</h3>
-                  <p className="text-orange-500 font-bold mt-1">
-                    ₹{item.condition === "OLD - 35% OFF" && item.discountedPrice > 0 ? item.discountedPrice : item.price}
-                  </p>
-                  <p className="text-sm text-gray-600">Condition: {item.condition || "NEW - ORIGINAL PRICE"}</p>
-                  <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-4">
+              {orders.map((order) => (
+                <div key={order._id} className="bg-white p-4 rounded-lg shadow-md flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    {order.imageUrl ? (
+                      <Image
+                        src={order.imageUrl}
+                        alt={order.title || "Unknown Book"}
+                        width={64}
+                        height={96}
+                        className="w-16 h-24 object-cover rounded-md"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <div className="w-16 h-24 flex items-center justify-center bg-gray-100 rounded-md">
+                        <p className="text-gray-500 text-sm">No image</p>
+                      </div>
+                    )}
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">{order.title || "Unknown Book"}</h3>
+                      <p className="text-sm text-gray-600">
+                        Price: {order.price != null ? `₹${order.price.toFixed(2)}` : "N/A"}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Status:{" "}
+                        <span
+                          className={
+                            order.status === "Delivered"
+                              ? "text-green-600"
+                              : order.status === "Processing"
+                              ? "text-blue-600"
+                              : order.status === "Shipped"
+                              ? "text-purple-600"
+                              : order.status === "Cancelled"
+                              ? "text-red-600"
+                              : "text-yellow-600"
+                          }
+                        >
+                          {order.status}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleCancelOrder(order._id)}
+                      disabled={order.status === "Cancelled" || order.status === "Delivered"}
+                      className={`px-3 py-1 rounded-lg text-white transition-all ${
+                        order.status === "Cancelled" || order.status === "Delivered"
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-red-500 hover:bg-red-600"
+                      }`}
+                    >
+                      Cancel Order
+                    </button>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-gray-600 font-medium">
-                    Status:{" "}
-                    <span className={
-                      item.status === "Delivered" ? "text-green-600" :
-                      item.status === "Shipping" ? "text-blue-600" :
-                      item.status === "On the Way" ? "text-yellow-600" :
-                      "text-orange-600"
-                    }>
-                      {item.status}
-                    </span>
-                  </p>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
-        <Link href="/" className="mt-6 inline-block bg-teal-600 text-white font-medium py-2 px-4 rounded hover:bg-teal-700">
-          Back to Home
-        </Link>
       </main>
       <Footer />
     </div>

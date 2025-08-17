@@ -1,25 +1,45 @@
-
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import CategoryTagForm from "./components/CategoryTagForm";
 import CategoryTagList from "./components/CategoryTagList";
+import { API_BASE_URL } from '../../../utils/api';
 
-// Define the CategoryTag interface
-export interface CategoryTag {
+export interface Category {
   id: string;
   name: string;
-  type: "category" | "tag";
   seoTitle: string;
   seoDescription: string;
+   type: string; 
 }
 
 export default function CategoriesTags() {
-  const [items, setItems] = useState<CategoryTag[]>([]);
-  const [selectedItem, setSelectedItem] = useState<CategoryTag | null>(null);
+  const [items, setItems] = useState<Category[]>([]);
+  const [selectedItem, setSelectedItem] = useState<Category | null>(null);
   const [isCreating, setIsCreating] = useState<boolean>(false);
 
-  const handleEdit = (item: CategoryTag) => {
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/book-categories`);
+        const data = await response.json();
+        setItems(
+          data.map((item: any) => ({
+            id: item._id,
+            name: item.name,
+            seoTitle: item.seoTitle || "",
+            seoDescription: item.seoDescription || "",
+          }))
+        );
+      } catch (error) {
+        console.error("Failed to fetch categories:", error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  const handleEdit = (item: Category) => {
     setSelectedItem(item);
     setIsCreating(true);
   };
@@ -33,24 +53,57 @@ export default function CategoriesTags() {
     setItems((prev) => prev.filter((item) => item.id !== id));
   };
 
-  const handleSave = (data: {
+  const handleSave = async (data: {
     id?: string;
     name: string;
-    type: "category" | "tag";
     seoTitle: string;
     seoDescription: string;
   }) => {
-    const newItem: CategoryTag = {
+    const newItem: Category = {
       id: data.id || Date.now().toString(),
       name: data.name,
-      type: data.type,
       seoTitle: data.seoTitle,
       seoDescription: data.seoDescription,
+      type: "category",
     };
-    if (selectedItem) {
-      setItems((prev) => prev.map((item) => (item.id === selectedItem.id ? newItem : item)));
-    } else {
-      setItems((prev) => [...prev, newItem]);
+    try {
+      let response;
+      if (data.id) {
+        response = await fetch(`${API_BASE_URL}/book-categories/${data.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: data.name,
+            seoTitle: data.seoTitle,
+            seoDescription: data.seoDescription,
+          }),
+        });
+      } else {
+        response = await fetch(`${API_BASE_URL}/book-categories`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: data.name,
+            seoTitle: data.seoTitle,
+            seoDescription: data.seoDescription,
+          }),
+        });
+      }
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to save category");
+      }
+      const savedData = await response.json();
+      newItem.id = savedData._id || newItem.id;
+      if (selectedItem) {
+        setItems((prev) =>
+          prev.map((item) => (item.id === selectedItem.id ? newItem : item))
+        );
+      } else {
+        setItems((prev) => [...prev, newItem]);
+      }
+    } catch (error) {
+      console.error("Error saving category:", error);
     }
     setIsCreating(false);
     setSelectedItem(null);
@@ -63,18 +116,18 @@ export default function CategoriesTags() {
 
   return (
     <div className="space-y-8 p-4 animate__fadeIn">
-      <h1 className="text-4xl font-bold text-yellow-900">Categories & Tags - Books Store</h1>
+      <h1 className="text-4xl font-bold text-yellow-900">Categories - Books Store</h1>
       <div className="flex justify-end">
         <button
           onClick={handleCreate}
           className="btn-primary px-4 py-2 rounded-lg hover:bg-teal-700 transition-all"
         >
-          Create New Category/Tag
+          Create New Category
         </button>
       </div>
       <CategoryTagList onEdit={handleEdit} onDelete={handleDelete} items={items} />
       {isCreating && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
+        <div className="fixed inset-0 bg-yellow-50 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
           <div className="card bg-white p-6 rounded-lg shadow-lg max-w-lg w-full relative animate__zoomIn">
             <button
               onClick={handleClose}
@@ -88,7 +141,6 @@ export default function CategoriesTags() {
                   ? {
                       id: selectedItem.id,
                       name: selectedItem.name,
-                      type: selectedItem.type,
                       seoTitle: selectedItem.seoTitle,
                       seoDescription: selectedItem.seoDescription,
                     }

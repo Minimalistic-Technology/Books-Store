@@ -4,7 +4,6 @@ import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBook, faShippingFast, faUndo, faHeadset } from "@fortawesome/free-solid-svg-icons";
 import { useState, useEffect } from "react";
-import Header from "../header/page"; // Adjust the import path as needed
 
 interface Book {
   _id: string;
@@ -28,16 +27,10 @@ export default function Home() {
       setSearchQuery(query);
     }
   };
-      {/* 
-        Update your Header component to call onSearch with both results and query, e.g.:
-        onSearch={(results, query) => handleSearch(results, query)}
-        If Header only passes results, you may need to update Header as well.
-      */}
-      <Header  />
+      
+      
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {/* Header */}
-      <Header  />
 
       {/* Main Content (Hero Section) */}
       <main className="container mx-auto p-4 flex-grow">

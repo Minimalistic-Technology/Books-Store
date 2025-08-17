@@ -1,15 +1,28 @@
-// components/CategoryTagList.tsx
 "use client";
 
-import type { CategoryTag } from "../page";
+import { useState, useEffect } from "react";
+import type { Category } from "../page";
+import { API_BASE_URL } from '../../../../utils/api';
 
 type CategoryTagListProps = {
-  onEdit: (item: CategoryTag) => void;
+  onEdit: (item: Category) => void;
   onDelete: (id: string) => void;
-  items: CategoryTag[];
+  items: Category[];
 };
 
 export default function CategoryTagList({ onEdit, onDelete, items }: CategoryTagListProps) {
+  const handleDelete = async (id: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/book-categories/${id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error("Failed to delete category/tag");
+      onDelete(id);
+    } catch (error) {
+      console.error("Error deleting category/tag:", error);
+    }
+  };
+
   return (
     <div className="card p-6 animate__fadeIn">
       <h2 className="text-2xl font-semibold mb-4 text-yellow-900">Categories & Tags List</h2>
@@ -27,7 +40,7 @@ export default function CategoryTagList({ onEdit, onDelete, items }: CategoryTag
                 Edit
               </button>
               <button
-                onClick={() => onDelete(item.id)}
+                onClick={() => handleDelete(item.id)}
                 className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition-all"
               >
                 Delete

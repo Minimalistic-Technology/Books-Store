@@ -1,108 +1,81 @@
 
 "use client";
-import dynamic from "next/dynamic";
+import Header from "../components/header/page";
 import Footer from "../components/footer/page";
 import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faThLarge, faList } from "@fortawesome/free-solid-svg-icons";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
+import { API_BASE_URL } from '../../utils/api';
 
-// Dynamically import Header with SSR disabled to avoid hydration mismatch
-const Header = dynamic(() => import("../components/header/page"), { ssr: false });
-
-interface Book {
-  _id: string;
-  title: string;
-  price: number;
-  imageUrl: string;
-  subCategory: string;
-  viewCount: number;
-}
-
-export default function RefBooksGuides() {
-  const categories = [
-    "School TextBooks",
-    "Class II",
-    "Class III",
-    "Class IV",
-    "Class V",
-    "Class VI",
-    "Class VII",
-    "Class VIII",
-    "Class IX",
-    "Class X",
-    "Class XI",
-    "Practical NoteBooks",
-    "Reference Books & Notes",
-    "College Books",
-    "B.Com",
-    "Non Academic Books",
-    "Maharashtra State Board",
-    "SSC Board",
-    "Navneet Digest",
-    "Mathematics",
-    "Investing",
-    "Business",
-    "Commerce",
-    "Personal Finance",
-    "Psychology",
-    "Philosophy",
-    "Fiction",
-    "Romance",
-    "Self-Help",
-    "Uncategorized",
-  ];
-
-  const [books, setBooks] = useState<Book[]>([]);
+export default function CategoryPage() {
+  const { category } = useParams();  
+  const [books, setBooks] = useState<any[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState("");
-  const [status, setStatus] = useState("");
-  const [booksToShow, setBooksToShow] = useState(0);
-  const [sortOption, setSortOption] = useState("default");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [priceRange, setPriceRange] = useState<string>("");
+  const [status, setStatus] = useState<string>("");
+  const [booksToShow, setBooksToShow] = useState<number>(0);
+  const [sortOption, setSortOption] = useState<string>("default");
+  const defaultImageUrl = "https://images.pexels.com/photos/373465/pexels-photo-373465.jpeg";
+  const [bookImageUrls, setBookImageUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const fetchBooks = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/bookstore/categories/Ref-Books-Guides');
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-        const data = await response.json();
-        console.log('Fetched books:', data.books);
-        setBooks(data.books || []);
-        setBooksToShow(data.books.length || 0);
-      } catch (err) {
-        setError('Error loading books. Please try again later.');
-        console.error('Fetch error:', err);
+        console.log("Fetching books for category:", category); 
+        const booksResponse = await fetch(`${API_BASE_URL}/book-categories/${encodeURIComponent(category as string)}`);
+        if (!booksResponse.ok) {
+          if (booksResponse.status === 404) {
+            throw new Error(`Category '${category}' not found. Please check the category name or create it in the admin panel. Available categories: [School-Books, College-Books, Competitive-Exam-Books, Ref-Books-Guides, Entrance-Exam-Books, Stationary, Non-Academics].`);
+          }
+          throw new Error('Failed to fetch books');
+        }
+        const booksData = await booksResponse.json();
+        console.log(`Fetched books for ${category} with IDs:`, booksData.books.map((b: any) => b._id));
+        setBooks(booksData.books || []);
+        setBooksToShow(booksData.books.length || 0);
+
+        const tagsResponse = await fetch(`${API_BASE_URL}/book-categories/${encodeURIComponent(category as string)}/tags`);
+        if (!tagsResponse.ok) throw new Error('Failed to fetch tags');
+        const tagsData = await tagsResponse.json();
+        setTags(tagsData.tags || []);
+      } catch (err: any) {
+        setError(err.message || `Error loading data for ${category}. Please try again later.`);
+        console.log('Fetch error:', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchBooks();
-  }, []);
+    fetchData();
+  }, [category]);
+
+  useEffect(() => {
+    // Initialize image URLs for all books
+    const initialImageUrls = books.reduce((acc, book) => ({
+      ...acc,
+      [book._id]: book.imageUrl || defaultImageUrl,
+    }), {});
+    setBookImageUrls(initialImageUrls);
+  }, [books]);
 
   const mapSubCategory = (subCat: string) => {
-    const classMatch = subCat.match(/class(\d+)/i);
+    const classMatch = subCat.match(/Class (\d+)/);
     if (classMatch) {
       const num = parseInt(classMatch[1]);
-      if (num >= 2 && num <= 11) return `Class ${['II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'][num - 2]}`;
+      return num <= 12 ? `Class ${["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"][num - 1]}` : subCat;
     }
-    return (
-      subCat === "B.com" ? "B.Com" :
-      subCat === "Reference Books & Notes" ? "Reference Books & Notes" :
-      subCat === "Non Academic Books" ? "Non Academic Books" :
-      subCat === "Maharashtra State Board" ? "Maharashtra State Board" :
-      subCat === "SSC Board" ? "SSC Board" :
-      subCat === "Navneet Digest" ? "Navneet Digest" :
-      subCat === "Self help" ? "Self-Help" :
-      categories.includes(subCat) ? subCat : "Uncategorized"
-    );
+    return subCat === "Practical Notebooks" ? "Practical NoteBooks" :
+           subCat === "Reference Books & Guides" ? "Reference Books&Notes" :
+           subCat === "School Textbooks" ? "School Textbooks" : subCat;
   };
 
-  const bookCountPerCategory = categories.reduce((acc, category) => {
-    acc[category] = books.filter((book) => mapSubCategory(book.subCategory) === category).length;
+  const bookCountPerCategory = tags.reduce((acc, tag) => {
+    acc[tag] = books.filter((book) => book.tags?.includes(tag)).length;
     return acc;
   }, {} as Record<string, number>);
 
@@ -111,7 +84,7 @@ export default function RefBooksGuides() {
   const filteredBooks = books
     .filter((book) => {
       const mappedSubCategory = mapSubCategory(book.subCategory);
-      const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(mappedSubCategory);
+      const matchesCategory = selectedCategories.length === 0 || selectedCategories.some((cat) => book.tags?.includes(cat));
       const matchesPrice = priceRange === "" ||
         (priceRange === "0to500" && book.price <= 500) ||
         (priceRange === "500to1000" && book.price > 500 && book.price <= 1000) ||
@@ -128,9 +101,9 @@ export default function RefBooksGuides() {
     .slice(0, booksToShow);
 
   const handleCategoryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const category = e.target.id;
+    const tag = e.target.id;
     setSelectedCategories((prev) =>
-      e.target.checked ? [...prev, category] : prev.filter((c) => c !== category)
+      e.target.checked ? [...prev, tag] : prev.filter((c) => c !== tag)
     );
   };
 
@@ -151,13 +124,23 @@ export default function RefBooksGuides() {
     setSortOption(e.target.value);
   };
 
-  const handleViewToggle = (mode: "grid" | "list") => {
-    setViewMode(mode);
-  };
-
   useEffect(() => {
     setBooksToShow(books.length);
   }, [selectedCategories, priceRange, status, sortOption]);
+
+  type ViewMode = "grid" | "list";
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+
+  const handleViewToggle = (mode: ViewMode) => {
+    setViewMode(mode);
+  };
+
+  const handleImageError = (bookId: string) => {
+    setBookImageUrls((prev) => ({
+      ...prev,
+      [bookId]: defaultImageUrl,
+    }));
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -165,20 +148,20 @@ export default function RefBooksGuides() {
       <main className="flex-grow px-6 sm:px-8 md:px-12 py-6">
         <div className="flex flex-col lg:flex-row">
           <aside className="w-full lg:w-1/4 pr-0 lg:pr-6 mb-6 lg:mb-0">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-900">Categories</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-gray-900">Tags</h2>
             <div className="border rounded-lg p-4 bg-gray-50 shadow-md mb-6">
-              {categories.map((category) => (
-                <div key={category} className="flex items-center mb-2">
+              {tags.map((tag) => (
+                <div key={tag} className="flex items-center mb-2">
                   <input
                     type="checkbox"
-                    id={category}
+                    id={tag}
                     className="mr-2 accent-orange-500"
                     onChange={handleCategoryChange}
                   />
-                  <label htmlFor={category} className="text-gray-800 text-sm">
-                    {bookCountPerCategory[category] > 0
-                      ? `${category} - ${bookCountPerCategory[category]} books`
-                      : category}
+                  <label htmlFor={tag} className="text-gray-800 text-sm">
+                    {bookCountPerCategory[tag] > 0
+                      ? `${tag} - ${bookCountPerCategory[tag]} books`
+                      : tag}
                   </label>
                 </div>
               ))}
@@ -245,7 +228,7 @@ export default function RefBooksGuides() {
             </div>
           </aside>
           <section className="w-full lg:w-3/4 pl-0 lg:pl-6">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-900">Reference Books & Guides</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-gray-900">{category || "Category"}</h2>
             <div className="mb-4 flex flex-col lg:flex-row justify-between items-center">
               <div className="flex items-center mb-2 lg:mb-0">
                 <span className="mr-2 text-3xl cursor-pointer" onClick={() => handleViewToggle("grid")}>
@@ -284,33 +267,32 @@ export default function RefBooksGuides() {
             ) : error ? (
               <p className="text-center text-red-500">{error}</p>
             ) : filteredBooks.length === 0 ? (
-              <p className="text-center text-gray-800">No books found matching the filters.</p>
+              <p className="text-center text-gray-800">No books found for '{category}'. Add books in the admin panel to display them.</p>
             ) : (
               <div
-                className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-1"}`}
-                style={{ maxHeight: viewMode === "list" ? "600px" : "auto", overflowY: viewMode === "list" ? "auto" : "visible" }}
+                className={`grid gap-6 ${
+                  viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-1"
+                }`}
               >
                 {filteredBooks.map((book) => (
-                  <Link href={`/overview1/${book._id}?category=Ref-Books-Guides`} key={book._id} passHref>
+                  <Link href={`/overview1/${book._id}?category=${category}&imageUrl=${encodeURIComponent(bookImageUrls[book._id] || defaultImageUrl)}`} key={book._id} passHref>
                     <div
-                      className={`border rounded-lg overflow-hidden shadow-md ${viewMode === "list" ? "w-full max-w-2xl mx-auto flex" : ""} cursor-pointer hover:shadow-lg transition-shadow duration-300`}
+                      className={`border rounded-lg overflow-hidden shadow-md cursor-pointer hover:shadow-lg transition-shadow duration-300 ${
+                        viewMode === "grid" ? "h-80" : "h-40 flex"
+                      }`}
                     >
-                      {book.imageUrl ? (
-                        <Image
-                          src={book.imageUrl}
-                          alt={book.title}
-                          width={150}
-                          height={169}
-                          className="w-full h-auto object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-[169px] flex items-center justify-center bg-gray-100">
-                          <p className="text-gray-500 text-sm">No image available</p>
-                        </div>
-                      )}
-                      <div className="p-2 text-center lg:text-left">
-                        <p className="text-sm text-gray-800">{book.title}</p>
-                        <p className="text-orange-500 font-bold mt-1">₹{book.price}.00</p>
+                      <Image
+                        src={bookImageUrls[book._id] || defaultImageUrl}
+                        alt={book.title}
+                        width={150}
+                        height={viewMode === "grid" ? 192 : 128} 
+                        className="w-full h-48 object-cover md:h-48 lg:h-48" 
+                        onError={() => handleImageError(book._id)}
+                        style={{ objectFit: "cover" }}
+                      />
+                      <div className={`p-2 ${viewMode === "grid" ? "text-center" : "text-left flex-1"}`}>
+                        <h3 className="text-lg font-semibold text-gray-900">{book.title}</h3>
+                        <p className="text-orange-500 font-bold mt-1">₹{book.price}</p>
                         <p className="text-gray-600 text-xs mt-1">{mapSubCategory(book.subCategory)}</p>
                       </div>
                     </div>

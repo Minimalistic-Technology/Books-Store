@@ -17,8 +17,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/bookstore';
+import { API_BASE_URL } from "@/utils/api";
 
 interface Category {
   _id: string;

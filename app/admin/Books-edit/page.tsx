@@ -9,6 +9,7 @@ import {
   faAngleRight,
   faAngleDoubleRight,
 } from "@fortawesome/free-solid-svg-icons";
+import { API_BASE_URL } from "@/utils/api";
 
 interface Content {
   id?: string;
@@ -173,7 +174,7 @@ export default function EBooksEdit() {
   const fetchBooks = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await axios.get<Content[]>("http://localhost:5000/api/bookstore/books");
+      const response = await axios.get<Content[]>(`${API_BASE_URL}/books`);
       const books = response.data.map((book: any) => ({
         id: book._id,
         title: book.bookName || book.title || "",
@@ -227,7 +228,7 @@ export default function EBooksEdit() {
     try {
       setIsLoading(true);
       const response = await axios.put(
-        `http://localhost:5000/api/bookstore/books/${encodeURIComponent(categoryPath)}/${bookId}`,
+        `${API_BASE_URL}/books/${encodeURIComponent(categoryPath)}/${bookId}`,
         {
           isBestSeller: flags.bestSeller,
           isNewArrival: flags.newArrival,

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -41,18 +40,24 @@ export default function SiteSettings() {
         if (!response.ok) throw new Error("Failed to fetch settings");
         const data = await response.json();
         console.log("API Response:", data);
-        setSettings({
-          _id: data._id,
-          logo: data.logo || null,
-          title: data.title,
-          metaDescription: data.metaDescription,
-          metaKeywords: data.metaKeywords,
-          apiKey: data.apiKey,
-          maintenanceMode: data.maintenanceMode,
-          createdAt: data.createdAt,
-          updatedAt: data.updatedAt,
-          __v: data.__v,
-        });
+        if (data) {
+          // Settings exist, update state with API data
+          setSettings({
+            _id: data._id,
+            logo: data.logo || null,
+            title: data.title || "",
+            metaDescription: data.metaDescription || "",
+            metaKeywords: data.metaKeywords || "",
+            apiKey: data.apiKey || "",
+            maintenanceMode: data.maintenanceMode || false,
+            createdAt: data.createdAt,
+            updatedAt: data.updatedAt,
+            __v: data.__v,
+          });
+        } else {
+          // No settings found, keep default settings and set optional error
+          setError("No settings found. You can create new settings.");
+        }
       } catch (err) {
         console.error("Error fetching settings:", err);
         setError("Failed to load settings. Please try again later.");

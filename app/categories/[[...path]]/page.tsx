@@ -9,8 +9,7 @@ import { faThLarge, faList } from '@fortawesome/free-solid-svg-icons';
 import Header from '../../components/header/page';
 import Footer from '../../components/footer/page';
 import { Component, ReactNode } from 'react';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/bookstore';
+import { API_BASE_URL } from "@/utils/api";
 const defaultImageUrl = 'https://images.pexels.com/photos/373465/pexels-photo-373465.jpeg';
 
 // Utility functions

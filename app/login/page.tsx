@@ -112,7 +112,7 @@ const BookStoreLoginPage: React.FC = () => {
     <div className="flex flex-col min-h-screen w-full bg-white font-serif text-gray-900">
       <div className="flex flex-col items-center justify-center flex-1 px-4 py-10">
         <div className="flex flex-col items-center mb-6">
-          <Image
+          <img
             src="/images/logo.png"
             alt="Harsh Book Store Logo"
             width={64}
@@ -199,9 +199,9 @@ const BookStoreLoginPage: React.FC = () => {
           )}
 
           <div className="mb-4 text-center">
-            <Link href="/forgot-password" className="text-sm text-teal-600 hover:underline">
+            <p className="text-sm text-teal-600 hover:underline">
               Forgot password?
-            </Link>
+            </p>
           </div>
 
           <button

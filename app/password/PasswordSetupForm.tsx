@@ -128,7 +128,7 @@ export default function PasswordSetupForm() {
     <div className="flex flex-col min-h-screen w-full bg-white font-serif text-gray-900">
       <div className="flex flex-col items-center justify-center flex-1 px-4 py-10">
         <div className="flex flex-col items-center mb-6">
-          <Image
+          <img
             src="/images/logo.png"
             alt="Harsh Book Store Logo"
             width={64}
@@ -140,7 +140,7 @@ export default function PasswordSetupForm() {
         <h1 className="text-3xl font-bold mb-2">Set Up Your Account</h1>
         <p className="text-sm text-center mb-6">
           Finish setting up your account at{" "}
-          <Link href="#" className="text-teal-600 hover:underline font-medium">
+          <Link href="/" className="text-teal-600 hover:underline font-medium">
             Harsh Book Store
           </Link>
         </p>

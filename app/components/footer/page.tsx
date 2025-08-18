@@ -45,22 +45,22 @@ export default function Footer() {
         <div>
           <h3 className="font-bold mb-2">Categories</h3>
           <ul className="space-y-1 text-sm">
-            <li><Link href="/school-books" className="hover:underline">School Books</Link></li>
-            <li><Link href="/maharashtra-state-board" className="hover:underline">Maharashtra State Board</Link></li>
-            <li><Link href="/non-academics" className="hover:underline">Non Academics</Link></li>
-            <li><Link href="/self-help-books" className="hover:underline">Self Help Books</Link></li>
-            <li><Link href="/reference-books" className="hover:underline">Reference Books & Guides</Link></li>
+            <li><p  className="hover:underline">School Books</p></li>
+            <li><p  className="hover:underline">Maharashtra State Board</p></li>
+            <li><p  className="hover:underline">Non Academics</p></li>
+            <li><p  className="hover:underline">Self Help Books</p></li>
+            <li><p  className="hover:underline">Reference Books & Guides</p></li>
           </ul>
         </div>
 
-        {/* Quick Links */}
+        {/* Quick ps */}
         <div>
-          <h3 className="font-bold mb-2">Quick Link</h3>
+          <h3 className="font-bold mb-2">Quick p</h3>
           <ul className="space-y-1 text-sm">
-            <li><Link href="/about-us" className="hover:underline">About Us</Link></li>
-            <li><Link href="/disclaimer" className="hover:underline">Disclaimer</Link></li>
-            <li><Link href="/privacy-policy" className="hover:underline">Privacy Policy</Link></li>
-            <li><Link href="/faqs" className="hover:underline">FAQ's</Link></li>
+            <li><p  className="hover:underline">About Us</p></li>
+            <li><p  className="hover:underline">Disclaimer</p></li>
+            <li><p  className="hover:underline">Privacy Policy</p></li>
+            <li><p  className="hover:underline">FAQ's</p></li>
           </ul>
         </div>
 
@@ -68,10 +68,10 @@ export default function Footer() {
         <div>
           <h3 className="font-bold mb-2">Contact Us</h3>
           <ul className="space-y-1 text-sm">
-            <li><Link href="/contact-us" className="hover:underline">Contact Us</Link></li>
-            <li><Link href="/cancellation-refund" className="hover:underline">Cancellation and Refund Policy</Link></li>
-            <li><Link href="/terms-conditions" className="hover:underline">Terms & Condition</Link></li>
-            <li><Link href="/shipping-delivery" className="hover:underline">Shipping and Delivery Policy</Link></li>
+            <li><p className="hover:underline">Contact Us</p></li>
+            <li><p className="hover:underline">Cancellation and Refund Policy</p></li>
+            <li><p className="hover:underline">Terms & Condition</p></li>
+            <li><p className="hover:underline">Shipping and Delivery Policy</p></li>
           </ul>
         </div>
       </div>

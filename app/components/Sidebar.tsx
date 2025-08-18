@@ -40,18 +40,6 @@ export default function Sidebar() {
                 Content Management
               </Link>
             </li>
-            {/* <li>
-              <Link
-                href="/admin/categories-tags"
-                className={`block p-3 text-gray-800 rounded-lg transition-all duration-200 font-medium ${
-                  isActive("/admin/categories-tags")
-                    ? "bg-yellow-200 text-yellow-900 shadow-md"
-                    : "hover:bg-yellow-200 hover:shadow-md animate__pulse"
-                }`}
-              >
-                Categories & Tags
-              </Link>
-            </li> */}
             <li>
               <Link
                 href="/admin/comments-reviews"

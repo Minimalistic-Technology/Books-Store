@@ -1,37 +1,12 @@
+// app/admin/dashboard/page.tsx
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import MetricsCard from "./components/MetricsCard";
 import ChartComponent from "./components/ChartComponent";
 import { useRouter } from "next/navigation";
 import { API_BASE_URL } from '../../../utils/api';
-
-// Create Context
-const DashboardContext = createContext<{
-  setMetrics: React.Dispatch<
-    React.SetStateAction<{
-      userCount: number | null;
-      orderCount: number | null;
-      completedOrders: number | null;
-    }>
-  >;
-}>({
-  setMetrics: () => {},
-});
-
-export { DashboardContext };
-
-// Custom hook to use the context
-export function useDashboard() {
-  const context = useContext(DashboardContext);
-  if (!context) {
-    throw new Error(
-      "useDashboard must be used within a DashboardContext.Provider"
-    );
-  }
-  return context;
-}
-
+import DashboardContext, { useDashboard } from '../context/DashboardContext';
 export default function Dashboard() {
   const [metrics, setMetrics] = useState<{
     userCount: number | null;

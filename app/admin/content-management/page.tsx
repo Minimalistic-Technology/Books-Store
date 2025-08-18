@@ -17,7 +17,7 @@ export type Content = {
   title: string;
   categoryName: string;
   subCategory: string;
-  categoryPath: string; // Added property
+  categoryPath: string;
   tags: string;
   author: string;
   publisher: string;
@@ -44,7 +44,8 @@ interface Category {
   children: Category[];
 }
 
-export const updateProducts = (
+// Non-exported utility function to avoid type conflict
+const updateProducts = (
   newProducts: Content[],
   callback: (products: Content[]) => void
 ) => {
@@ -52,7 +53,10 @@ export const updateProducts = (
 };
 
 // Helper function to flatten category hierarchy for dropdown
-const flattenCategories = (categories: Category[], parentPath: string = ""): { id: string; path: string; display: string }[] => {
+const flattenCategories = (
+  categories: Category[],
+  parentPath: string = ""
+): { id: string; path: string; display: string }[] => {
   let result: { id: string; path: string; display: string }[] = [];
   categories.forEach((cat) => {
     if (!cat.path) return; // Skip categories with undefined path
@@ -69,7 +73,9 @@ export default function ContentManagement() {
   const [contents, setContents] = useState<Content[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingContent, setEditingContent] = useState<Content | undefined>(undefined);
+  const [editingContent, setEditingContent] = useState<Content | undefined>(
+    undefined
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>("");
   const [successMessage, setSuccessMessage] = useState<string>("");
@@ -85,8 +91,8 @@ export default function ContentManagement() {
     try {
       const categoriesResponse = await fetch(`${API_BASE_URL}/book-categories`);
       if (!categoriesResponse.ok) throw new Error("Failed to fetch categories");
-      const categoriesData = await categoriesResponse.json();
-      console.log('Categories Data:', categoriesData); // Debug
+      const categoriesData: Category[] = await categoriesResponse.json();
+      console.log("Categories Data:", categoriesData); // Debug
       setCategories(categoriesData);
 
       const allBooks: Content[] = [];
@@ -105,6 +111,8 @@ export default function ContentManagement() {
           return books.map((book: any) => ({
             id: book._id,
             title: book.bookName || book.title || "",
+            categoryName: book.categoryName || "",
+            subCategory: book.subCategory || "",
             categoryPath: book.categoryPath || category.path,
             tags: Array.isArray(book.tags)
               ? book.tags.join(", ")
@@ -114,7 +122,12 @@ export default function ContentManagement() {
             price: book.price || 0,
             description: book.description || "",
             estimatedDelivery: book.estimatedDelivery || "",
-            condition: book.condition === "new" ? "NEW - ORIGINAL PRICE" : book.condition === "used" ? "OLD" : "BOTH",
+            condition:
+              book.condition === "new"
+                ? "NEW - ORIGINAL PRICE"
+                : book.condition === "used"
+                ? "OLD"
+                : "BOTH",
             author: book.author || "",
             publisher: book.publisher || "",
             imageUrl: book.imageUrl || "",
@@ -122,7 +135,6 @@ export default function ContentManagement() {
             quantityOld: book.quantityOld || 0,
             discountNew: book.discountNew || 0,
             discountOld: book.discountOld || 0,
-            bookName: book.bookName || "",
             createdAt: book.createdAt || "",
             updatedAt: book.updatedAt || "",
           }));
@@ -155,9 +167,16 @@ export default function ContentManagement() {
       setIsLoading(true);
       const isUpdate = Boolean(data.id);
       const url = isUpdate
-        ? `${API_BASE_URL}/books/${encodeURIComponent(data.categoryPath)}/${data.id}`
+        ? `${API_BASE_URL}/books/${encodeURIComponent(data.categoryPath)}/${
+            data.id
+          }`
         : `${API_BASE_URL}/books/${encodeURIComponent(data.categoryPath)}`;
-      const backendCondition = data.condition === "NEW - ORIGINAL PRICE" ? "new" : data.condition === "OLD" ? "used" : data.condition;
+      const backendCondition =
+        data.condition === "NEW - ORIGINAL PRICE"
+          ? "new"
+          : data.condition === "OLD"
+          ? "used"
+          : data.condition;
       const response = await fetch(url, {
         method: isUpdate ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -188,8 +207,8 @@ export default function ContentManagement() {
       const updatedBook: Content = {
         id: bookData._id,
         title: bookData.bookName || bookData.title,
-        categoryName: bookData.categoryName || "", // Add categoryName
-        subCategory: bookData.subCategory || "",   // Add subCategory
+        categoryName: bookData.categoryName || "",
+        subCategory: bookData.subCategory || "",
         categoryPath: bookData.categoryPath,
         tags: Array.isArray(bookData.tags)
           ? bookData.tags.join(", ")
@@ -199,7 +218,12 @@ export default function ContentManagement() {
         price: bookData.price,
         description: bookData.description,
         estimatedDelivery: bookData.estimatedDelivery,
-        condition: bookData.condition === "new" ? "NEW - ORIGINAL PRICE" : bookData.condition === "used" ? "OLD" : "BOTH",
+        condition:
+          bookData.condition === "new"
+            ? "NEW - ORIGINAL PRICE"
+            : bookData.condition === "used"
+            ? "OLD"
+            : "BOTH",
         author: bookData.author,
         publisher: bookData.publisher,
         imageUrl: bookData.imageUrl,
@@ -333,7 +357,7 @@ export default function ContentManagement() {
         const removeCategory = (categories: Category[]): Category[] => {
           return categories
             .filter((cat) => {
-              const path = cat.path || ''; // Fallback for undefined path
+              const path = cat.path || "";
               return (
                 path &&
                 path !== categoryToDelete &&

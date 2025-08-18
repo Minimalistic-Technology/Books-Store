@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -10,17 +11,9 @@ import Header from '../../components/header/page';
 import Footer from '../../components/footer/page';
 import { Component, ReactNode } from 'react';
 import { API_BASE_URL } from "@/utils/api";
-const defaultImageUrl = 'https://images.pexels.com/photos/373465/pexels-photo-373465.jpeg';
+import { normalizeUrlParam, normalizeDisplayName } from '@/utils/stringUtils'; 
 
-// Utility functions
-export const normalizeUrlParam = (name: string) => name.trim().replace(/\s+/g, '-').toLowerCase();
-export const normalizeDisplayName = (name: string | undefined | null) => {
-  if (!name || typeof name !== 'string') {
-    console.warn('[normalizeDisplayName] Invalid name:', name);
-    return 'Unnamed Category';
-  }
-  return name.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-};
+const defaultImageUrl = 'https://images.pexels.com/photos/373465/pexels-photo-373465.jpeg';
 
 interface Book {
   _id: string;
@@ -163,7 +156,7 @@ export default function CategoryPage() {
       const currentPath = parentPath ? `${parentPath}/${cat.name}` : cat.name;
       result.push({ ...cat, path: currentPath });
       if (cat.children && cat.children.length > 0) {
-        result = result.concat(flattenCategories(cat.children, currentPath));
+        result = result.concat(flattenCategories(cat.children, currentPath)) as Category[];
       }
     });
     return result;

@@ -77,13 +77,13 @@ export default function OtpForm() {
         <div className="flex-1 flex flex-col items-center justify-center p-3 xs:p-4 sm:p-6 md:p-8">
           <div className="mb-4 xs:mb-6 sm:mb-8">
             <Link href="/">
-              <Image
+              <img
                 src="/images/logo.png"
                 alt="Book Haven Logo"
                 width={80}
                 height={80}
                 className="w-8 h-8 xs:w-10 xs:h-10 sm:w-12 sm:h-12"
-                priority
+                // priority
               />
             </Link>
           </div>

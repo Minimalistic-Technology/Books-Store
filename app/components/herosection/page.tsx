@@ -141,9 +141,6 @@ export default function Home() {
               <p className="text-lg text-gray-600 mb-8">
                 A Harsh Book Store platform for book lovers
               </p>
-              <Link href="/books" className="text-blue-600 hover:underline">
-                Explore Books
-              </Link>
             </>
           )}
         </section>

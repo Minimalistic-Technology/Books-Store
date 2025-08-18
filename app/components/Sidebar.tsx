@@ -1,4 +1,3 @@
-// components/Sidebar.tsx
 "use client";
 
 import Link from "next/link";
@@ -10,7 +9,7 @@ export default function Sidebar() {
   const isActive = (path: string) => pathname === path;
 
   return (
-    <aside className="w-64 bg-yellow-100 shadow-lg rounded-r-lg h-screen overflow-y-auto transition-all duration-300 animate__slideInLeft">
+    <aside className="w-64 bg-yellow-100 shadow-lg rounded-r-lg h-screen overflow-y-auto sticky top-0">
       <div className="p-6">
         <h2 className="text-2xl font-extrabold mb-6 bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent">
           Admin Panel
@@ -41,7 +40,7 @@ export default function Sidebar() {
                 Content Management
               </Link>
             </li>
-            <li>
+            {/* <li>
               <Link
                 href="/admin/categories-tags"
                 className={`block p-3 text-gray-800 rounded-lg transition-all duration-200 font-medium ${
@@ -52,7 +51,7 @@ export default function Sidebar() {
               >
                 Categories & Tags
               </Link>
-            </li>
+            </li> */}
             <li>
               <Link
                 href="/admin/comments-reviews"
@@ -62,7 +61,7 @@ export default function Sidebar() {
                     : "hover:bg-yellow-200 hover:shadow-md animate__pulse"
                 }`}
               >
-                Comments & Reviews
+                Comments
               </Link>
             </li>
             <li>
@@ -74,7 +73,7 @@ export default function Sidebar() {
                     : "hover:bg-yellow-200 hover:shadow-md animate__pulse"
                 }`}
               >
-                Order & Product Management
+                Orders
               </Link>
             </li>
             <li>
@@ -103,18 +102,6 @@ export default function Sidebar() {
             </li>
             <li>
               <Link
-                href="/admin/notifications"
-                className={`block p-3 text-gray-800 rounded-lg transition-all duration-200 font-medium ${
-                  isActive("/admin/notifications")
-                    ? "bg-yellow-200 text-yellow-900 shadow-md"
-                    : "hover:bg-yellow-200 hover:shadow-md animate__pulse"
-                }`}
-              >
-                Banners
-              </Link>
-            </li>
-            <li>
-              <Link
                 href="/admin/notifications-email"
                 className={`block p-3 text-gray-800 rounded-lg transition-all duration-200 font-medium ${
                   isActive("/admin/notifications-email")
@@ -125,7 +112,18 @@ export default function Sidebar() {
                 Notifications & Email Management
               </Link>
             </li>
-            
+            <li>
+              <Link
+                href="/admin/Books-edit"
+                className={`block p-3 text-gray-800 rounded-lg transition-all duration-200 font-medium ${
+                  isActive("/admin/Books-edit")
+                    ? "bg-yellow-200 text-yellow-900 shadow-md"
+                    : "hover:bg-yellow-200 hover:shadow-md animate__pulse"
+                }`}
+              >
+                Books-Edit
+              </Link>
+            </li>
             <li>
               <Link
                 href="/admin/import-export"
@@ -136,6 +134,18 @@ export default function Sidebar() {
                 }`}
               >
                 Import/Export
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/admin/DiscountManagement"
+                className={`block p-3 text-gray-800 rounded-lg transition-all duration-200 font-medium ${
+                  isActive("/admin/import-export")
+                    ? "bg-yellow-200 text-yellow-900 shadow-md"
+                    : "hover:bg-yellow-200 hover:shadow-md animate__pulse"
+                }`}
+              >
+                Discount Management
               </Link>
             </li>
           </ul>

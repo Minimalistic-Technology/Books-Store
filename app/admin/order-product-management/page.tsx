@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import OrderList from "./components/OrderList";
 import OrderForm from "./components/OrderForm";
+import AddOrderForm from "./components/AddOrderForm";
 import type { Order } from "./types";
 import { API_BASE_URL } from '../../../utils/api';
 
@@ -10,31 +11,67 @@ export default function OrderProductManagement() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [isAddOrderModalOpen, setIsAddOrderModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [cancelReasons, setCancelReasons] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null); 
+  const fetchCancelReasons = async () => {
+    try {
+      const url = `${API_BASE_URL}/cancel-reasons`;
+      console.log(`Fetching cancel reasons from: ${url}`);
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`Failed to fetch cancel reasons: ${response.status} - ${errorData.message || 'Unknown error'}`);
+      }
+      const data = await response.json();
+      setCancelReasons(data.reasons || []);
+      setError(null);
+    } catch (err: any) {
+      console.error("Error fetching cancel reasons:", err);
+      setError("Failed to load cancellation reasons.");
+    }
+  };
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/orders`);
-      if (!response.ok) throw new Error("Failed to fetch orders");
+      const url = `${API_BASE_URL}/orders`;
+      console.log(`Fetching orders from: ${url}`);
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`Failed to fetch orders: ${response.status} - ${errorData.message || 'Unknown error'}`);
+      }
       const data = await response.json();
-      setOrders(data.orders.map((order: any) => ({
-        id: order._id,
-        customerName: order.customerName,
-        email: order.email,
-        mobileNumber: order.mobileNumber,
-        address: order.address,
-        paymentType: order.paymentType,
-        quantity: order.quantity,
-        price: order.price,
-        status: order.status,
-        condition: order.condition,
-        createdAt: order.createdAt,
-        bookId: order.bookId,
-        title: order.title,
-        imageUrl: order.imageUrl,
-      })));
-    } catch (err) {
+      setOrders(
+        data.orders.map((order: any) => ({
+          id: order._id,
+          customerName: order.customerName,
+          email: order.email,
+          mobileNumber: order.mobileNumber,
+          address: order.address,
+          paymentType: order.paymentType,
+          quantity: order.quantity,
+          price: order.price,
+          status: order.status,
+          condition: order.condition,
+          createdAt: order.createdAt,
+          updatedAt: order.updatedAt,
+          bookId: order.bookId,
+          title: order.title || "Unknown Book",
+          imageUrl: order.imageUrl || null,
+          cancelReason: order.cancelReason || null,
+          userId: "",
+          products: [],
+          totalAmount: order.price,
+          shippingAddress: order.address,
+        }))
+      );
+      setError(null);
+    } catch (err: any) {
       console.error("Error fetching orders:", err);
+      setError("Failed to fetch orders. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -42,8 +79,7 @@ export default function OrderProductManagement() {
 
   useEffect(() => {
     fetchOrders();
-    const interval = setInterval(fetchOrders, 5000);
-    return () => clearInterval(interval);
+    fetchCancelReasons();
   }, []);
 
   const handleEditOrder = (order: Order) => {
@@ -51,32 +87,109 @@ export default function OrderProductManagement() {
     setIsOrderModalOpen(true);
   };
 
-  const handleDeleteOrder = (id: string) => {
-    setOrders((prev) => prev.filter((order) => order.id !== id));
-    const event = new CustomEvent("orderUpdated");
-    window.dispatchEvent(event);
+  const handleDeleteOrder = async (id: string) => {
+    if (deletingOrderId) return;
+    setDeletingOrderId(id);
+    console.log(`Orders state before deletion:`, orders);
+    const orderExists = orders.find((order) => order.id === id);
+    if (!orderExists) {
+      setError("Order not found in the current list. Please refresh and try again.");
+      setDeletingOrderId(null);
+      return;
+    }
+
+    try {
+      const url = `${API_BASE_URL}/orders/${id}`;
+      console.log(`Sending DELETE request to: ${url}`);
+      const response = await fetch(url, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error(`Delete failed with status ${response.status}:`, errorData);
+        if (response.status === 404) {
+          setError("Order not found on the server. It may have been deleted already.");
+          setOrders((prev) => prev.filter((order) => order.id !== id));
+        } else {
+          throw new Error(errorData.message || `Failed to delete order: ${response.status}`);
+        }
+      } else {
+        console.log(`Order ${id} deleted successfully`);
+        setOrders((prev) => prev.filter((order) => order.id !== id));
+        setError(null);
+      }
+    } catch (err: any) {
+      console.error("Error deleting order:", err);
+      setError(err.message || "Failed to delete order. Please try again.");
+    } finally {
+      setDeletingOrderId(null);
+    }
+  };
+
+  const handleCancelOrder = async (orderId: string, reason: string) => {
+    try {
+      const url = `${API_BASE_URL}/orders/${orderId}/cancel`;
+      console.log(`Sending CANCEL request to: ${url}`);
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to cancel order: ${response.status}`);
+      }
+      const updatedOrder = await response.json();
+      setOrders((prev) =>
+        prev.map((order) =>
+          order.id === orderId
+            ? {
+                ...order,
+                status: updatedOrder.order.status,
+                cancelReason: updatedOrder.order.cancelReason,
+                updatedAt: updatedOrder.order.updatedAt,
+              }
+            : order
+        )
+      );
+      setError(null);
+    } catch (err: any) {
+      console.error("Error cancelling order:", err);
+      setError("Failed to cancel order. Please try again.");
+    }
   };
 
   const handleSaveOrder = async (data: { id: string; status: string }) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/orders/${data.id}`, {
+      const url = `${API_BASE_URL}/orders/${data.id}`;
+      console.log(`Sending PUT request to: ${url}`);
+      const response = await fetch(url, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: data.status }),
       });
-      if (!response.ok) throw new Error("Failed to update order");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to update order: ${response.status}`);
+      }
       const updatedOrder = await response.json();
       setOrders((prev) =>
         prev.map((order) =>
-          order.id === data.id ? { ...order, status: updatedOrder.order.status } : order
+          order.id === data.id
+            ? { ...order, status: updatedOrder.order.status }
+            : order
         )
       );
-      const event = new CustomEvent("orderUpdated");
-      window.dispatchEvent(event);
-    } catch (err) {
+      setError(null);
+    } catch (err: any) {
       console.error("Error updating order:", err);
-      alert("Failed to update order. Please try again.");
+      setError("Failed to update order. Please try again.");
     }
+  };
+
+  const handleAddOrder = (order: Order) => {
+    setOrders((prev) => [...prev, order]);
+    setError(null);
   };
 
   const closeOrderModal = () => {
@@ -84,16 +197,51 @@ export default function OrderProductManagement() {
     setSelectedOrder(null);
   };
 
+  const closeAddOrderModal = () => {
+    setIsAddOrderModalOpen(false);
+  };
+
   return (
     <div className="min-h-screen w-full bg-yellow-50 text-yellow-900 font-serif p-6">
-      <h1 className="text-3xl font-semibold mb-6">Order Management</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-semibold">Order Management</h1>
+        <div className="flex space-x-2">
+          <button
+            onClick={fetchOrders}
+            className="btn-primary px-4 py-2 rounded-lg hover:bg-teal-700 transition-all"
+          >
+            Refresh Orders
+          </button>
+          <button
+            onClick={() => setIsAddOrderModalOpen(true)}
+            className="btn-primary px-4 py-2 rounded-lg hover:bg-teal-700 transition-all"
+          >
+            Add New Order
+          </button>
+        </div>
+      </div>
       {loading ? (
         <p>Loading...</p>
+      ) : error ? (
+        <p className="text-red-500 mb-4">{error}</p>
       ) : (
         <>
-          <OrderList orders={orders} onEdit={handleEditOrder} onDelete={handleDeleteOrder} />
+          <OrderList
+            orders={orders}
+            cancelReasons={cancelReasons}
+            onEdit={handleEditOrder}
+            onDelete={handleDeleteOrder}
+            onCancel={handleCancelOrder}
+          />
           {isOrderModalOpen && selectedOrder && (
-            <OrderForm order={selectedOrder} onClose={closeOrderModal} onSave={handleSaveOrder} />
+            <OrderForm
+              order={selectedOrder}
+              onClose={closeOrderModal}
+              onSave={handleSaveOrder}
+            />
+          )}
+          {isAddOrderModalOpen && (
+            <AddOrderForm onClose={closeAddOrderModal} onSave={handleAddOrder} />
           )}
         </>
       )}

@@ -42,7 +42,6 @@ const BookStoreLoginPage: React.FC = () => {
       apiError: '',
     };
 
-    // Validate email
     if (!email.trim()) {
       newErrors.email = 'This field is mandatory';
       hasErrors = true;
@@ -51,7 +50,6 @@ const BookStoreLoginPage: React.FC = () => {
       hasErrors = true;
     }
 
-    // Validate password
     if (!password.trim()) {
       newErrors.password = 'This field is mandatory';
       hasErrors = true;
@@ -60,7 +58,6 @@ const BookStoreLoginPage: React.FC = () => {
       hasErrors = true;
     }
 
-    // Validate role
     if (!role) {
       newErrors.role = 'Please select a role';
       hasErrors = true;
@@ -76,7 +73,7 @@ const BookStoreLoginPage: React.FC = () => {
           role,
         };
 
-        console.log('Sending login request with:', loginData); // Debugging
+        console.log('Sending login request with:', loginData); 
 
         const response = await fetch(`${API_BASE_URL}/auth/login`, {
           method: 'POST',
@@ -87,28 +84,22 @@ const BookStoreLoginPage: React.FC = () => {
         });
 
         const data = await response.json();
-        console.log('Login response:', data); // Debugging
+        console.log('Login response:', data); 
 
         if (!response.ok) {
           throw new Error(data.message || 'Login failed. Please try again.');
         }
-
-        // Decode the JWT token to get the role
         const decodedToken: JwtPayload = jwtDecode(data.token);
-        console.log('Decoded token:', decodedToken); // Debugging
-
-        // Store token (e.g., in localStorage or cookies)
         localStorage.setItem('token', data.token);
 
         alert('Login successful!');
-        // Redirect based on role
         if (decodedToken.role === 'Admin') {
           router.push('/admin/dashboard');
         } else {
           router.push('/');
         }
       } catch (error) {
-        console.error('Login error:', error); // Debugging
+        console.error('Login error:', error);
         setErrors((prev) => ({
           ...prev,
           apiError: (error as Error).message || 'An error occurred during login. Please try again.',
@@ -120,7 +111,6 @@ const BookStoreLoginPage: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen w-full bg-white font-serif text-gray-900">
       <div className="flex flex-col items-center justify-center flex-1 px-4 py-10">
-        {/* Logo and Book Icon */}
         <div className="flex flex-col items-center mb-6">
           <Image
             src="/images/logo.png"
@@ -130,8 +120,6 @@ const BookStoreLoginPage: React.FC = () => {
             className="mb-2"
           />
         </div>
-
-        {/* Heading */}
         <h1 className="text-3xl font-bold mb-2">Log In to Your Account</h1>
         <p className="text-sm text-center mb-6">
           Welcome back to{' '}
@@ -139,13 +127,10 @@ const BookStoreLoginPage: React.FC = () => {
             Harsh Book Store
           </Link>
         </p>
-
-        {/* Form */}
         <form
           onSubmit={handleLogin}
           className="w-full max-w-md bg-white border border-gray-300 rounded-xl p-6 shadow-md"
         >
-          {/* Email Field */}
           <div className="mb-4">
             <label htmlFor="email" className="block text-sm font-medium">
               Email
@@ -163,7 +148,6 @@ const BookStoreLoginPage: React.FC = () => {
             )}
           </div>
 
-          {/* Password Field */}
           <div className="mb-4">
             <label htmlFor="password" className="block text-sm font-medium">
               Password
@@ -190,7 +174,6 @@ const BookStoreLoginPage: React.FC = () => {
             )}
           </div>
 
-          {/* Role Dropdown */}
           <div className="mb-4">
             <label htmlFor="role" className="block text-sm font-medium">
               Role
@@ -209,21 +192,18 @@ const BookStoreLoginPage: React.FC = () => {
             )}
           </div>
 
-          {/* API Error */}
           {errors.apiError && (
             <p className="text-center text-sm text-red-600 mb-4">
               {errors.apiError}
             </p>
           )}
 
-          {/* Forgot Password */}
           <div className="mb-4 text-center">
             <Link href="/forgot-password" className="text-sm text-teal-600 hover:underline">
               Forgot password?
             </Link>
           </div>
 
-          {/* Login Button */}
           <button
             type="submit"
             className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-md py-2 transition-all"
@@ -231,7 +211,6 @@ const BookStoreLoginPage: React.FC = () => {
             Log In
           </button>
 
-          {/* Signup Link */}
           <div className="mt-4 text-center">
             <p className="text-sm">
               Don’t have an account?{' '}
@@ -243,7 +222,6 @@ const BookStoreLoginPage: React.FC = () => {
         </form>
       </div>
 
-      {/* Footer */}
       <footer className="text-center py-4 border-t border-gray-200 text-sm text-gray-600">
         <p className="font-medium">
           Legal restrictions and terms of use applicable to this site

@@ -4,37 +4,44 @@ import { useState, useEffect, useCallback } from "react";
 import ContentList from "./components/ContentList";
 import { ContentForm } from "./components/ContentForm";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faAngleDoubleLeft, faAngleLeft, faAngleRight, faAngleDoubleRight } from "@fortawesome/free-solid-svg-icons";
-import { API_BASE_URL } from '../../../utils/api';
+import {
+  faAngleDoubleLeft,
+  faAngleLeft,
+  faAngleRight,
+  faAngleDoubleRight,
+} from "@fortawesome/free-solid-svg-icons";
+import { API_BASE_URL } from "../../../utils/api";
 
-export interface Content {
+export type Content = {
   id?: string;
   title: string;
   categoryName: string;
   subCategory: string;
+  categoryPath: string; // Added property
   tags: string;
-  seoTitle: string;
-  seoDescription: string;
-  price: number;
-  description: string;
-  estimatedDelivery: string;
-  condition: string;
   author: string;
   publisher: string;
+  price: number;
+  condition: string;
+  quantityNew?: number;
+  discountNew?: number;
+  quantityOld?: number;
+  discountOld?: number;
   imageUrl: string;
-  quantityNew: number;
-  quantityOld: number;
-  discountNew: number;
-  discountOld: number;
-  bookName?: string;
+  estimatedDelivery: string;
+  description: string;
+  seoTitle?: string;
+  seoDescription?: string;
   createdAt?: string;
   updatedAt?: string;
-}
+};
 
 interface Category {
   _id: string;
   name: string;
+  path: string;
   tags: string[];
+  children: Category[];
 }
 
 export const updateProducts = (
@@ -42,6 +49,20 @@ export const updateProducts = (
   callback: (products: Content[]) => void
 ) => {
   callback(newProducts);
+};
+
+// Helper function to flatten category hierarchy for dropdown
+const flattenCategories = (categories: Category[], parentPath: string = ""): { id: string; path: string; display: string }[] => {
+  let result: { id: string; path: string; display: string }[] = [];
+  categories.forEach((cat) => {
+    if (!cat.path) return; // Skip categories with undefined path
+    const currentPath = parentPath ? `${parentPath}/${cat.name}` : cat.name;
+    result.push({ id: cat._id, path: cat.path, display: currentPath });
+    if (cat.children && cat.children.length > 0) {
+      result = result.concat(flattenCategories(cat.children, currentPath));
+    }
+  });
+  return result;
 };
 
 export default function ContentManagement() {
@@ -52,10 +73,9 @@ export default function ContentManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>("");
   const [successMessage, setSuccessMessage] = useState<string>("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [newTag, setNewTag] = useState<string>("");
-  const [tagToEdit, setTagToEdit] = useState<string>("");
-  const [editTag, setEditTag] = useState<string>("");
+  const [newCategoryName, setNewCategoryName] = useState<string>("");
+  const [parentPath, setParentPath] = useState<string>("");
+  const [categoryToDelete, setCategoryToDelete] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const itemsPerPage = 10;
@@ -66,32 +86,35 @@ export default function ContentManagement() {
       const categoriesResponse = await fetch(`${API_BASE_URL}/book-categories`);
       if (!categoriesResponse.ok) throw new Error("Failed to fetch categories");
       const categoriesData = await categoriesResponse.json();
+      console.log('Categories Data:', categoriesData); // Debug
       setCategories(categoriesData);
 
       const allBooks: Content[] = [];
       const fetchPromises = categoriesData.map(async (category: Category) => {
+        if (!category.path) return []; // Skip invalid categories
         try {
           const booksResponse = await fetch(
-            `${API_BASE_URL}/book-categories/${encodeURIComponent(category.name)}`
+            `${API_BASE_URL}/books/${encodeURIComponent(category.path)}`
           );
           if (!booksResponse.ok) {
-            console.warn(`Failed to fetch books for ${category.name}`);
+            console.warn(`Failed to fetch books for ${category.path}`);
             return [];
           }
           const booksData = await booksResponse.json();
-          const books = Array.isArray(booksData.books) ? booksData.books : [];
+          const books = Array.isArray(booksData) ? booksData : [];
           return books.map((book: any) => ({
             id: book._id,
-            title: book.title || "",
-            categoryName: category.name,
-            subCategory: book.subCategory || "",
-            tags: Array.isArray(book.tags) ? book.tags.join(", ") : book.tags || "",
+            title: book.bookName || book.title || "",
+            categoryPath: book.categoryPath || category.path,
+            tags: Array.isArray(book.tags)
+              ? book.tags.join(", ")
+              : book.tags || "",
             seoTitle: book.seoTitle || "",
             seoDescription: book.seoDescription || "",
             price: book.price || 0,
             description: book.description || "",
             estimatedDelivery: book.estimatedDelivery || "",
-            condition: book.condition || "NEW - ORIGINAL PRICE",
+            condition: book.condition === "new" ? "NEW - ORIGINAL PRICE" : book.condition === "used" ? "OLD" : "BOTH",
             author: book.author || "",
             publisher: book.publisher || "",
             imageUrl: book.imageUrl || "",
@@ -104,7 +127,10 @@ export default function ContentManagement() {
             updatedAt: book.updatedAt || "",
           }));
         } catch (error) {
-          console.error(`Error fetching books for category ${category.name}:`, error);
+          console.error(
+            `Error fetching books for category ${category.path}:`,
+            error
+          );
           return [];
         }
       });
@@ -124,53 +150,36 @@ export default function ContentManagement() {
     fetchCategoriesAndContents();
   }, [fetchCategoriesAndContents]);
 
-  useEffect(() => {
-    const fetchTags = async () => {
-      if (!selectedCategory) return;
-      try {
-        const response = await fetch(
-          `${API_BASE_URL}/book-categories/${encodeURIComponent(selectedCategory)}/tags`
-        );
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Failed to fetch tags");
-        }
-        const data = await response.json();
-        setCategories((prev) =>
-          prev.map((cat) =>
-            cat.name === selectedCategory ? { ...cat, tags: data.tags || [] } : cat
-          )
-        );
-        setError("");
-      } catch (err: any) {
-        setError(err.message || `Failed to load tags for ${selectedCategory}`);
-        setTimeout(() => setError(""), 5000);
-      }
-    };
-    fetchTags();
-  }, [selectedCategory]);
-
   const handleSave = async (data: Content) => {
     try {
       setIsLoading(true);
       const isUpdate = Boolean(data.id);
       const url = isUpdate
-        ? `${API_BASE_URL}/book-categories/${encodeURIComponent(data.categoryName)}/${data.id}`
-        : `${API_BASE_URL}/book-categories/${encodeURIComponent(data.categoryName)}`;
+        ? `${API_BASE_URL}/books/${encodeURIComponent(data.categoryPath)}/${data.id}`
+        : `${API_BASE_URL}/books/${encodeURIComponent(data.categoryPath)}`;
+      const backendCondition = data.condition === "NEW - ORIGINAL PRICE" ? "new" : data.condition === "OLD" ? "used" : data.condition;
       const response = await fetch(url, {
         method: isUpdate ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...data,
-          tags: typeof data.tags === "string" ? data.tags.split(",").map((tag) => tag.trim()) : data.tags,
+          title: data.title,
+          tags:
+            typeof data.tags === "string"
+              ? data.tags.split(",").map((tag) => tag.trim())
+              : data.tags,
+          condition: backendCondition,
           discountNew: data.discountNew ?? 0,
           discountOld: data.discountOld ?? 0,
+          categoryPath: data.categoryPath,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to ${isUpdate ? "update" : "create"} book`);
+        throw new Error(
+          errorData.error || `Failed to ${isUpdate ? "update" : "create"} book`
+        );
       }
 
       const savedBook = await response.json();
@@ -178,16 +187,19 @@ export default function ContentManagement() {
 
       const updatedBook: Content = {
         id: bookData._id,
-        title: bookData.title,
-        categoryName: data.categoryName,
-        subCategory: bookData.subCategory,
-        tags: Array.isArray(bookData.tags) ? bookData.tags.join(", ") : bookData.tags || "",
+        title: bookData.bookName || bookData.title,
+        categoryName: bookData.categoryName || "", // Add categoryName
+        subCategory: bookData.subCategory || "",   // Add subCategory
+        categoryPath: bookData.categoryPath,
+        tags: Array.isArray(bookData.tags)
+          ? bookData.tags.join(", ")
+          : bookData.tags || "",
         seoTitle: bookData.seoTitle || "",
         seoDescription: bookData.seoDescription || "",
         price: bookData.price,
         description: bookData.description,
         estimatedDelivery: bookData.estimatedDelivery,
-        condition: bookData.condition,
+        condition: bookData.condition === "new" ? "NEW - ORIGINAL PRICE" : bookData.condition === "used" ? "OLD" : "BOTH",
         author: bookData.author,
         publisher: bookData.publisher,
         imageUrl: bookData.imageUrl,
@@ -195,23 +207,28 @@ export default function ContentManagement() {
         quantityOld: bookData.quantityOld || 0,
         discountNew: bookData.discountNew || 0,
         discountOld: bookData.discountOld || 0,
-        bookName: bookData.bookName || "",
         createdAt: bookData.createdAt || "",
         updatedAt: bookData.updatedAt || "",
       };
 
       setContents((prev) =>
         isUpdate
-          ? prev.map((content) => (content.id === data.id ? updatedBook : content))
+          ? prev.map((content) =>
+              content.id === data.id ? updatedBook : content
+            )
           : [...prev, updatedBook]
       );
-      setSuccessMessage(`Book ${isUpdate ? "updated" : "created"} successfully`);
+      setSuccessMessage(
+        `Book ${isUpdate ? "updated" : "created"} successfully`
+      );
       setTimeout(() => setSuccessMessage(""), 3000);
       setIsFormOpen(false);
       setEditingContent(undefined);
-      await fetchCategoriesAndContents(); // Refresh categories to include new tags
+      await fetchCategoriesAndContents();
     } catch (err: any) {
-      setError(err.message || `Failed to ${data.id ? "update" : "create"} book`);
+      setError(
+        err.message || `Failed to ${data.id ? "update" : "create"} book`
+      );
       setTimeout(() => setError(""), 5000);
     } finally {
       setIsLoading(false);
@@ -223,12 +240,12 @@ export default function ContentManagement() {
     setIsFormOpen(true);
   };
 
-  const handleDelete = async (id: string, categoryName: string) => {
+  const handleDelete = async (id: string, categoryPath: string) => {
     if (!confirm("Are you sure you want to delete this book?")) return;
     try {
       setIsLoading(true);
       const response = await fetch(
-        `${API_BASE_URL}/book-categories/${encodeURIComponent(categoryName)}/${id}`,
+        `${API_BASE_URL}/books/${encodeURIComponent(categoryPath)}/${id}`,
         { method: "DELETE" }
       );
       if (!response.ok) throw new Error("Failed to delete book");
@@ -243,112 +260,99 @@ export default function ContentManagement() {
     }
   };
 
-  const handleCreateTag = async () => {
-    if (!selectedCategory || !newTag.trim()) {
-      setError("Please select a category and enter a tag");
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) {
+      setError("Please enter a category name");
       setTimeout(() => setError(""), 3000);
       return;
     }
     try {
       setIsLoading(true);
-      const response = await fetch(
-        `${API_BASE_URL}/book-categories/${encodeURIComponent(selectedCategory)}/tags`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tag: newTag.trim() }),
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/book-categories`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newCategoryName.trim(),
+          parentPath: parentPath || undefined,
+        }),
+      });
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create tag");
+        throw new Error(errorData.error || "Failed to create category");
       }
       const data = await response.json();
-      setCategories((prev) =>
-        prev.map((cat) =>
-          cat.name === selectedCategory ? { ...cat, tags: data.tags || [] } : cat
-        )
-      );
-      setNewTag("");
-      setSuccessMessage(`Tag '${newTag}' added successfully`);
+      setCategories((prev) => {
+        if (!parentPath) {
+          return [...prev, data];
+        }
+        const updateChildren = (categories: Category[]): Category[] => {
+          return categories.map((cat) => {
+            if (cat.path === parentPath) {
+              return { ...cat, children: [...cat.children, data] };
+            }
+            return { ...cat, children: updateChildren(cat.children) };
+          });
+        };
+        return updateChildren(prev);
+      });
+      setNewCategoryName("");
+      setParentPath("");
+      setSuccessMessage(`Category '${newCategoryName}' added successfully`);
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (err: any) {
-      setError(err.message || "Failed to create tag");
+      setError(err.message || "Failed to create category");
       setTimeout(() => setError(""), 3000);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleUpdateTag = async () => {
-    if (!selectedCategory || !tagToEdit || !editTag.trim()) {
-      setError("Please select a category, tag to edit, and new tag value");
+  const handleDeleteCategory = async () => {
+    if (!categoryToDelete) {
+      setError("Please select a category to delete");
       setTimeout(() => setError(""), 3000);
       return;
     }
-    try {
-      setIsLoading(true);
-      const response = await fetch(
-        `${API_BASE_URL}/book-categories/${encodeURIComponent(selectedCategory)}/tags/${encodeURIComponent(tagToEdit)}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ newTag: editTag.trim() }),
-        }
-      );
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update tag");
-      }
-      const data = await response.json();
-      setCategories((prev) =>
-        prev.map((cat) =>
-          cat.name === selectedCategory ? { ...cat, tags: data.tags || [] } : cat
-        )
-      );
-      setTagToEdit("");
-      setEditTag("");
-      setSuccessMessage(`Tag updated to '${editTag}' successfully`);
-      setTimeout(() => setSuccessMessage(""), 3000);
-    } catch (err: any) {
-      setError(err.message || "Failed to update tag");
-      setTimeout(() => setError(""), 3000);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDeleteTag = async () => {
-    if (!selectedCategory || !tagToEdit) {
-      setError("Please select a category and tag to delete");
-      setTimeout(() => setError(""), 3000);
+    if (
+      !confirm(
+        `Are you sure you want to delete the category '${categoryToDelete}' and all its descendants?`
+      )
+    )
       return;
-    }
-    if (!confirm(`Are you sure you want to delete the tag '${tagToEdit}'?`)) return;
     try {
       setIsLoading(true);
       const response = await fetch(
-        `${API_BASE_URL}/book-categories/${encodeURIComponent(selectedCategory)}/tags/${encodeURIComponent(tagToEdit)}`,
-        {
-          method: "DELETE",
-        }
+        `${API_BASE_URL}/book-categories/${encodeURIComponent(categoryToDelete)}`,
+        { method: "DELETE" }
       );
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete tag");
+        throw new Error(errorData.error || "Failed to delete category");
       }
-      const data = await response.json();
-      setCategories((prev) =>
-        prev.map((cat) =>
-          cat.name === selectedCategory ? { ...cat, tags: data.tags || [] } : cat
-        )
-      );
-      setTagToEdit("");
-      setEditTag("");
-      setSuccessMessage(`Tag '${tagToEdit}' deleted successfully`);
+      setCategories((prev) => {
+        const removeCategory = (categories: Category[]): Category[] => {
+          return categories
+            .filter((cat) => {
+              const path = cat.path || ''; // Fallback for undefined path
+              return (
+                path &&
+                path !== categoryToDelete &&
+                !path.startsWith(`${categoryToDelete}/`)
+              );
+            })
+            .map((cat) => ({
+              ...cat,
+              children: removeCategory(cat.children),
+            }));
+        };
+        return removeCategory(prev);
+      });
+      setCategoryToDelete("");
+      setSuccessMessage(`Category '${categoryToDelete}' deleted successfully`);
       setTimeout(() => setSuccessMessage(""), 3000);
+      await fetchCategoriesAndContents();
     } catch (err: any) {
-      setError(err.message || "Failed to delete tag");
+      setError(err.message || "Failed to delete category");
       setTimeout(() => setError(""), 3000);
     } finally {
       setIsLoading(false);
@@ -369,9 +373,8 @@ export default function ContentManagement() {
     setCurrentPage(page);
   };
 
-  // Generate page numbers to display
   const getPageNumbers = () => {
-    const pageNumbers = [];
+    const pageNumbers: (number | string)[] = [];
     const maxVisiblePages = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
     let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
@@ -396,6 +399,9 @@ export default function ContentManagement() {
     return pageNumbers;
   };
 
+  // Get flattened categories for dropdown
+  const flattenedCategories = flattenCategories(categories);
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -405,7 +411,7 @@ export default function ContentManagement() {
             setEditingContent(undefined);
             setIsFormOpen(true);
           }}
-          className="px-4 py-2 bg-teal-500 text-black rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+          className="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
           disabled={isLoading}
         >
           Create New Book
@@ -419,7 +425,7 @@ export default function ContentManagement() {
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              setCurrentPage(1); // Reset to first page on search
+              setCurrentPage(1);
             }}
             placeholder="Search by title (e.g., physics)..."
             className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 w-full max-w-xs"
@@ -444,87 +450,72 @@ export default function ContentManagement() {
       )}
 
       <div className="mb-6 bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Manage Tags</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          Manage Categories
+        </h2>
         <div className="space-y-4">
           <div>
-            <label className="block text-gray-800 font-medium mb-2">Select Category</label>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-              disabled={isLoading}
-            >
-              <option value="" disabled>
-                Select a category
-              </option>
-              {categories.map((cat) => (
-                <option key={cat._id} value={cat.name}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-gray-800 font-medium mb-2">Add New Tag</label>
+            <label className="block text-gray-800 font-medium mb-2">
+              Add New Category
+            </label>
             <div className="flex gap-2">
               <input
                 type="text"
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
                 className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                placeholder="Enter new tag"
-                disabled={isLoading || !selectedCategory}
+                placeholder="Enter new category name"
+                disabled={isLoading}
               />
-              <button
-                onClick={handleCreateTag}
-                disabled={isLoading || !selectedCategory || !newTag.trim()}
-                className="px-4 py-2 bg-teal-600 text-black rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              <select
+                value={parentPath}
+                onChange={(e) => setParentPath(e.target.value)}
+                className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                disabled={isLoading}
               >
-                Add Tag
+                <option value="">Select Parent Category (Root)</option>
+                {flattenedCategories.map((cat) => (
+                  <option key={cat.id} value={cat.path}>
+                    {cat.display}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={handleCreateCategory}
+                disabled={isLoading || !newCategoryName.trim()}
+                className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Add Category
               </button>
             </div>
           </div>
+
           <div>
-            <label className="block text-gray-800 font-medium mb-2">Edit/Delete Tag</label>
+            <label className="block text-gray-800 font-medium mb-2">
+              Delete Category
+            </label>
             <div className="flex gap-2">
               <select
-                value={tagToEdit}
-                onChange={(e) => setTagToEdit(e.target.value)}
+                value={categoryToDelete}
+                onChange={(e) => setCategoryToDelete(e.target.value)}
                 className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                disabled={isLoading || !selectedCategory}
+                disabled={isLoading}
               >
                 <option value="" disabled>
-                  Select tag to edit/delete
+                  Select category to delete
                 </option>
-                {categories
-                  .find((cat) => cat.name === selectedCategory)
-                  ?.tags.map((tag) => (
-                    <option key={tag} value={tag}>
-                      {tag}
-                    </option>
-                  ))}
+                {flattenedCategories.map((cat) => (
+                  <option key={cat.id} value={cat.path}>
+                    {cat.display}
+                  </option>
+                ))}
               </select>
-              <input
-                type="text"
-                value={editTag}
-                onChange={(e) => setEditTag(e.target.value)}
-                className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                placeholder="New tag value"
-                disabled={isLoading || !tagToEdit}
-              />
               <button
-                onClick={handleUpdateTag}
-                disabled={isLoading || !selectedCategory || !tagToEdit || !editTag.trim()}
-                className="px-4 py-2 bg-yellow-500 text-black rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={handleDeleteCategory}
+                disabled={isLoading || !categoryToDelete}
+                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Update Tag
-              </button>
-              <button
-                onClick={handleDeleteTag}
-                disabled={isLoading || !selectedCategory || !tagToEdit}
-                className="px-4 py-2 bg-red-500 text-black rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Delete Tag
+                Delete Category
               </button>
             </div>
           </div>
@@ -537,28 +528,36 @@ export default function ContentManagement() {
         </div>
       ) : (
         <>
-          <ContentList contents={paginatedContents} onEdit={handleEdit} onDelete={handleDelete} />
+          <ContentList
+            contents={paginatedContents}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
           <div className="mt-6 flex justify-center items-center gap-2">
             <button
               onClick={() => handlePageChange(1)}
               disabled={currentPage === 1}
-              className="px-2 py-1 bg-teal-600 text-black rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-2 py-1 bg-teal-600 text-white rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FontAwesomeIcon icon={faAngleDoubleLeft} />
             </button>
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className="px-2 py-1 bg-teal-500 text-black rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-2 py-1 bg-teal-500 text-white rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FontAwesomeIcon icon={faAngleLeft} />
             </button>
             {getPageNumbers().map((page, index) => (
               <button
-                key={index}
+                key={typeof page === "number" ? `page-${page}` : `ellipsis-${index}`}
                 onClick={() => typeof page === "number" && handlePageChange(page)}
                 disabled={page === "..." || currentPage === page}
-                className={`px-3 py-1 rounded-md ${currentPage === page ? "bg-teal-700 text-white" : "bg-teal-500 text-black hover:bg-teal-700"} focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+                className={`px-3 py-1 rounded-md ${
+                  currentPage === page
+                    ? "bg-teal-700 text-white"
+                    : "bg-teal-500 text-white hover:bg-teal-700"
+                } focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {page}
               </button>
@@ -566,14 +565,14 @@ export default function ContentManagement() {
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="px-2 py-1 bg-teal-500 text-black rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-2 py-1 bg-teal-500 text-white rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FontAwesomeIcon icon={faAngleRight} />
             </button>
             <button
               onClick={() => handlePageChange(totalPages)}
               disabled={currentPage === totalPages}
-              className="px-2 py-1 bg-teal-500 text-black rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-2 py-1 bg-teal-500 text-white rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FontAwesomeIcon icon={faAngleDoubleRight} />
             </button>

@@ -35,12 +35,21 @@ export default function OrderDetails({ order, onClose, onUpdateOrder }: OrderDet
             status: updatedOrder.status,
             createdAt: updatedOrder.createdAt,
             updatedAt: updatedOrder.updatedAt,
+            email: updatedOrder.email,
+            mobileNumber: updatedOrder.mobileNumber,
+            address: updatedOrder.address,
+            paymentType: updatedOrder.paymentType,
+            quantity: updatedOrder.quantity,
+            price: updatedOrder.price,
+            condition: updatedOrder.condition,
+            title: updatedOrder.title,
+            imageUrl: updatedOrder.imageUrl,
           }),
         });
         if (!response.ok) throw new Error("Failed to cancel/refund order");
         onUpdateOrder(updatedOrder);
-setIsRefundProcessing(false);
-alert(`${isRefundProcessing ? "Refund" : "Cancellation"} processed for Order #${order.id}`);
+        setIsRefundProcessing(false);
+        alert(`${isRefundProcessing ? "Refund" : "Cancellation"} processed for Order #${order.id}`);
       } catch (error) {
         console.error("Error processing refund/cancellation:", error);
         alert("Failed to process refund/cancellation. Please try again.");
@@ -52,6 +61,14 @@ alert(`${isRefundProcessing ? "Refund" : "Cancellation"} processed for Order #${
     const invoiceContent = `
       Invoice for Order #${order.id}
       Customer: ${order.customerName}
+      Email: ${order.email}
+      Mobile Number: ${order.mobileNumber}
+      Address: ${order.address.street}, ${order.address.city}, ${order.address.state}, ${order.address.country}, ${order.address.pinCode}
+      Payment Type: ${order.paymentType}
+      Quantity: ${order.quantity}
+      Price: ₹${order.price.toFixed(2)}
+      Condition: ${order.condition}
+      Book Title: ${order.title}
       Amount: ₹${order.totalAmount.toFixed(2)}
       Status: ${order.status}
       Date: ${new Date(order.createdAt).toLocaleDateString()}
@@ -63,10 +80,18 @@ alert(`${isRefundProcessing ? "Refund" : "Cancellation"} processed for Order #${
 
   return (
     <div className="fixed inset-0 bg-yellow-50 bg-opacity-50 flex items-center justify-center z-50 animate__fadeIn">
-      <div className="card p-6 max-w-md w-full animate__zoomIn">
+      <div className="card p-6 max-w-md w-full animate__zoomIn" style={{ maxHeight: "90vh", overflowY: "auto" }}>
         <h2 className="text-2xl font-semibold mb-4 text-yellow-900">Order Details - #{order.id}</h2>
         <div className="space-y-6">
           <p className="text-gray-800"><strong>Customer:</strong> {order.customerName}</p>
+          <p className="text-gray-800"><strong>Email:</strong> {order.email}</p>
+          <p className="text-gray-800"><strong>Mobile Number:</strong> {order.mobileNumber}</p>
+          <p className="text-gray-800"><strong>Address:</strong> {`${order.address.street}, ${order.address.city}, ${order.address.state}, ${order.address.country}, ${order.address.pinCode}`}</p>
+          <p className="text-gray-800"><strong>Payment Type:</strong> {order.paymentType}</p>
+          <p className="text-gray-800"><strong>Quantity:</strong> {order.quantity}</p>
+          <p className="text-gray-800"><strong>Price:</strong> ₹{order.price.toFixed(2)}</p>
+          <p className="text-gray-800"><strong>Condition:</strong> {order.condition}</p>
+          <p className="text-gray-800"><strong>Book Title:</strong> {order.title}</p>
           <p className="text-gray-800"><strong>Amount:</strong> ₹{order.totalAmount.toFixed(2)}</p>
           <p className="text-gray-800"><strong>Date:</strong> {new Date(order.createdAt).toLocaleDateString()}</p>
           {order.updatedAt && <p className="text-gray-800"><strong>Updated:</strong> {new Date(order.updatedAt).toLocaleDateString()}</p>}

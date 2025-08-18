@@ -1,4 +1,5 @@
 "use client";
+
 import Header from "../components/header/page";
 import Footer from "../components/footer/page";
 import Link from "next/link";
@@ -7,7 +8,9 @@ import { useForm } from "react-hook-form";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faShoppingCart } from "@fortawesome/free-solid-svg-icons";
-import { API_BASE_URL } from '../../utils/api';
+import { API_BASE_URL } from "../../utils/api";
+
+const defaultImageUrl = "https://images.pexels.com/photos/373465/pexels-photo-373465.jpeg";
 
 interface CartItem {
   _id: string;
@@ -17,6 +20,7 @@ interface CartItem {
   condition: string;
   discountedPrice: number;
   quantity: number;
+  categoryName?: string;
 }
 
 interface FormData {
@@ -66,19 +70,21 @@ const CartPage: React.FC = () => {
     const id = searchParams.get("_id");
     const name = searchParams.get("name");
     const price = searchParams.get("price");
-    const imageUrl = searchParams.get("imageUrl");
+    const imageUrl = searchParams.get("imageUrl") || defaultImageUrl;
     const condition = searchParams.get("condition");
     const discountedPrice = searchParams.get("discountedPrice");
+    const categoryName = searchParams.get("category") || "Non-Academics";
 
     if (id && name && price && !storedItems.some((item: CartItem) => item._id === id)) {
       const newItem: CartItem = {
         _id: id,
         name,
         price: parseFloat(price),
-        imageUrl: imageUrl || "",
+        imageUrl,
         condition: condition || "New",
         discountedPrice: discountedPrice ? parseFloat(discountedPrice) : parseFloat(price),
         quantity: 1,
+        categoryName,
       };
       const updatedCart = [...storedItems, newItem];
       setCartItems(updatedCart);
@@ -90,7 +96,7 @@ const CartPage: React.FC = () => {
   }, [searchParams]);
 
   const getEffectivePrice = (item: CartItem) => {
-    return item.condition === "Old" && item.discountedPrice > 0 ? item.discountedPrice : item.price;
+    return item.discountedPrice > 0 ? item.discountedPrice : item.price;
   };
 
   const getTotal = () => {
@@ -146,7 +152,7 @@ const CartPage: React.FC = () => {
   const mapConditionToOrderSchema = (bookCondition: string): string => {
     if (bookCondition === "NEW - ORIGINAL PRICE" || bookCondition === "New") return "New";
     if (bookCondition === "OLD " || bookCondition === "Old" || bookCondition === "OLD - 35% OFF") return "Old";
-    if (bookCondition === "BOTH") return cartItems[0]?.condition || "New";
+    if (bookCondition === "BOTH") return "New";
     throw new Error(`Invalid book condition: ${bookCondition}`);
   };
 
@@ -156,7 +162,6 @@ const CartPage: React.FC = () => {
       setError("Cart is empty.");
       return;
     }
-
 
     const paymentMethod = data.paymentMethod;
     if (!["creditCard", "debitCard", "upi", "cod"].includes(paymentMethod)) {
@@ -172,26 +177,42 @@ const CartPage: React.FC = () => {
     };
     const paymentType = paymentTypeMap[paymentMethod] || "Cash on Delivery";
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/book-categories/School-Books/${cartItems[0]._id}`);
-      if (!response.ok) throw new Error("Failed to fetch book details");
-      const book = await response.json();
-      if (cartItems[0].condition === "New" && book.quantityNew < cartItems[0].quantity) {
-        setError(`Insufficient new stock. Only ${book.quantityNew} available.`);
+    for (const item of cartItems) {
+      try {
+        // Use the direct book fetch endpoint instead of category-based endpoint
+        const response = await fetch(
+          `${API_BASE_URL}/books/${item._id}?t=${new Date().getTime()}`,
+          { cache: "no-store" }
+        );
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
+        }
+        const book = await response.json();
+        console.log(`Fetched book details for ${item._id}:`, book);
+
+        const quantityNew = book.quantityNew ?? 0;
+        const quantityOld = book.quantityOld ?? 0;
+        const itemCondition = mapConditionToOrderSchema(item.condition);
+
+        if (itemCondition === "New" && quantityNew < (item.quantity || 1)) {
+          setError(`Insufficient new stock for ${item.name}. Only ${quantityNew} available.`);
+          return;
+        }
+        if (itemCondition === "Old" && quantityOld < (item.quantity || 1)) {
+          setError(`Insufficient old stock for ${item.name}. Only ${quantityOld} available.`);
+          return;
+        }
+      } catch (err: any) {
+        console.error(`Error checking stock for item ${item._id}:`, err);
+        setError(`Unable to verify stock for ${item.name}. Please try again or contact support.`);
         return;
       }
-      if (cartItems[0].condition === "Old" && book.quantityOld < cartItems[0].quantity) {
-        setError(`Insufficient old stock. Only ${book.quantityOld} available.`);
-        return;
-      }
-    } catch (err) {
-      console.error("Error checking stock:", err);
-      setError("Failed to verify stock availability. Please try again.");
-      return;
     }
 
     try {
-      const orderCondition = mapConditionToOrderSchema(cartItems[0].condition);
+      const item = cartItems[0];
+      const orderCondition = mapConditionToOrderSchema(item.condition);
       const orderData = {
         customerName,
         email,
@@ -204,11 +225,11 @@ const CartPage: React.FC = () => {
           pinCode: address.postalCode,
         },
         paymentType,
-        quantity: cartItems[0].quantity || 1,
+        quantity: item.quantity || 1,
         price: getTotal(),
         status: "Shipped",
         condition: orderCondition,
-        bookId: cartItems[0]._id,
+        bookId: item._id,
       };
 
       const response = await fetch(`${API_BASE_URL}/orders`, {
@@ -263,20 +284,23 @@ const CartPage: React.FC = () => {
                   className="flex items-center justify-between bg-white p-4 rounded-lg shadow-md"
                 >
                   <img
-                    src={item.imageUrl}
+                    src={item.imageUrl || defaultImageUrl}
                     alt={item.name}
                     className="w-24 h-32 object-cover rounded-md"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = "/placeholder-image.jpg";
+                      (e.target as HTMLImageElement).src = defaultImageUrl;
                     }}
                   />
                   <div className="flex-1 ml-4">
                     <h3 className="text-lg font-semibold">{item.name}</h3>
                     <div className="flex items-center space-x-2">
-                      {item.condition === "Old" && item.discountedPrice > 0 ? (
+                      {item.discountedPrice > 0 && item.discountedPrice < item.price ? (
                         <>
                           <span className="text-sm text-gray-500 line-through">₹{item.price.toFixed(2)}</span>
                           <span className="text-orange-500 font-bold">₹{item.discountedPrice.toFixed(2)}</span>
+                          <span className="text-sm text-gray-600">
+                            ({((1 - item.discountedPrice / item.price) * 100).toFixed(0)}% off)
+                          </span>
                         </>
                       ) : (
                         <span className="text-orange-500 font-bold">₹{item.price.toFixed(2)}</span>
@@ -425,7 +449,7 @@ const CartPage: React.FC = () => {
                       <option value="creditCard">Credit Card</option>
                       <option value="debitCard">Debit Card</option>
                       <option value="upi">UPI</option>
-                      <option value="cod Holycow">Cash on Delivery</option>
+                      <option value="cod">Cash on Delivery</option>
                     </select>
                     {errors.paymentMethod && <p className="text-red-500 text-sm">{errors.paymentMethod.message}</p>}
                   </div>

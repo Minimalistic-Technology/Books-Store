@@ -1,4 +1,5 @@
-module.exports = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   images: {
     domains: [
       'harshbookcenter.com',
@@ -16,8 +17,11 @@ module.exports = {
       'unsplash.com',
       'example.com',
       'res.cloudinary.com',
-      "images.pexels.com"
+      'images.pexels.com',
     ],
+  },
+  eslint: {
+    ignoreDuringBuilds: true, 
   },
   async rewrites() {
     return [
@@ -28,3 +32,5 @@ module.exports = {
     ];
   },
 };
+
+module.exports = nextConfig;

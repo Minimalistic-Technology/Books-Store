@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { API_BASE_URL } from "../../../utils/api";
 
 const Header = dynamic(() => import("../../components/header/page"), { ssr: false });
+const defaultImageUrl = "https://images.pexels.com/photos/373465/pexels-photo-373465.jpeg";
 
 interface Item {
   _id: string;
@@ -27,6 +28,8 @@ interface Item {
   quantityOld: number;
   discountNew: number;
   discountOld: number;
+  effectiveDiscount: number;
+  discountedPrice: number;
 }
 
 interface BookstoreReview {
@@ -37,19 +40,19 @@ interface BookstoreReview {
   comment: string;
   createdAt: string;
   bookId: { _id: string; title: string };
-  status: 'pending' | 'approved' | 'disapproved';
+  status: "pending" | "approved" | "disapproved";
 }
 
 export default function Overview() {
   const { id } = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const category = searchParams.get("category") || "School-Books";
+  const category = searchParams.get("category") || "Non-Academics";
   const [item, setItem] = useState<Item>({
     _id: "",
     name: "Loading...",
     price: 0,
-    imageUrl: "/images/placeholder.jpg",
+    imageUrl: defaultImageUrl,
     description: "",
     estimatedDelivery: "",
     tags: [],
@@ -61,28 +64,30 @@ export default function Overview() {
     quantityOld: 0,
     discountNew: 0,
     discountOld: 0,
+    effectiveDiscount: 0,
+    discountedPrice: 0,
   });
   const [condition, setCondition] = useState("New");
   const [discountedPrice, setDiscountedPrice] = useState(0);
   const [isOutOfStock, setIsOutOfStock] = useState(false);
   const [availableConditions, setAvailableConditions] = useState<string[]>([]);
-  const [viewers, setViewers] = useState(Math.floor(Math.random() * 50) + 1); 
+  const [viewers, setViewers] = useState(Math.floor(Math.random() * 50) + 1);
   const [rating, setRating] = useState(0);
   const [reviewDescription, setReviewDescription] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [reviewError, setReviewError] = useState<string | null>(null);
-  const [reviews, setReviews] = useState<BookstoreReview[]>([]);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [reviews, setReviews] = useState<BookstoreReview[]>([]);
 
   useEffect(() => {
     const fetchItemDetails = async () => {
       if (id) {
         try {
-          console.log(`Fetching item with ID: ${id} from category: ${category}`);
+          console.log(`Fetching item with ID: ${id}`);
           const response = await fetch(
-            `${API_BASE_URL}/book-categories/${encodeURIComponent(category)}/${id}?t=${new Date().getTime()}`,
+            `${API_BASE_URL}/books/${id}?t=${new Date().getTime()}`,
             { cache: "no-store" }
           );
           if (!response.ok) {
@@ -92,27 +97,32 @@ export default function Overview() {
           const data = await response.json();
           const newItem = {
             _id: data._id || "",
-            name: data.title || "Unknown Title",
+            name: data.bookName || data.title || "Unknown Title",
             price: data.price || 0,
-            imageUrl: data.imageUrl || "/images/placeholder.jpg",
+            imageUrl: data.imageUrl || defaultImageUrl,
             description: data.description || "",
             estimatedDelivery: data.estimatedDelivery || "",
             tags: data.tags || [],
-            condition: data.condition || "New",
-            subCategory: data.subCategory || "",
+            condition: data.condition || "new",
+            subCategory: data.categoryPath ? data.categoryPath.split("/").pop() || "Non-Academics" : "Non-Academics",
             author: data.author || "",
             publisher: data.publisher || "",
-            quantityNew: data.quantityNew || 0,
-            quantityOld: data.quantityOld || 0,
-            discountNew: data.discountNew || 0,
-            discountOld: data.discountOld || 0,
+            quantityNew: data.quantityNew ?? 0,
+            quantityOld: data.quantityOld ?? 0,
+            discountNew: data.discountNew ?? 0,
+            discountOld: data.discountOld ?? 0,
+            effectiveDiscount: data.effectiveDiscount ?? 0,
+            discountedPrice: (data.discountedPrice ?? data.price) || 0,
           };
           setItem(newItem);
-          setCondition(newItem.condition === "BOTH" ? "New" : newItem.condition === "NEW - ORIGINAL PRICE" ? "New" : "Old");
-          setDiscountedPrice(
-            newItem.condition === "OLD " ? newItem.price * (1 - newItem.discountOld / 100) :
-            newItem.price * (1 - newItem.discountNew / 100)
-          );
+          const selectedCondition = newItem.condition === "BOTH" ? "New" :
+            newItem.condition === "new" ? "New" :
+            newItem.quantityNew > 0 ? "New" : "Old";
+          setCondition(selectedCondition);
+          // Calculate initial discounted price based on selected condition
+          const initialDiscount = selectedCondition === "New" ? newItem.discountNew : newItem.discountOld;
+          const initialDiscountedPrice = newItem.price * (1 - initialDiscount / 100);
+          setDiscountedPrice(initialDiscountedPrice);
           setIsOutOfStock(newItem.quantityNew === 0 && newItem.quantityOld === 0);
           const conditions = [];
           if (newItem.quantityNew > 0) conditions.push("New");
@@ -124,14 +134,13 @@ export default function Overview() {
             message: err.message,
             stack: err.stack,
             id,
-            category,
           });
           setError(`Item not found. Please check the item ID (${id}) or try a different one.`);
           setItem({
             _id: "",
             name: "Not Found",
             price: 0,
-            imageUrl: "/images/placeholder.jpg",
+            imageUrl: defaultImageUrl,
             description: "",
             estimatedDelivery: "",
             tags: [],
@@ -143,6 +152,8 @@ export default function Overview() {
             quantityOld: 0,
             discountNew: 0,
             discountOld: 0,
+            effectiveDiscount: 0,
+            discountedPrice: 0,
           });
           setCondition("New");
           setDiscountedPrice(0);
@@ -152,7 +163,7 @@ export default function Overview() {
       }
     };
     fetchItemDetails();
-  }, [id, category]);
+  }, [id]);
 
   useEffect(() => {
     const fetchReviews = async () => {
@@ -199,11 +210,10 @@ export default function Overview() {
   const handleConditionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedCondition = e.target.value;
     setCondition(selectedCondition);
-    setDiscountedPrice(
-      selectedCondition === "Old"
-        ? item.price * (1 - item.discountOld / 100)
-        : item.price * (1 - item.discountNew / 100)
-    );
+    // Calculate discounted price based on selected condition
+    const discount = selectedCondition === "New" ? item.discountNew : item.discountOld;
+    const newDiscountedPrice = item.price * (1 - discount / 100);
+    setDiscountedPrice(newDiscountedPrice);
   };
 
   const handleRating = (rate: number) => {
@@ -268,14 +278,14 @@ export default function Overview() {
 
   const handleAddToCart = () => {
     if (!error && item._id && !isOutOfStock) {
-      const effectivePrice = condition === "Old" ? discountedPrice : item.price * (1 - item.discountNew / 100);
       const query = new URLSearchParams({
         _id: item._id,
         name: item.name,
-        price: effectivePrice.toFixed(2),
-        imageUrl: item.imageUrl,
+        price: item.price.toFixed(2),
+        imageUrl: item.imageUrl || defaultImageUrl,
         condition,
         discountedPrice: discountedPrice.toFixed(2),
+        category,
       }).toString();
       console.log("Navigating to cart with query:", query);
       router.push(`/cart?${query}`);
@@ -284,14 +294,14 @@ export default function Overview() {
 
   const handleBuyNow = () => {
     if (!error && item._id && !isOutOfStock) {
-      const effectivePrice = condition === "Old" ? discountedPrice : item.price * (1 - item.discountNew / 100);
       const query = new URLSearchParams({
         _id: item._id,
         name: item.name,
-        price: effectivePrice.toFixed(2),
-        imageUrl: item.imageUrl,
+        price: item.price.toFixed(2),
+        imageUrl: item.imageUrl || defaultImageUrl,
         condition,
         discountedPrice: discountedPrice.toFixed(2),
+        category,
       }).toString();
       console.log("Navigating to cart with query:", query);
       router.push(`/cart?${query}`);
@@ -328,19 +338,16 @@ export default function Overview() {
       <main className="flex-grow px-6 sm:px-8 md:px-12 py-6">
         <div className="flex flex-col lg:flex-row items-start">
           <div className="w-full lg:w-1/2 mb-6 lg:mb-0">
-            {item.imageUrl ? (
-              <Image
-                src={item.imageUrl}
-                alt={item.name}
-                width={300}
-                height={400}
-                className="w-full h-auto object-cover rounded-lg shadow-md"
-              />
-            ) : (
-              <div className="w-full h-[400px] flex items-center justify-center bg-gray-100 rounded-lg shadow-md">
-                <p className="text-gray-500">No image available</p>
-              </div>
-            )}
+            <Image
+              src={item.imageUrl || defaultImageUrl}
+              alt={item.name}
+              width={300}
+              height={400}
+              className="w-full h-auto object-cover rounded-lg shadow-md"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = defaultImageUrl;
+              }}
+            />
           </div>
           <div className="w-full lg:w-1/2 lg:pl-6">
             <h2 className="text-2xl font-semibold mb-4 text-gray-900">{item.name}</h2>
@@ -351,7 +358,7 @@ export default function Overview() {
                   <span className="text-2xl text-green-500">₹{discountedPrice.toFixed(2)}</span>
                   <span className="text-sm text-gray-600">({item.discountOld}% off)</span>
                 </>
-              ) : item.discountNew > 0 && condition === "New" ? (
+              ) : condition === "New" && item.discountNew > 0 ? (
                 <>
                   <span className="text-sm text-gray-500 line-through">₹{item.price.toFixed(2)}</span>
                   <span className="text-2xl text-green-500">₹{discountedPrice.toFixed(2)}</span>
@@ -411,7 +418,7 @@ export default function Overview() {
             </div>
             <div className="mt-2">
               <h3 className="text-md font-medium text-gray-900">Category:</h3>
-              <p className="text-sm text-gray-600">{item.subCategory || "School Books"}</p>
+              <p className="text-sm text-gray-600">{item.subCategory || "Non-Academics"}</p>
             </div>
             <div className="mt-2">
               <h3 className="text-md font-medium text-gray-900">Author:</h3>
@@ -428,7 +435,8 @@ export default function Overview() {
             <div className="mt-4">
               <h3 className="text-md font-medium text-gray-900">Stock Availability:</h3>
               <p className="text-sm text-gray-600">
-                New: {item.quantityNew} {item.quantityNew === 0 ? "(Out of Stock)" : ""}, Old: {item.quantityOld} {item.quantityOld === 0 ? "(Out of Stock)" : ""}
+                New: {item.quantityNew} {item.quantityNew === 0 ? "(Out of Stock)" : ""},
+                Old: {item.quantityOld} {item.quantityOld === 0 ? "(Out of Stock)" : ""}
               </p>
             </div>
             <div className="mt-4">

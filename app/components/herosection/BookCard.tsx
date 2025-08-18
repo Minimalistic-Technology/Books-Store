@@ -1,4 +1,3 @@
-
 "use client";
 import Link from "next/link";
 import Image from "next/image";
@@ -8,6 +7,7 @@ interface Book {
   bookName: string;
   title: string;
   price: number;
+  discountedPrice: number;
   imageUrl: string;
   subCategory: string;
   viewCount: number;
@@ -18,6 +18,8 @@ interface BookCardProps {
 }
 
 const BookCard: React.FC<BookCardProps> = ({ book }) => {
+  const hasDiscount = book.discountedPrice < book.price;
+
   return (
     <div className="border rounded-lg overflow-hidden shadow-md w-[200px] h-[300px] flex flex-col justify-between">
       <div className="w-full h-[200px] overflow-hidden">
@@ -31,8 +33,14 @@ const BookCard: React.FC<BookCardProps> = ({ book }) => {
       </div>
       <div className="p-2 text-center flex-grow">
         <p className="text-sm text-black line-clamp-2">{book.title}</p>
-        <p className="text-red-500 line-through">₹{book.price * 1.5}.00</p>
-        <p className="text-green-600 font-bold">₹{book.price}.00</p>
+        {hasDiscount ? (
+          <>
+            <p className="text-red-500 line-through">₹{book.price.toFixed(2)}</p>
+            <p className="text-green-600 font-bold">₹{book.discountedPrice.toFixed(2)}</p>
+          </>
+        ) : (
+          <p className="text-green-600 font-bold">₹{book.price.toFixed(2)}</p>
+        )}
       </div>
     </div>
   );

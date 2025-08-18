@@ -1,9 +1,8 @@
-// app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Books Store Admin",
+  title: "Books Store",
   description: "Admin panel for Books Store",
 };
 
@@ -14,8 +13,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="flex h-screen  overflow-hidden">
-        {children}
+      <body className="flex h-screen w-full overflow bg-gray-50">
+        <div className="flex flex-col w-full h-full overflow">
+          {children}
+        </div>
       </body>
     </html>
   );

@@ -1,69 +1,59 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "@fortawesome/fontawesome-svg-core/styles.css"; /* Ensure FontAwesome styles are imported */
+@import "@fortawesome/fontawesome-svg-core/styles.css";
 
-/* Global font variables */
 :root {
   --font-heading: 'Libre Baskerville', sans-serif;
   --font-body: 'Arial', sans-serif;
 }
 
-/* Apply fonts via Tailwind theme */
 @theme inline {
   --font-sans: var(--font-body);
   --font-heading: var(--font-heading);
 }
 
-/* Optional for dark mode */
 @custom-variant dark (&:is(.dark *));
 
-/* Global defaults */
-body {
+html, body {
   margin: 0;
   padding: 0;
+  height: 100vh !important;
+  position: relative !important;
+}
+
+body {
   font-family: var(--font-body);
-  min-height: 100vh;
-  overflow-x: hidden;
-  overflow-y: auto;
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
 }
 
-/* Ensure FontAwesome icons have consistent sizing */
 .fa, .fas, .search-icon {
-  font-size: 0.875rem; /* Fallback size equivalent to text-sm */
+  font-size: 0.875rem;
   line-height: 1;
 }
 
 @media (min-width: 640px) {
   .fa, .fas, .search-icon {
-    font-size: 1rem; /* Equivalent to text-base for sm screens */
+    font-size: 1rem;
   }
 }
 
-/* Banner styles */
-.banner {
-  @apply fixed top-0 left-0 w-full bg-yellow-500 text-white p-4 text-center z-50;
-  transition: all 0.3s ease-in-out;
-}
-
-.banner.inactive {
-  @apply hidden;
-}
-
-/* Admin-specific styles */
 .admin-layout {
-  @apply w-full min-h-screen bg-yellow-50;
+  @apply w-full min-h-screen flex; /* Flex layout for sidebar and main content */
 }
 
 .page-container {
-  @apply w-full min-h-screen;
+  @apply flex-1 w-full; /* Main content takes remaining space */
 }
 
 main {
-  @apply w-full px-4 sm:px-6 md:px-8 lg:px-12 py-6;
+  @apply w-full p-6;
+}
+
+.scrollable-orders {
+  @apply max-h-[calc(100vh-200px)] overflow-y-auto; /* Scrollable orders list */
 }
 
 @media (min-width: 1536px) {
@@ -72,7 +62,6 @@ main {
   }
 }
 
-/* Optional: Add beautification utilities */
 .card {
   @apply bg-white rounded-lg shadow-md p-4;
 }
@@ -83,4 +72,25 @@ main {
 
 .btn-disabled {
   @apply bg-gray-400 text-white font-semibold rounded-md py-2 px-4 cursor-not-allowed;
+}
+
+footer {
+  @apply w-full;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.dropdown-menu {
+  position: absolute;
+  z-index: 1000;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }

@@ -1,17 +1,12 @@
 "use client";
 
 import Sidebar from "../components/Sidebar";
-import { DashboardContext, useDashboard } from "../admin/dashboard/page";
 import { useMemo, useState } from "react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { isLoggedIn, handleLogout } = useDashboard();
-  const [isLoading, setIsLoading] = useState(false); // Add loading state
-
-  const contextValue = useMemo(() => ({ isLoggedIn, handleLogout }), [isLoggedIn, handleLogout]);
+  const [isLoading, setIsLoading] = useState(false); 
 
   return (
-    // <DashboardContext.Provider value={contextValue}>
       <div className="page-container flex flex-row h-screen bg-yellow-50 overflow-hidden">
         <Sidebar />
         <div className="flex-1 flex flex-col min-h-0 overflow-auto">
@@ -26,6 +21,5 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </main>
         </div>
       </div>
-    // </DashboardContext.Provider>
   );
 }

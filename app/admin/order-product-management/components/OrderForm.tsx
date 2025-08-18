@@ -127,6 +127,17 @@ export default function OrderForm({ order, onClose, onSave }: OrderFormProps) {
                 className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100"
               />
             </div>
+            {order?.cancelReason && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Cancel Reason</label>
+                <input
+                  type="text"
+                  value={order.cancelReason}
+                  disabled
+                  className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100"
+                />
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-700">Status</label>
               <select

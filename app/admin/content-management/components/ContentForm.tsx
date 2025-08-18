@@ -1,15 +1,21 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
-import { Content } from "../page"; 
-import { API_BASE_URL } from '../../../../utils/api';
+import { Content } from "../page";
+import { API_BASE_URL } from "../../../../utils/api";
+
+interface Category {
+  _id: string;
+  name: string;
+  path: string;
+  children: Category[];
+}
 
 interface ContentFormProps {
   content?: Content;
   onClose: () => void;
   onSave: (data: Content) => Promise<void>;
-  categories: { name: string; tags: string[] }[];
+  categories: Category[];
 }
 
 export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSave, categories }) => {
@@ -17,6 +23,7 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
   const [formData, setFormData] = useState<Content>({
     id: content?.id || "",
     title: content?.title || "",
+    categoryPath: content?.categoryPath || "",
     categoryName: content?.categoryName || "",
     subCategory: content?.subCategory || "",
     tags: content?.tags || "",
@@ -34,32 +41,30 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
     discountNew: content?.discountNew || 0,
     discountOld: content?.discountOld || 0,
   });
-  const [tags, setTags] = useState<string[]>([]);
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [categoryLevels, setCategoryLevels] = useState<string[]>(formData.categoryPath ? formData.categoryPath.split("/") : []);
 
   useEffect(() => {
-    const fetchTags = async () => {
-      if (!formData.categoryName) {
-        setTags([]);
-        return;
-      }
-      try {
-        const url = `${API_BASE_URL}/book-categories/${encodeURIComponent(formData.categoryName)}/tags`;
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`Failed to fetch tags: ${response.statusText}`);
-        const data = await response.json();
-        setTags(data.tags || []);
-        setError("");
-      } catch (err: any) {
-        console.error("Error fetching tags:", err);
-        setError(`Failed to load tags for ${formData.categoryName}: ${err.message}`);
-        setTags([]);
-      }
-    };
-    fetchTags();
-  }, [formData.categoryName]);
+    setCategoryLevels(formData.categoryPath ? formData.categoryPath.split("/") : []);
+  }, [formData.categoryPath]);
+
+  const handleCategoryChange = (level: number, value: string) => {
+    const newLevels = [...categoryLevels.slice(0, level), value];
+    setCategoryLevels(newLevels);
+    setFormData((prev) => ({ ...prev, categoryPath: newLevels.join("/") }));
+  };
+
+  const getCategoriesForLevel = (level: number): Category[] => {
+    let currentCategories = categories;
+    for (let i = 0; i < level && i < categoryLevels.length; i++) {
+      const selected = categoryLevels[i];
+      const parent = currentCategories.find((cat) => cat.name === selected);
+      currentCategories = parent ? (parent.children || []) : [];
+    }
+    return currentCategories;
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -76,7 +81,7 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
       if (name === "condition") {
         if (value === "NEW - ORIGINAL PRICE") {
           return { ...newData, quantityOld: 0, discountOld: 0 };
-        } else if (value === "OLD ") {
+        } else if (value === "OLD") {
           return { ...newData, quantityNew: 0, discountNew: 0 };
         }
       }
@@ -110,9 +115,7 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
         formData.append("upload_preset", uploadPreset);
         formData.append("cloud_name", cloudName);
         formData.append("folder", "bookstore");
-        // Add transformation for consistent height (300px) and crop to maintain aspect ratio
         formData.append("transformation", JSON.stringify([{ height: 300, crop: "fill" }]));
-
         const response = await fetch(
           `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
           {
@@ -145,8 +148,7 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
     try {
       const requiredFields = [
         "title",
-        "categoryName",
-        "subCategory",
+        "categoryPath",
         "tags",
         "price",
         "description",
@@ -168,19 +170,19 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
         return;
       }
 
-      if (!["NEW - ORIGINAL PRICE", "OLD ", "BOTH"].includes(formData.condition)) {
+      if (!["NEW - ORIGINAL PRICE", "OLD", "BOTH"].includes(formData.condition)) {
         setError("Invalid condition selected");
         setIsSubmitting(false);
         return;
       }
 
-      if (formData.discountNew < 0 || formData.discountNew > 100) {
+      if ((formData.discountNew ?? 0) < 0 || (formData.discountNew ?? 0) > 100) {
         setError("Discount for new books must be between 0 and 100 percent");
         setIsSubmitting(false);
         return;
       }
 
-      if (formData.discountOld < 0 || formData.discountOld > 100) {
+      if ((formData.discountOld ?? 0) < 0 || (formData.discountOld ?? 0) > 100) {
         setError("Discount for old books must be between 0 and 100 percent");
         setIsSubmitting(false);
         return;
@@ -193,12 +195,6 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
         return;
       }
 
-      if (imageUrl !== defaultImageUrl && !imageUrl.startsWith('https://res.cloudinary.com/')) {
-        setError("Image URL must be a valid Cloudinary URL or the default image");
-        setIsSubmitting(false);
-        return;
-      }
-
       const dataToSend: Content = {
         ...formData,
         tags: formData.tags,
@@ -207,10 +203,8 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
         quantityOld: formData.quantityOld ?? 0,
         discountNew: formData.discountNew ?? 0,
         discountOld: formData.discountOld ?? 0,
-        categoryName: formData.categoryName,
+        categoryPath: formData.categoryPath,
       };
-
-      console.log("Data being sent:", dataToSend);
 
       await onSave(dataToSend);
       setError("");
@@ -254,45 +248,43 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
-              <select
-                name="categoryName"
-                value={formData.categoryName}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                required
-                disabled={isSubmitting}
-              >
-                <option value="" disabled>
-                  Select a category
-                </option>
-                {categories.map((cat) => (
-                  <option key={cat.name} value={cat.name}>
-                    {cat.name}
+              <label className="block text-sm font-medium text-gray-700 mb-2">Category Path *</label>
+              {categoryLevels.map((levelValue, index) => (
+                <select
+                  key={`category-level-${index}`}
+                  value={levelValue || ""}
+                  onChange={(e) => handleCategoryChange(index, e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent mb-2"
+                  required
+                  disabled={isSubmitting}
+                >
+                  <option value="" disabled>
+                    Select level {index + 1} category
                   </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Subcategory *</label>
-              <select
-                name="subCategory"
-                value={formData.subCategory}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                required
-                disabled={isSubmitting || !formData.categoryName}
-              >
-                <option value="" disabled>
-                  Select a subcategory
-                </option>
-                {tags.map((tag) => (
-                  <option key={tag} value={tag}>
-                    {tag}
+                  {getCategoriesForLevel(index).map((cat) => (
+                    <option key={cat._id} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              ))}
+              {getCategoriesForLevel(categoryLevels.length).length > 0 && (
+                <select
+                  value=""
+                  onChange={(e) => handleCategoryChange(categoryLevels.length, e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  disabled={isSubmitting}
+                >
+                  <option value="" disabled>
+                    Select next level category (optional)
                   </option>
-                ))}
-              </select>
+                  {getCategoriesForLevel(categoryLevels.length).map((cat) => (
+                    <option key={cat._id} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div>
@@ -361,7 +353,7 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
                 disabled={isSubmitting}
               >
                 <option value="NEW - ORIGINAL PRICE">NEW - ORIGINAL PRICE</option>
-                <option value="OLD ">OLD </option>
+                <option value="OLD">OLD</option>
                 <option value="BOTH">BOTH</option>
               </select>
             </div>
@@ -398,7 +390,7 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
               </>
             ) : null}
 
-            {formData.condition === "OLD " || formData.condition === "BOTH" ? (
+            {formData.condition === "OLD" || formData.condition === "BOTH" ? (
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Old Quantity</label>
@@ -443,7 +435,7 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
                 <img
                   src={formData.imageUrl || defaultImageUrl}
                   alt="Preview"
-                  className="h-48 w-auto object-cover rounded-md" // Adjusted to 300px height for preview
+                  className="h-48 w-auto object-cover rounded-md"
                 />
               </div>
             </div>

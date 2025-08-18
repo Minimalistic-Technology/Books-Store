@@ -1,80 +1,212 @@
+// app/components/header.tsx
+'use client';
 
-"use client";
-import Link from "next/link";
-import Image from "next/image";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUser, faShoppingCart, faBars, faSearch } from "@fortawesome/free-solid-svg-icons";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { API_BASE_URL } from '../../../utils/api';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-} from "@/components/ui/navigation-menu";
+  faUser,
+  faShoppingCart,
+  faBars,
+  faSearch,
+  faChevronDown,
+  faChevronUp,
+  faChevronRight,
+} from '@fortawesome/free-solid-svg-icons';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { API_BASE_URL } from "@/utils/api";
 
 interface Category {
   _id: string;
   name: string;
+  path: string;
+  children: Category[];
+  books: string[];
+  tags: string[];
+  seoTitle?: string;
+  seoDescription?: string;
+  discount: number;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
 }
+
+interface SiteSettings {
+  _id: string;
+  logo: string | null;
+  title: string;
+  metaDescription: string;
+  metaKeywords: string;
+  apiKey: string;
+  maintenanceMode: boolean;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+}
+
+const normalizeDisplayName = (name: string | undefined | null) => {
+  if (!name || typeof name !== 'string') {
+    console.warn('[normalizeDisplayName] Invalid category name:', name);
+    return 'Unnamed Category';
+  }
+  return name.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+interface CategoryMenuProps {
+  categories: Category[];
+  level: number;
+  isMobile: boolean;
+  openCategories: Record<string, boolean>;
+  toggleCategory: (categoryId: string) => void;
+  closeAll: () => void;
+}
+
+const CategoryMenu: React.FC<CategoryMenuProps> = ({
+  categories,
+  level,
+  isMobile,
+  openCategories,
+  toggleCategory,
+  closeAll,
+}) => {
+  const validCategories = categories.filter(
+    (category) => category.name && typeof category.name === 'string'
+  );
+
+  return (
+    <ul
+      className={`${isMobile ? 'py-2' : 'py-1'} ${level > 0 && !isMobile ? 'border-l' : ''}`}
+    >
+      {validCategories.map((category) => {
+        const isOpen = openCategories[category._id];
+        const hasChildren = category.children.length > 0;
+
+        return (
+          <li
+            key={category._id}
+            className={isMobile ? 'mb-2' : 'relative'}
+            onMouseEnter={!isMobile ? () => toggleCategory(category._id) : undefined}
+            onMouseLeave={!isMobile ? () => toggleCategory(category._id) : undefined}
+          >
+            {/* Main category button/link */}
+            <div
+              className={`flex items-center justify-between transition-all duration-200
+                ${isOpen ? 'bg-orange-400 text-white' : 'hover:bg-orange-300 hover:text-white'}
+                ${isMobile ? 'text-gray-600 text-sm p-2' : 'text-gray-700 font-bold text-sm px-3 py-2'}
+              `}
+              style={{
+                width: 'fit-content',
+                minWidth: '100%',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <Link
+                href={`/categories/${category.path}`}
+                className="flex-1"
+              >
+                {normalizeDisplayName(category.name)}
+              </Link>
+              {hasChildren && (
+                <button
+                  onClick={() => toggleCategory(category._id)}
+                  className={`p-2 ${isMobile ? 'text-gray-600 hover:text-orange-600' : 'text-gray-500'}`}
+                  aria-label={`Toggle ${normalizeDisplayName(category.name)} subcategories`}
+                >
+                  <FontAwesomeIcon
+                    icon={
+                      isOpen
+                        ? faChevronUp
+                        : isMobile
+                        ? faChevronDown
+                        : faChevronRight
+                    }
+                    className="h-3 w-3"
+                  />
+                </button>
+              )}
+            </div>
+
+            {/* Submenu */}
+            {isOpen && hasChildren && (
+              <div
+                className={`${isMobile ? 'pl-4 mt-2 bg-white shadow-lg' : 'absolute top-0 left-full bg-white shadow-2xl z-50'}`}
+                style={{
+                  width: 'max-content',
+                  minWidth: '150px',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <CategoryMenu
+                  categories={category.children}
+                  level={level + 1}
+                  isMobile={isMobile}
+                  openCategories={openCategories}
+                  toggleCategory={toggleCategory}
+                  closeAll={closeAll}
+                />
+              </div>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+};
 
 export default function Header() {
   const router = useRouter();
-  const [isMenuOpen, setIsMenuOpen] = useState(true); 
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/settings`);
+        if (!response.ok) throw new Error('Failed to fetch settings');
+        const data = await response.json();
+        setSettings(data);
+      } catch (err) {
+        console.error('[Header] Error fetching settings:', err);
+        setError('Failed to load site settings.');
+      }
+    };
+
     const fetchCategories = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/book-categories`);
         if (!response.ok) throw new Error('Failed to fetch categories');
-        const data = await response.json();
-        console.log("Fetched categories:", data);
-        const fetchedCategories = data.map((item: any) => ({
-          _id: item._id,
-          name: item.name,
-        }));
-        const combinedCategories = [
-          ...[
-            { _id: "static-competitive", name: "Competitive-Exam-Books" },
-            { _id: "static-school", name: "School-Books" },
-            { _id: "static-college", name: "College-Books" },
-            { _id: "static-ref", name: "Ref-Books-Guides" },
-            { _id: "static-entrance", name: "Entrance-Exam-Books" },
-            { _id: "static-stationary", name: "Stationary" },
-            { _id: "static-non-academics", name: "Non-Academics" },
-          ],
-          ...fetchedCategories.filter(
-            (cat: Category) => !["Competitive-Exam-Books", "School-Books", "College-Books", "Ref-Books-Guides", "Entrance-Exam-Books", "Stationary", "Non-Academics"].includes(cat.name)
-          ),
-        ];
-        if (!combinedCategories.some((cat: Category) => cat.name === "Request Your Book")) {
-          combinedCategories.push({ _id: "static-request", name: "Request Your Book" });
-        }
-        setCategories(combinedCategories);
+        const data: Category[] = await response.json();
+        console.log('[Header] Raw API response:', JSON.stringify(data, null, 2));
+        const validCategories = data.filter(
+          (category) => category.name && typeof category.name === 'string'
+        );
+        setCategories(validCategories);
       } catch (err) {
+        console.error('[Header] Error fetching categories:', err);
         setError('Error loading categories. Please try again later.');
-        console.error(err);
       } finally {
         setLoading(false);
       }
     };
 
+    fetchSettings();
     fetchCategories();
   }, []);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) {
-      setSearchError("Please enter a search query");
+      setSearchError('Please enter a search query');
       return;
     }
 
@@ -84,9 +216,7 @@ export default function Header() {
     try {
       const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(searchQuery.trim())}`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
       });
 
       if (!response.ok) {
@@ -94,14 +224,26 @@ export default function Header() {
       }
 
       const results = await response.json();
-      console.log("Search results:", results);
+      console.log('[Header] Search results:', results);
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     } catch (err) {
-      console.error("Search error:", err);
-      setSearchError("Failed to perform search. Please try again later.");
+      console.error('[Header] Search error:', err);
+      setSearchError('Failed to perform search. Please try again later.');
     } finally {
       setSearchLoading(false);
     }
+  };
+
+  const toggleCategory = (categoryId: string) => {
+    setOpenCategories((prev) => ({
+      ...prev,
+      [categoryId]: !prev[categoryId],
+    }));
+  };
+
+  const closeAll = () => {
+    setIsMenuOpen(false);
+    setOpenCategories({});
   };
 
   return (
@@ -110,8 +252,8 @@ export default function Header() {
         <div className="flex items-center">
           <Link href="/">
             <Image
-              src="/Images/logo.png"
-              alt="Harsh Books Store Logo"
+              src={settings?.logo || 'https://images.pexels.com/photos/373465/pexels-photo-373465.jpeg'}
+              alt="Books Store Logo"
               width={80}
               height={80}
               className="ml-2 rounded-full hover:opacity-80 transition-opacity duration-300"
@@ -160,11 +302,7 @@ export default function Header() {
                     ></path>
                   </svg>
                 ) : (
-                  <FontAwesomeIcon
-                    icon={faSearch}
-                    className="h-4 w-4 text-gray-500"
-                    title="Search"
-                  />
+                  <FontAwesomeIcon icon={faSearch} className="h-4 w-4 text-gray-500" />
                 )}
               </Button>
             </form>
@@ -179,16 +317,16 @@ export default function Header() {
             <span className="text-black">+91 7977250185</span>
           </div>
           <Link href="/login" className="hover:underline text-black">
-            <FontAwesomeIcon icon={faUser} size="lg" className="text-lg sm:text-xl" title="Sign In" />
+            <FontAwesomeIcon icon={faUser} size="lg" className="text-lg sm:text-xl" />
           </Link>
           <Link href="/cart" className="relative text-black hover:underline">
-            <FontAwesomeIcon icon={faShoppingCart} size="lg" className="text-lg sm:text-xl" title="Cart" />
+            <FontAwesomeIcon icon={faShoppingCart} size="lg" className="text-lg sm:text-xl" />
           </Link>
         </div>
       </div>
 
       <nav className="bg-yellow-200 p-2 sm:p-4">
-        <div className="lg:hidden flex justify-end px-4">
+        <div className="xl:hidden flex justify-end px-4">
           <Button
             variant="ghost"
             size="icon"
@@ -198,6 +336,7 @@ export default function Header() {
             <FontAwesomeIcon icon={faBars} size="lg" className="text-2xl" />
           </Button>
         </div>
+
         {loading ? (
           <div className="flex items-center justify-center p-4">
             <svg
@@ -226,40 +365,71 @@ export default function Header() {
           <p className="text-red-500 text-center p-4">{error}</p>
         ) : (
           <>
-            <ul
-              className={`${
-                isMenuOpen ? "block" : "hidden"
-              } lg:hidden p-2 space-y-2 bg-yellow-200`}
-            >
-              {categories.map(({ _id, name }) => (
-                <li key={_id}>
-                  <Link
-                    href={name === "Request Your Book" ? "/request-book" : `/${name.toLowerCase().replace(/ /g, '-')}`}
-                    className={`block text-gray-800 font-bold text-sm p-2 hover:bg-orange-500 hover:text-white rounded transition-colors duration-300 ${
-                      name === "Request Your Book" ? "bg-black text-white" : ""
-                    }`}
-                  >
-                    {name}
-                  </Link>
-                </li>
-              ))}
+            <ul className={`${isMenuOpen ? 'block' : 'hidden'} xl:hidden p-4 space-y-2 bg-yellow-200`}>
+              <CategoryMenu
+                categories={categories}
+                level={0}
+                isMobile={true}
+                openCategories={openCategories}
+                toggleCategory={toggleCategory}
+                closeAll={() => {
+                  setIsMenuOpen(false);
+                  setOpenCategories({});
+                }}
+              />
             </ul>
-            <NavigationMenu className="hidden lg:block">
-              <NavigationMenuList className="flex justify-between p-2 sm:p-4 space-x-2">
-                {categories.map(({ _id, name }) => (
-                  <NavigationMenuItem key={_id}>
-                    <NavigationMenuLink
-                      href={name === "Request Your Book" ? "/request-book" : `/${name.toLowerCase().replace(/ /g, '-')}`}
-                      className={`text-gray-800 font-bold text-sm sm:text-base p-2 hover:bg-orange-500 hover:text-white rounded transition-colors duration-300 ${
-                        name === "Request Your Book" ? "bg-black text-white" : ""
-                      }`}
+
+            <div className="hidden xl:block">
+              <div className="w-full">
+                <ul className="flex justify-center items-center flex-wrap gap-1 px-2">
+                  {categories.map((category) => (
+                    <li
+                      key={category._id}
+                      className="relative"
+                      onMouseEnter={() => toggleCategory(category._id)}
+                      onMouseLeave={() => setOpenCategories({})}
                     >
-                      {name}
-                    </NavigationMenuLink>
-                  </NavigationMenuItem>
-                ))}
-              </NavigationMenuList>
-            </NavigationMenu>
+                      <div className="flex items-center">
+                        <Link
+                          href={`/categories/${category.path}`}
+                          className={`whitespace-nowrap font-bold text-gray-800 text-xs lg:text-sm px-2 lg:px-3 py-2 transition-all duration-300 ${
+                            openCategories[category._id] ? 'bg-orange-400 text-white' : 'hover:bg-orange-300 hover:text-white'
+                          }`}
+                        >
+                          {normalizeDisplayName(category.name)}
+                        </Link>
+                        {category.children.length > 0 && (
+                          <button
+                            className="p-1 lg:p-2 text-gray-600 hover:text-orange-300"
+                            aria-label={`Toggle ${normalizeDisplayName(category.name)} subcategories`}
+                          >
+                            <FontAwesomeIcon
+                              icon={openCategories[category._id] ? faChevronUp : faChevronDown}
+                              className="h-2 w-2 lg:h-3 lg:w-3"
+                            />
+                          </button>
+                        )}
+                      </div>
+                      {openCategories[category._id] && category.children.length > 0 && (
+                        <div
+                          className="absolute left-0 mt-0 bg-white shadow-2xl z-50"
+                          style={{ width: 'max-content', minWidth: '150px' }}
+                        >
+                          <CategoryMenu
+                            categories={category.children}
+                            level={1}
+                            isMobile={false}
+                            openCategories={openCategories}
+                            toggleCategory={toggleCategory}
+                            closeAll={() => setOpenCategories({})}
+                          />
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           </>
         )}
       </nav>

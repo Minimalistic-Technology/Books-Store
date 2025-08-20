@@ -23,7 +23,6 @@ const AdminLoginPage: React.FC = () => {
   });
   const [isMounted, setIsMounted] = useState(false);
 
-  // Check for existing token on mount
   useEffect(() => {
     setIsMounted(true);
     const token = localStorage.getItem('token');
@@ -34,7 +33,6 @@ const AdminLoginPage: React.FC = () => {
           router.push('/admin/dashboard');
         }
       } catch (error) {
-        console.error('Token verification failed:', error);
         localStorage.removeItem('token');
       }
     }
@@ -99,7 +97,6 @@ const AdminLoginPage: React.FC = () => {
         alert('Admin login successful!');
         router.push('/admin/dashboard');
       } catch (error) {
-        console.error('Login error:', error);
         setErrors((prev) => ({
           ...prev,
           apiError: (error as Error).message || 'An error occurred during login. Please try again.',
@@ -109,7 +106,7 @@ const AdminLoginPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen w-full bg-white font-serif text-gray-900">
+    <div className="flex flex-col min-h-screen w-full bg-yellow-50 font-serif text-gray-900">
       <div className="flex flex-col items-center justify-center flex-1 px-4 py-10">
         <div className="flex flex-col items-center mb-6">
           <img
@@ -129,7 +126,7 @@ const AdminLoginPage: React.FC = () => {
         </p>
         <form
           onSubmit={handleLogin}
-          className="w-full max-w-md bg-white border border-gray-300 rounded-xl p-6 shadow-md"
+          className="w-full max-w-md bg-yellow-50 border border-gray-300 rounded-xl p-6 shadow-md"
         >
           <div className="mb-4">
             <label htmlFor="email" className="block text-sm font-medium">

@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export default function Sidebar() {
+export default function Sidebar({ isVisible }: { isVisible: boolean }) {
   const pathname = usePathname();
 
   const isActive = (path: string) => pathname === path;
+
+  if (!isVisible) return null;
 
   return (
     <aside className="w-64 bg-yellow-100 shadow-lg rounded-r-lg h-screen overflow-y-auto sticky top-0">
@@ -128,7 +130,7 @@ export default function Sidebar() {
               <Link
                 href="/admin/DiscountManagement"
                 className={`block p-3 text-gray-800 rounded-lg transition-all duration-200 font-medium ${
-                  isActive("/admin/import-export")
+                  isActive("/admin/DiscountManagement")
                     ? "bg-yellow-200 text-yellow-900 shadow-md"
                     : "hover:bg-yellow-200 hover:shadow-md animate__pulse"
                 }`}

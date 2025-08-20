@@ -17,10 +17,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
 
   useEffect(() => {
-    // Skip authentication check for /admin/login
     if (pathname === "/admin/login") {
       setIsLoading(false);
-      setIsAuthenticated(true); // Allow login page to render
+      setIsAuthenticated(true); 
       return;
     }
 
@@ -41,7 +40,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         setIsAuthenticated(true);
       }
     } catch (error) {
-      console.error("Token verification failed:", error);
       localStorage.removeItem("token");
       setIsAuthenticated(false);
     } finally {
@@ -64,12 +62,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   if (!isAuthenticated && pathname !== "/admin/login") {
-    return null; // Prevent rendering until redirect completes for protected routes
+    return null;
   }
 
+  const shouldRenderSidebar = isAuthenticated && pathname !== "/admin/login";
   return (
     <div className="page-container flex flex-row h-screen bg-yellow-50 overflow-hidden">
-      <Sidebar />
+      {shouldRenderSidebar && <Sidebar isVisible={isAuthenticated} />}
       <div className="flex-1 flex flex-col min-h-0 overflow-auto">
         <main className="flex-1 p-6 overflow-auto w-full animate__fadeIn">
           {children}

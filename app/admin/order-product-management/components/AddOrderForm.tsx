@@ -63,12 +63,22 @@ export default function AddOrderForm({ onClose, onSave }: AddOrderFormProps) {
         const data = await response.json();
         console.log("Categories response:", data);
         setCategories(Array.isArray(data) ? data : []);
-      } catch (err: any) {
-        console.error("Error fetching categories:", err);
+      } catch (err) {
+        if (err instanceof Error) {
+            console.error("Error fetching categories:", err);
         setErrors((prev) => ({
           ...prev,
           general: "Failed to load categories",
         }));
+          
+        } else {
+            console.error("Error fetching categories:", err);
+        setErrors((prev) => ({
+          ...prev,
+          general: "Failed to load categories",
+        }));
+        }
+    
       } finally {
         setIsLoading(false);
       }

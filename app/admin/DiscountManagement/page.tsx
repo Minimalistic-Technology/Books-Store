@@ -105,10 +105,15 @@ export default function DiscountManagement() {
         `Discount of ${discount}% applied to ${selectionType === "category" ? normalizeDisplayName(selectedCategory) : `${normalizeDisplayName(selectedCategory)} - ${normalizeDisplayName(selectedSubCategory)}`}`
       );
       setDiscount("");
-    } catch (error: any) {
-      console.error("Error setting discount:", error);
-      setErrors({ general: error.message || "Failed to set discount. Please try again." });
+    } catch (err) { 
+      if(err instanceof Error){
+        console.error("Error setting discount:", err);
+      setErrors({ general: err.message});
+      }else{
+      console.error("Error setting discount:", err);
+      setErrors({ general: "Failed to set discount. Please try again." });
     }
+  }
   };
 
   return (

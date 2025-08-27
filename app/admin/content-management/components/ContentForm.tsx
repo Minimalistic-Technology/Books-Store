@@ -131,10 +131,17 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
 
         const data = await response.json();
         return data.secure_url;
-      } catch (err: any) {
-        console.error("Image upload error:", err);
+      } catch (err) {
+        if (err instanceof Error) {
+          console.error("Image upload error:", err.message);
         setError(`Failed to upload image: ${err.message}. Using default image.`);
         return defaultImageUrl;
+          
+        } else {
+          console.error("Image upload error:", err);
+        setError(`Failed to upload image: ${err}. Using default image.`);
+        return defaultImageUrl;
+        }
       }
     }
 
@@ -210,10 +217,17 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
       setError("");
       setIsSubmitting(false);
       onClose();
-    } catch (err: any) {
-      console.error("Error saving content:", err);
-      setError(err.message || "Failed to save content");
+    } catch (err) {
+     if (err instanceof Error) {
+       console.error("Error saving content:", err);
+      setError(err.message);
       setIsSubmitting(false);
+      
+     } else {
+       console.error("Error saving content:", err);
+      setError( "Failed to save content");
+      setIsSubmitting(false);
+     }
     }
   };
 

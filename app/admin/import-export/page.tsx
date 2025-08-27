@@ -92,10 +92,16 @@ export default function ImportExportManagement() {
         setSuccessMessage("Products imported successfully");
         setTimeout(() => setSuccessMessage(""), 3000);
       }
-    } catch (err: any) {
-      console.error("Import error:", err);
-      setError(err.message || "Failed to import data");
+    } catch (err) {
+    if (err instanceof Error) {
+        console.error("Import error:", err);
+      setError(err.message );
       setTimeout(() => setError(""), 5000);
+    } else {
+      console.error("Import error:", err);
+      setError( "Failed to import data");
+      setTimeout(() => setError(""), 5000);
+    } 
     }
   };
 
@@ -104,9 +110,16 @@ export default function ImportExportManagement() {
       console.log("Exporting data:", data);
       setSuccessMessage(`Exporting ${data.type} in ${data.format} format`);
       setTimeout(() => setSuccessMessage(""), 3000);
-    } catch (err: any) {
-      setError(err.message || "Failed to export data");
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
       setTimeout(() => setError(""), 5000);
+        
+      } else {
+      setError( "Failed to export data");
+      setTimeout(() => setError(""), 5000);
+      }
+      
     }
   };
 

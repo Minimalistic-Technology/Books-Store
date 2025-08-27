@@ -35,7 +35,7 @@ export default function CommentsReviews() {
         throw new Error("Failed to fetch books");
       }
       const data = await response.json();
-      const books = data.flatMap((category: any) =>
+      const books = data.flatMap((category:any) =>
         category.books.map((book: any) => ({
           _id: book._id,
           title: book.title,
@@ -106,6 +106,10 @@ export default function CommentsReviews() {
       setItems((prev) => prev.filter((item) => item.id !== id));
       setError(null);
     } catch (err) {
+      if(err instanceof Error){
+        console.error('[CategoryPage] Error:',err);
+        setError(err.message || 'Failed to load category or books. Please try again later')
+      }
       setError("Failed to delete review. Please try again.");
       console.error("Error deleting review:", err);
     }

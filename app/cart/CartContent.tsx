@@ -5,9 +5,10 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faShoppingCart } from "@fortawesome/free-solid-svg-icons";
+// import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+// import { faShoppingCart } from "@fortawesome/free-solid-svg-icons";
 import { API_BASE_URL } from "../../utils/api";
+import Image from "next/image";
 
 const defaultImageUrl = "https://images.pexels.com/photos/373465/pexels-photo-373465.jpeg";
 
@@ -282,7 +283,7 @@ const onPaymentSubmit = async (data: FormData) => {
                 key={item._id}
                 className="flex items-center justify-between bg-white p-4 rounded-lg shadow-md"
               >
-                <img
+                <Image
                   src={item.imageUrl || defaultImageUrl}
                   alt={item.name}
                   className="w-24 h-32 object-cover rounded-md"

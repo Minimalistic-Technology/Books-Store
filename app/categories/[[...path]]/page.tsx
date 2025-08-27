@@ -125,9 +125,14 @@ export default function CategoryPage() {
           )
         );
         setBooksToShow(booksData?.length || 0);
-      } catch (err: any) {
-        console.error('[CategoryPage] Error:', err);
-        setError(err.message || 'Failed to load category or books. Please try again later.');
+      } catch (err) {
+        if (err instanceof Error) {
+          console.error('[CategoryPage] Error:', err);
+          setError(err.message || 'Failed to load category or books. Please try again later.');
+        } else {
+          console.error('[CategoryPage] Error:', err);
+          setError( 'Failed to load category or books. Please try again later.');
+        }
       } finally {
         setLoading(false);
       }
@@ -172,8 +177,8 @@ export default function CategoryPage() {
   }, {});
 
   // Find the selected category and its children
-  const selectedCategory = allCategories.find((cat) => cat.path === selectedCategoryPath) || category;
-  const subCategories = selectedCategory ? selectedCategory.children : [];
+  // const selectedCategory = allCategories.find((cat) => cat.path === selectedCategoryPath) || category;
+  // const subCategories = selectedCategory ? selectedCategory.children : [];
 
   const filteredBooks = books
     .filter((book) => {
@@ -432,7 +437,7 @@ export default function CategoryPage() {
                 <p className="text-center text-red-500">{error}</p>
               ) : filteredBooks.length === 0 ? (
                 <p className="text-center text-gray-800">
-                  No books found for '{normalizeDisplayName(category?.name || path)}'. Add books in the admin panel to
+                  No books found for &apos;{normalizeDisplayName(category?.name || path)}&apos;. Add books in the admin panel to
                   display them.
                 </p>
               ) : (

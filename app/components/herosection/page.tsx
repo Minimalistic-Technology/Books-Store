@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import Image from "next/image";
+// import Link from "next/link";
+// import Image from "next/image";
 import Head from "next/head";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -41,9 +41,9 @@ interface SiteSettings {
 }
 
 export default function Home() {
-  const [searchResults, setSearchResults] = useState<Book[]>([]);
-  const [showSearchResults, setShowSearchResults] = useState(false);
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  // const [searchResults, setSearchResults] = useState<Book[]>([]);
+  // const [showSearchResults, setShowSearchResults] = useState(false);
+  // const [searchQuery, setSearchQuery] = useState<string>("");
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +52,7 @@ export default function Home() {
 
   const bestSellersRef = useRef<HTMLDivElement | null>(null);
   const newArrivalsRef = useRef<HTMLDivElement | null>(null);
-  const searchResultsRef = useRef<HTMLDivElement | null>(null);
+  // const searchResultsRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -89,13 +89,13 @@ export default function Home() {
     fetchBooks();
   }, []);
 
-  const handleSearch = (results: Book[], query?: string) => {
-    setSearchResults(results);
-    setShowSearchResults(true);
-    if (query !== undefined) {
-      setSearchQuery(query);
-    }
-  };
+  // const handleSearch = (results: Book[], query?: string) => {
+  //   setSearchResults(results);
+  //   setShowSearchResults(true);
+  //   if (query !== undefined) {
+  //     setSearchQuery(query);
+  //   }
+  // };
 
   const scroll = (
     ref: React.RefObject<HTMLDivElement | null>,
@@ -145,10 +145,10 @@ export default function Home() {
           )}
         </section>
 
-        {showSearchResults && searchResults.length > 0 ? (
+        {/* {showSearchResults && searchResults.length > 0 ? (
           <section className="mb-20">
-            <h2 className="text-2xl font-semibold mb-4 px-29 text-black">
-              Search Results for "{searchQuery}"
+            <h2 className="text-2xl font-semibold mb-4 md:px-29 text-black">
+              Search Results for &quot;{searchQuery}&quot;
             </h2>
             <div className="relative">
               {searchResults.length > 4 && (
@@ -161,7 +161,7 @@ export default function Home() {
               )}
               <div
                 ref={searchResultsRef}
-                className="flex overflow-x-auto space-x-10 scrollbar-hide px-29"
+                className="flex overflow-x-auto space-x-10 scrollbar-hide md:px-29"
                 style={{ scrollBehavior: "smooth" }}
               >
                 {searchResults.map((book) => (
@@ -178,10 +178,10 @@ export default function Home() {
               )}
             </div>
           </section>
-        ) : (
+        ) : ( */}
           <>
             <section className="mb-20">
-              <h2 className="text-2xl font-semibold mb-4 px-29 text-black">
+              <h2 className="text-2xl font-semibold mb-4 text-center md:text-left md:px-29 text-black">
                 Best Sellers
               </h2>
               <div className="relative">
@@ -195,7 +195,7 @@ export default function Home() {
                 )}
                 <div
                   ref={bestSellersRef}
-                  className="flex overflow-x-auto space-x-10 scrollbar-hide px-29"
+                  className="flex overflow-x-auto space-x-5 scrollbar-hide md:px-29"
                   style={{
                     scrollBehavior: "smooth",
                   }}
@@ -203,7 +203,8 @@ export default function Home() {
                   {bestSellers.map((book) => (
                     <div
                       key={book._id}
-                      style={{ flex: "0 0 calc(25% - 18px)" }} 
+                      className="min-w-20 h-60 "
+                      // style={{ flex: "0 0 calc(25% - 18px)" }}
                     >
                       <BookCard book={book} />
                     </div>
@@ -222,7 +223,7 @@ export default function Home() {
             </section>
 
             <section className="mb-20">
-              <h2 className="text-2xl font-semibold mb-4 px-29 text-black">
+              <h2 className="text-2xl font-semibold mb-4 text-center md:text-left md:px-29 text-black">
                 New Arrivals
               </h2>
               <div className="relative">
@@ -236,13 +237,14 @@ export default function Home() {
                 )}
                 <div
                   ref={newArrivalsRef}
-                  className="flex overflow-x-auto space-x-10 scrollbar-hide px-29"
+                  className="flex overflow-x-auto space-x-5 scrollbar-hide md:px-29"
                   style={{ scrollBehavior: "smooth" }}
                 >
                   {newArrivals.map((book) => (
-                   <div
+                    <div
                       key={book._id}
-                      style={{ flex: "0 0 calc(25% - 18px)" }} 
+                       className="min-w-20 h-60"
+                      // style={{ flex: "0 0 calc(25% - 18px)" }}
                     >
                       <BookCard book={book} />
                     </div>
@@ -260,10 +262,10 @@ export default function Home() {
             </section>
 
             <section className="mb-20">
-              <h2 className="text-2xl font-semibold mb-6 px-29 text-black">
+              <h2 className="text-2xl font-semibold mb-6 text-center md:text-left md:px-29 text-black">
                 Our Services
               </h2>
-              <div className="px-29 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="md:px-29 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
                 <div className="text-center p-4 border rounded-lg shadow-md bg-white hover:bg-gray-50 transition duration-200">
                   <FontAwesomeIcon
                     icon={faBook}
@@ -315,7 +317,7 @@ export default function Home() {
               </div>
             </section>
           </>
-        )}
+         {/* )} */}
       </main>
     </div>
   );

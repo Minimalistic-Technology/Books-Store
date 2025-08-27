@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import OrderList from "./components/OrderList";
 import OrderForm from "./components/OrderForm";
 import AddOrderForm from "./components/AddOrderForm";
-import type { Order } from "./types";
-import { API_BASE_URL } from '../../../utils/api';
+import type { Order, OrderApiResponse } from "./types";
+import { API_BASE_URL } from "../../../utils/api";
 
 export default function OrderProductManagement() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -15,7 +15,7 @@ export default function OrderProductManagement() {
   const [loading, setLoading] = useState(true);
   const [cancelReasons, setCancelReasons] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null); 
+  const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
   const fetchCancelReasons = async () => {
     try {
       const url = `${API_BASE_URL}/cancel-reasons`;
@@ -23,14 +23,23 @@ export default function OrderProductManagement() {
       const response = await fetch(url, { cache: "no-store" });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(`Failed to fetch cancel reasons: ${response.status} - ${errorData.message || 'Unknown error'}`);
+        throw new Error(
+          `Failed to fetch cancel reasons: ${response.status} - ${
+            errorData.message || "Unknown error"
+          }`
+        );
       }
       const data = await response.json();
       setCancelReasons(data.reasons || []);
       setError(null);
-    } catch (err: any) {
-      console.error("Error fetching cancel reasons:", err);
-      setError("Failed to load cancellation reasons.");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Error fetching cancel reasons:", err.message);
+        setError("Failed to load cancellation reasons.");
+      } else {
+        console.error("Error fetching cancel reasons:", err);
+        setError("Failed to load cancellation reasons.");
+      }
     }
   };
 
@@ -41,11 +50,15 @@ export default function OrderProductManagement() {
       const response = await fetch(url, { cache: "no-store" });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(`Failed to fetch orders: ${response.status} - ${errorData.message || 'Unknown error'}`);
+        throw new Error(
+          `Failed to fetch orders: ${response.status} - ${
+            errorData.message || "Unknown error"
+          }`
+        );
       }
       const data = await response.json();
       setOrders(
-        data.orders.map((order: any) => ({
+        data.orders.map((order: OrderApiResponse) => ({
           id: order._id,
           customerName: order.customerName,
           email: order.email,
@@ -69,9 +82,14 @@ export default function OrderProductManagement() {
         }))
       );
       setError(null);
-    } catch (err: any) {
-      console.error("Error fetching orders:", err);
-      setError("Failed to fetch orders. Please try again.");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Error fetching orders:", err.message);
+        setError("Failed to fetch orders. Please try again.");
+      } else {
+        console.error("Error fetching orders:", err);
+        setError("Failed to fetch orders. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -93,7 +111,9 @@ export default function OrderProductManagement() {
     console.log(`Orders state before deletion:`, orders);
     const orderExists = orders.find((order) => order.id === id);
     if (!orderExists) {
-      setError("Order not found in the current list. Please refresh and try again.");
+      setError(
+        "Order not found in the current list. Please refresh and try again."
+      );
       setDeletingOrderId(null);
       return;
     }
@@ -106,21 +126,33 @@ export default function OrderProductManagement() {
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error(`Delete failed with status ${response.status}:`, errorData);
+        console.error(
+          `Delete failed with status ${response.status}:`,
+          errorData
+        );
         if (response.status === 404) {
-          setError("Order not found on the server. It may have been deleted already.");
+          setError(
+            "Order not found on the server. It may have been deleted already."
+          );
           setOrders((prev) => prev.filter((order) => order.id !== id));
         } else {
-          throw new Error(errorData.message || `Failed to delete order: ${response.status}`);
+          throw new Error(
+            errorData.message || `Failed to delete order: ${response.status}`
+          );
         }
       } else {
         console.log(`Order ${id} deleted successfully`);
         setOrders((prev) => prev.filter((order) => order.id !== id));
         setError(null);
       }
-    } catch (err: any) {
-      console.error("Error deleting order:", err);
-      setError(err.message || "Failed to delete order. Please try again.");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Error deleting order:", err.message);
+        setError(err.message || "Failed to delete order. Please try again.");
+      } else {
+        console.error("Error deleting order:", err);
+        setError("Failed to delete order. Please try again.");
+      }
     } finally {
       setDeletingOrderId(null);
     }
@@ -137,7 +169,9 @@ export default function OrderProductManagement() {
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Failed to cancel order: ${response.status}`);
+        throw new Error(
+          errorData.message || `Failed to cancel order: ${response.status}`
+        );
       }
       const updatedOrder = await response.json();
       setOrders((prev) =>
@@ -153,9 +187,14 @@ export default function OrderProductManagement() {
         )
       );
       setError(null);
-    } catch (err: any) {
-      console.error("Error cancelling order:", err);
-      setError("Failed to cancel order. Please try again.");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Error cancelling order:", err.message);
+        setError("Failed to cancel order. Please try again.");
+      } else {
+        console.error("Error cancelling order:", err);
+        setError("Failed to cancel order. Please try again.");
+      }
     }
   };
 
@@ -170,7 +209,9 @@ export default function OrderProductManagement() {
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Failed to update order: ${response.status}`);
+        throw new Error(
+          errorData.message || `Failed to update order: ${response.status}`
+        );
       }
       const updatedOrder = await response.json();
       setOrders((prev) =>
@@ -181,9 +222,14 @@ export default function OrderProductManagement() {
         )
       );
       setError(null);
-    } catch (err: any) {
-      console.error("Error updating order:", err);
-      setError("Failed to update order. Please try again.");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Error updating order:", err.message);
+        setError("Failed to update order. Please try again.");
+      } else {
+        console.error("Error updating order:", err);
+        setError("Failed to update order. Please try again.");
+      }
     }
   };
 
@@ -202,8 +248,8 @@ export default function OrderProductManagement() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-yellow-50 text-yellow-900 font-serif p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="min-h-screen w-full bg-yellow-50 text-yellow-900  p-6 pt-12">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-3 md:gap-0 mb-6">
         <h1 className="text-3xl font-semibold">Order Management</h1>
         <div className="flex space-x-2">
           <button
@@ -241,7 +287,10 @@ export default function OrderProductManagement() {
             />
           )}
           {isAddOrderModalOpen && (
-            <AddOrderForm onClose={closeAddOrderModal} onSave={handleAddOrder} />
+            <AddOrderForm
+              onClose={closeAddOrderModal}
+              onSave={handleAddOrder}
+            />
           )}
         </>
       )}

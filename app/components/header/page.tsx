@@ -241,25 +241,25 @@ export default function Header() {
     }));
   };
 
-  const closeAll = () => {
-    setIsMenuOpen(false);
-    setOpenCategories({});
-  };
+  // const closeAll = () => {
+  //   setIsMenuOpen(false);
+  //   setOpenCategories({});
+  // };
 
   return (
     <div className="bg-white text-black font-sans">
-      <div className="px-4 sm:px-6 lg:px-8 py-2 flex justify-between items-center">
-        <div className="flex items-center">
+      <div className="px-4 sm:px-6 lg:px-8 py-2 flex flex-col md:flex-row md:flex-wrap md:justify-between items-center  md:mx-auto w-full md:gap-10 gap-2">
+        <div className="flex md:w-1/2 items-center md:min-w-sm w-full">
           <Link href="/">
             <Image
               src={settings?.logo || 'https://images.pexels.com/photos/373465/pexels-photo-373465.jpeg'}
               alt="Books Store Logo"
               width={80}
               height={80}
-              className="ml-2 rounded-full hover:opacity-80 transition-opacity duration-300"
+              className="ml-2 rounded-full hover:opacity-80 transition-opacity duration-300 min-w-[80px]"
             />
           </Link>
-          <div className="relative max-w-xl ml-4 hidden sm:flex items-center">
+          <div className="relative md:max-w-2xl   ml-4  sm:flex items-center">
             <form onSubmit={handleSearch} className="flex items-center w-full">
               <Input
                 type="text"
@@ -269,7 +269,7 @@ export default function Header() {
                   setSearchQuery(e.target.value);
                   setSearchError(null);
                 }}
-                className="w-64 sm:w-80 md:w-96 pr-10 text-sm sm:text-base focus:ring-teal-500"
+                className=" w-full pr-10 text-sm sm:text-base  focus:ring-teal-500"
                 disabled={searchLoading}
               />
               <Button
@@ -311,17 +311,19 @@ export default function Header() {
             )}
           </div>
         </div>
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center text-sm sm:text-base">
+        <div className="flex flex-col  md:flex-row items-center min-w-[30%] space-x-4 ">
+          <div className="flex flex-wrap items-center text-sm sm:text-base min-w-[200px] border-b mb-4">
             <span className="text-orange-500 mr-2">Need help? Call us:</span>
             <span className="text-black">+91 7977250185</span>
           </div>
+          <div className='flex gap-4'>
           <Link href="/login" className="hover:underline text-black">
             <FontAwesomeIcon icon={faUser} size="lg" className="text-lg sm:text-xl" />
           </Link>
           <Link href="/cart" className="relative text-black hover:underline">
             <FontAwesomeIcon icon={faShoppingCart} size="lg" className="text-lg sm:text-xl" />
           </Link>
+          </div>
         </div>
       </div>
 

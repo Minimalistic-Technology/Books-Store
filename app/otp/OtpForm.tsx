@@ -72,7 +72,7 @@ export default function OtpForm() {
   });
 
   return (
-    <div className="flex flex-col min-h-screen w-full bg-gradient-to-b from-white to-gray-50 font-serif">
+    <div className="flex flex-col min-h-screen w-full bg-gradient-to-b from-white to-gray-50 ">
       <div className="flex flex-col md:flex-row flex-1">
         <div className="flex-1 flex flex-col items-center justify-center p-3 xs:p-4 sm:p-6 md:p-8">
           <div className="mb-4 xs:mb-6 sm:mb-8">

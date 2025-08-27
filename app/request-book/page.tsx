@@ -158,7 +158,7 @@ const RequestBookPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen w-full bg-white font-serif relative">
+    <div className="flex flex-col min-h-screen w-full bg-white  relative">
       <div className="absolute top-10 left-10 text-orange-600 opacity-20 animate-pulse">
         <FontAwesomeIcon icon={faBookOpen} size="3x" />
       </div>
@@ -185,7 +185,7 @@ const RequestBookPage: React.FC = () => {
               Request a Book
             </h1>
             <p className="text-base md:text-lg text-gray-600 text-center">
-              Let us know which book you'd like us to source for you.
+              Let us know which book you&apos;d like us to source for you.
             </p>
           </div>
 

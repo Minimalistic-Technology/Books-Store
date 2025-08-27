@@ -1,5 +1,5 @@
 "use client";
-import Link from "next/link";
+// import Link from "next/link";
 import Image from "next/image";
 
 interface Book {
@@ -21,7 +21,7 @@ const BookCard: React.FC<BookCardProps> = ({ book }) => {
   const hasDiscount = book.discountedPrice < book.price;
 
   return (
-    <div className="border rounded-lg overflow-hidden shadow-md w-[200px] h-[300px] flex flex-col justify-between">
+    <div className="border rounded-lg overflow-hidden shadow-md w-full h-full flex flex-col justify-between">
       <div className="w-full h-[200px] overflow-hidden">
         <Image
           src={book.imageUrl}

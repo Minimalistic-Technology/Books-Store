@@ -159,7 +159,7 @@ const OrdersPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-yellow-50 text-yellow-900 font-serif">
+    <div className="min-h-screen flex flex-col bg-yellow-50 text-yellow-900 ">
       <Header />
       <main className="flex-grow p-6 w-full max-w-6xl mx-auto">
         <h1 className="text-3xl font-semibold mb-6">Your Orders</h1>

@@ -12,7 +12,7 @@ export default function SubscriberList({ subscribers, onDelete }: SubscriberList
     <div className="card p-6 overflow-y-auto" style={{ maxHeight: "400px" }}>
       <ul className="space-y-3">
         {subscribers.map((sub) => (
-          <li key={sub.id} className="border-b py-3 flex justify-between items-center animate__fadeIn">
+          <li key={sub.id} className="border-b py-3 flex md:flex-row flex-col gap-2 md:gap-0 justify-between items-center animate__fadeIn">
             <span className="text-gray-800">
               {sub.name} ({sub.email}) - Subscribed: {new Date(sub.createdAt).toLocaleDateString()}
             </span>

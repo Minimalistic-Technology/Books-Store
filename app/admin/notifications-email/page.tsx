@@ -1,19 +1,33 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
 import SubscriberList from "./components/SubscriberList";
 import EmailComposer from "./components/EmailComposer";
-import {API_BASE_URL} from '../../../utils/api'
+import { API_BASE_URL } from "../../../utils/api";
 
 export interface Subscriber {
   id: string;
   email: string;
   name: string;
-  createdAt: string; 
+  createdAt: string;
 }
 
 export interface EmailLog {
+  id: string;
+  subject: string;
+  recipients: string[];
+  status: "success" | "failed";
+  timestamp: string;
+  error?: string;
+}
+interface SubscriberApiResponse {
+  _id: string;
+  email: string;
+  name: string;
+  createdAt: string;
+}
+
+interface EmailLogApiResponse {
   id: string;
   subject: string;
   recipients: string[];
@@ -31,30 +45,46 @@ export default function NotificationsEmailManagement() {
     const fetchSubscribers = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/subscribers`);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.json();
-        const mappedSubscribers = data.map((sub: any) => ({
+        if (!response.ok)
+          throw new Error(`HTTP error! status: ${response.status}`);
+
+        const data: SubscriberApiResponse[] = await response.json();
+
+        const mappedSubscribers: Subscriber[] = data.map((sub) => ({
           id: sub._id,
           email: sub.email,
           name: sub.name,
           createdAt: sub.createdAt,
         }));
+
         setSubscribers(mappedSubscribers);
-      } catch (error: any) {
-        console.error("Failed to fetch subscribers:", error);
-        alert(`Failed to fetch subscribers: ${error.message}`);
+      } catch (error) {
+        if (error instanceof Error) {
+          console.error("Failed to fetch subscribers:", error);
+          alert(`Failed to fetch subscribers: ${error.message}`);
+        } else {
+          console.error("Unknown error:", error);
+          alert("Failed to fetch subscribers: Unknown error");
+        }
       }
     };
 
     const fetchEmailLogs = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/email-logs`);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const logs = await response.json();
+        if (!response.ok)
+          throw new Error(`HTTP error! status: ${response.status}`);
+
+        const logs: EmailLogApiResponse[] = await response.json();
         setEmailLogs(logs);
-      } catch (error: any) {
-        console.error("Failed to fetch email logs:", error);
-        alert(`Failed to fetch email logs: ${error.message}`);
+      } catch (error) {
+        if (error instanceof Error) {
+          console.error("Failed to fetch email logs:", error);
+          alert(`Failed to fetch email logs: ${error.message}`);
+        } else {
+          console.error("Unknown error:", error);
+          alert("Failed to fetch email logs: Unknown error");
+        }
       }
     };
 
@@ -67,16 +97,23 @@ export default function NotificationsEmailManagement() {
       const response = await fetch(`${API_BASE_URL}/subscribers/${id}`, {
         method: "DELETE",
       });
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok)
+        throw new Error(`HTTP error! status: ${response.status}`);
+
       setSubscribers((prev) => prev.filter((sub) => sub.id !== id));
       alert("Subscriber deleted successfully!");
-    } catch (error: any) {
-      console.error("Failed to delete subscriber:", error);
-      alert(`Failed to delete subscriber: ${error.message}`);
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error("Failed to delete subscriber:", error);
+        alert(`Failed to delete subscriber: ${error.message}`);
+      }
     }
   };
 
-  const handleAddSubscriber = async (newSubscriber: { name: string; email: string }) => {
+  const handleAddSubscriber = async (newSubscriber: {
+    name: string;
+    email: string;
+  }) => {
     try {
       const response = await fetch(`${API_BASE_URL}/subscribers/send`, {
         method: "POST",
@@ -89,12 +126,15 @@ export default function NotificationsEmailManagement() {
         }),
       });
 
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok)
+        throw new Error(`HTTP error! status: ${response.status}`);
+
       const subscribersResponse = await fetch(`${API_BASE_URL}/subscribers`);
       if (subscribersResponse.ok) {
-        const updatedSubscribers = await subscribersResponse.json();
+        const updatedSubscribers: SubscriberApiResponse[] =
+          await subscribersResponse.json();
         setSubscribers(
-          updatedSubscribers.map((sub: any) => ({
+          updatedSubscribers.map((sub) => ({
             id: sub._id,
             email: sub.email,
             name: sub.name,
@@ -103,13 +143,19 @@ export default function NotificationsEmailManagement() {
         );
       }
       alert("Subscriber added and welcome email sent!");
-    } catch (error: any) {
-      console.error("Failed to add subscriber:", error);
-      alert(`Failed to add subscriber: ${error.message}`);
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error("Failed to add subscriber:", error);
+        alert(`Failed to add subscriber: ${error.message}`);
+      }
     }
   };
 
-  const handleSendEmail = async (emailData: { subject: string; body: string; recipients: string[] }) => {
+  const handleSendEmail = async (emailData: {
+    subject: string;
+    body: string;
+    recipients: string[];
+  }) => {
     try {
       const response = await fetch(`${API_BASE_URL}/send-email`, {
         method: "POST",
@@ -117,22 +163,28 @@ export default function NotificationsEmailManagement() {
         body: JSON.stringify(emailData),
       });
 
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok)
+        throw new Error(`HTTP error! status: ${response.status}`);
+
       const logsResponse = await fetch(`${API_BASE_URL}/email-logs`);
       if (logsResponse.ok) {
-        const logs = await logsResponse.json();
+        const logs: EmailLogApiResponse[] = await logsResponse.json();
         setEmailLogs(logs);
       }
       alert("Emails sent successfully!");
-    } catch (error: any) {
-      console.error("Failed to send emails:", error);
-      alert(`Failed to send emails: ${error.message}`);
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error("Failed to send emails:", error);
+        alert(`Failed to send emails: ${error.message}`);
+      }
     }
   };
 
   return (
     <div className="space-y-8 p-4 animate__fadeIn">
-      <h1 className="text-4xl font-extrabold text-yellow-900">Notifications & Email Management - Books Store</h1>
+      <h1 className="text-4xl font-extrabold text-yellow-900">
+        Notifications & Email Management - Books Store
+      </h1>
       <div className="flex justify-end">
         <button
           onClick={() => setIsEmailComposerOpen(true)}
@@ -143,11 +195,18 @@ export default function NotificationsEmailManagement() {
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Subscriber List</h2>
-          <SubscriberList subscribers={subscribers} onDelete={handleDeleteSubscriber} />
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+            Subscriber List
+          </h2>
+          <SubscriberList
+            subscribers={subscribers}
+            onDelete={handleDeleteSubscriber}
+          />
         </div>
         <div>
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Email Logs</h2>
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+            Email Logs
+          </h2>
           {emailLogs.length === 0 ? (
             <p className="text-gray-600">No email logs available.</p>
           ) : (
@@ -165,15 +224,27 @@ export default function NotificationsEmailManagement() {
                 <tbody>
                   {emailLogs.map((log) => (
                     <tr key={log.id}>
-                      <td className="border px-4 py-2">{new Date(log.timestamp).toLocaleString()}</td>
-                      <td className="border px-4 py-2">{log.subject}</td>
-                      <td className="border px-4 py-2">{log.recipients.join(", ")}</td>
                       <td className="border px-4 py-2">
-                        <span className={`${log.status === "success" ? "text-green-600" : "text-red-600"} font-semibold`}>
+                        {new Date(log.timestamp).toLocaleString()}
+                      </td>
+                      <td className="border px-4 py-2">{log.subject}</td>
+                      <td className="border px-4 py-2">
+                        {log.recipients.join(", ")}
+                      </td>
+                      <td className="border px-4 py-2">
+                        <span
+                          className={`${
+                            log.status === "success"
+                              ? "text-green-600"
+                              : "text-red-600"
+                          } font-semibold`}
+                        >
                           {log.status}
                         </span>
                       </td>
-                      <td className="border px-4 py-2">{log.error || log.subject}</td>
+                      <td className="border px-4 py-2">
+                        {log.error || log.subject}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

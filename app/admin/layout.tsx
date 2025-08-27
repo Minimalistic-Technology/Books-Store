@@ -1,10 +1,10 @@
 "use client";
 
 import Sidebar from "../components/Sidebar";
-import { useMemo, useState } from "react";
+import {  useState } from "react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const [isLoading, setIsLoading] = useState(false); 
+  const [isLoading] = useState(false); 
 
   return (
       <div className="page-container flex flex-row h-screen bg-yellow-50 overflow-hidden">

@@ -71,7 +71,7 @@ export default function Overview() {
   const [discountedPrice, setDiscountedPrice] = useState(0);
   const [isOutOfStock, setIsOutOfStock] = useState(false);
   const [availableConditions, setAvailableConditions] = useState<string[]>([]);
-  const [viewers, setViewers] = useState(Math.floor(Math.random() * 50) + 1);
+  const [viewers] = useState(Math.floor(Math.random() * 50) + 1);
   const [rating, setRating] = useState(0);
   const [reviewDescription, setReviewDescription] = useState("");
   const [name, setName] = useState("");
@@ -178,7 +178,7 @@ export default function Overview() {
           throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
         }
         const data = await response.json();
-        const reviews: BookstoreReview[] = data.map((review: any) => ({
+        const reviews: BookstoreReview[] = data.map((review:BookstoreReview) => ({
           _id: review._id,
           name: review.name,
           email: review.email,

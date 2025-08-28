@@ -9,9 +9,21 @@ export interface IAddress {
   country: string;
   pinCode: string;
 }
-
+export interface BookstoreReview {
+  id: string;
+  _id?:string;
+  bookId: { _id: string; title: string }; // Populated bookId
+  categoryName: string;
+  name: string;
+  email: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  status: 'pending' | 'approved' | 'disapproved';
+}
 export interface Order {
   id: string;
+  _id?:string;
   customerName: string;
   email: string;
   mobileNumber: string;
@@ -58,7 +70,7 @@ export interface Content {
   _id?:string;
   title: string;
   bookName?:string;
-  categoryName?: string;
+  categoryName: string;
   subCategory?: string;
   categoryPath: string;
   tags: string;
@@ -79,4 +91,44 @@ export interface Content {
   isNewArrival?: boolean;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface Book {
+  _id: string;
+  bookName: string;
+  title: string;
+  categoryPath: string;
+  tags: string[];
+  seoTitle?: string;
+  seoDescription?: string;
+  price?: number;
+  description?: string;
+  estimatedDelivery?: string;
+  condition: 'new' | 'used';
+  author?: string;
+  publisher?: string;
+  imageUrl?: string;
+  quantityNew: number;
+  quantityOld: number;
+  discountNew: number;
+  discountOld: number;
+  effectiveDiscount: number;
+  discountedPrice: number;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+}
+export interface Category {
+  _id: string;
+  name: string;
+  path: string;
+  children: Category[];
+  books: Book[];
+  tags: string[];
+  seoTitle?: string;
+  seoDescription?: string;
+  discount: number;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
 }

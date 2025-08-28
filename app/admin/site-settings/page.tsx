@@ -103,9 +103,17 @@ export default function SiteSettings() {
       });
       setSaveSuccess("Settings saved successfully!");
       console.log("Settings saved:", data);
-    } catch (err: any) {
-      console.error("Error saving settings:", err);
-      setSaveError(err.message || "Failed to save settings. Please try again.");
+    } catch (err) {
+      if(err instanceof Error){
+
+        console.error("Error saving settings:", err);
+        setSaveError(err.message || "Failed to save settings. Please try again.");
+      }
+      else{
+
+        console.error("Error saving settings:", err);
+        setSaveError( "Failed to save settings. Please try again.");
+      }
     } finally {
       setSaving(false);
     }

@@ -6,32 +6,33 @@ import Footer from "../components/footer/page";
 import Link from "next/link";
 import Image from "next/image";
 import { API_BASE_URL } from '../../utils/api';
+import { Order } from "../admin/order-product-management/types";
 
-interface Order {
-  id: string;
-  customerName: string;
-  email: string;
-  mobileNumber: string;
-  address: {
-    street: string;
-    city: string;
-    state: string;
-    country: string;
-    pinCode: string;
-  };
-  paymentType: 'Credit Card' | 'Debit Card' | 'UPI' | 'Cash on Delivery';
-  quantity: number;
-  price: number;
-  status: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
-  condition: 'New' | 'Old';
-  createdAt: string;
-  updatedAt: string;
-  bookId: string;
-  date?: string;
-  title?: string;
-  imageUrl?: string | null;
-  cancelReason?: string | null;
-}
+// interface Order {
+//   id: string;
+//   customerName: string;
+//   email: string;
+//   mobileNumber: string;
+//   address: {
+//     street: string;
+//     city: string;
+//     state: string;
+//     country: string;
+//     pinCode: string;
+//   };
+//   paymentType: 'Credit Card' | 'Debit Card' | 'UPI' | 'Cash on Delivery';
+//   quantity: number;
+//   price: number;
+//   status: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
+//   condition: 'New' | 'Old';
+//   createdAt: string;
+//   updatedAt: string;
+//   bookId: string;
+//   date?: string;
+//   title?: string;
+//   imageUrl?: string | null;
+//   cancelReason?: string | null;
+// }
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -73,7 +74,7 @@ const OrdersPage = () => {
         console.log("Raw orders API response:", data);
         const ordersArray = Array.isArray(data) ? data : data.orders || [];
         console.log("Orders array:", ordersArray);
-        const mappedOrders = ordersArray.map((order: any) => ({
+        const mappedOrders = ordersArray.map((order:Order) => ({
           id: order._id,
           customerName: order.customerName,
           email: order.email,

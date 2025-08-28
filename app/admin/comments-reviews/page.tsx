@@ -4,19 +4,10 @@ import { useState, useEffect } from "react";
 import CommentReviewForm from "./components/CommentReviewForm";
 import CommentReviewList from "./components/CommentReviewList";
 import { API_BASE_URL } from '../../../utils/api';
+import { Book, BookstoreReview, Category } from "../order-product-management/types";
 
 // Define the BookstoreReview interface
-export interface BookstoreReview {
-  id: string;
-  bookId: { _id: string; title: string }; // Populated bookId
-  categoryName: string;
-  name: string;
-  email: string;
-  rating: number;
-  comment: string;
-  createdAt: string;
-  status: 'pending' | 'approved' | 'disapproved';
-}
+
 
 export default function CommentsReviews() {
   const [items, setItems] = useState<BookstoreReview[]>([]);
@@ -35,8 +26,8 @@ export default function CommentsReviews() {
         throw new Error("Failed to fetch books");
       }
       const data = await response.json();
-      const books = data.flatMap((category:any) =>
-        category.books.map((book: any) => ({
+      const books = data.flatMap((category:Category) =>
+        category.books.map((book:Book) => ({
           _id: book._id,
           title: book.title,
           categoryName: category.name,
@@ -60,7 +51,7 @@ export default function CommentsReviews() {
         throw new Error(errorData.error || "Failed to fetch reviews");
       }
       const data = await response.json();
-      const reviews: BookstoreReview[] = data.map((review: any) => ({
+      const reviews: BookstoreReview[] = data.map((review: BookstoreReview) => ({
         id: review._id,
         bookId: {
           _id: review.bookId?._id || review.bookId,

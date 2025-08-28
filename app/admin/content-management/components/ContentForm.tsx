@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Content } from "../page";
-import { API_BASE_URL } from "../../../../utils/api";
+
+
+import Image from "next/image";
+import { Content } from "../../order-product-management/types";
 
 interface Category {
   _id: string;
@@ -446,7 +448,9 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
                 disabled={isSubmitting}
               />
               <div className="mt-2">
-                <img
+                <Image
+                width={200}
+                height={190}
                   src={formData.imageUrl || defaultImageUrl}
                   alt="Preview"
                   className="h-48 w-auto object-cover rounded-md"

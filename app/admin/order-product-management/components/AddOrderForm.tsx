@@ -115,7 +115,7 @@ export default function AddOrderForm({ onClose, onSave }: AddOrderFormProps) {
           setSubCategories(tags);
         }
         console.timeEnd("fetchSubCategories");
-      } catch (err: any) {
+      } catch (err) {
         console.error("Error fetching subcategories:", err);
         setErrors((prev) => ({
           ...prev,
@@ -148,7 +148,7 @@ export default function AddOrderForm({ onClose, onSave }: AddOrderFormProps) {
           (book: Book) => book.subCategory === selectedSubCategory
         );
         setBooks(filteredBooks);
-      } catch (err: any) {
+      } catch (err) {
         console.error("Error fetching books:", err);
         setErrors((prev) => ({ ...prev, general: "Failed to load books" }));
       } finally {
@@ -290,12 +290,23 @@ export default function AddOrderForm({ onClose, onSave }: AddOrderFormProps) {
         shippingAddress: result.order.address,
       });
       onClose();
-    } catch (err: any) {
-      console.error("Error creating order:", err);
-      setErrors((prev) => ({
-        ...prev,
-        general: err.message || "Failed to create order. Please try again.",
-      }));
+    } catch (err) {
+      if(err instanceof Error){
+
+        console.error("Error creating order:", err);
+        setErrors((prev) => ({
+          ...prev,
+          general: err.message || "Failed to create order. Please try again.",
+        }));
+      }
+      else{
+        console.error("Error creating order:", err);
+        setErrors((prev) => ({
+          ...prev,
+          general: "Failed to create order. Please try again.",
+        }));
+
+      }
     }
   };
 

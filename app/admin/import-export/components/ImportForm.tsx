@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Content } from "../../content-management/page";
+
 import Papa, { ParseResult } from "papaparse";
 import { User } from "./ExportForm";
 import { API_BASE_URL } from '../../../../utils/api';
+import { Category, Content } from "../../order-product-management/types";
 
 interface ImportFormProps {
   onImport: (
@@ -13,6 +14,32 @@ interface ImportFormProps {
       | { type: "products"; file: File | null; parsedData: Content[] }
   ) => void;
 }
+
+interface UserRow {
+  username: string;
+  email: string;
+}
+
+interface ProductRow {
+  title: string;
+  category: string;
+  subcategory: string;
+  tags: string;
+  author: string;
+  publisher: string;
+  price: string;
+  condition: string;
+  "new quantity": string;
+  "discount for new books (%)": string;
+  "old quantity": string;
+  "discount for old books (%)": string;
+  "valid image link": string;
+  "estimated delivery": string;
+  description: string;
+  "seo title": string;
+  "seo description": string;
+}
+
 
 export default function ImportForm({ onImport }: ImportFormProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -25,7 +52,7 @@ export default function ImportForm({ onImport }: ImportFormProps) {
         const response = await fetch(`${API_BASE_URL}/book-categories`);
         if (!response.ok) throw new Error("Failed to fetch categories");
         const data = await response.json();
-        setCategories(data.map((cat: any) => cat.name));
+        setCategories(data.map((cat: Category) => cat.name));
       } catch (error) {
         console.error("Failed to fetch categories:", error);
         setError("Failed to load categories");
@@ -59,7 +86,7 @@ export default function ImportForm({ onImport }: ImportFormProps) {
       let parsedData: User[] | Content[] | null = null;
 
       try {
-        const result: ParseResult<any> = Papa.parse(text, {
+        const result: ParseResult<UserRow | ProductRow> = Papa.parse(text, {
           header: true,
           skipEmptyLines: "greedy",
           transformHeader: (header: string) => header.trim().toLowerCase(),
@@ -69,7 +96,7 @@ export default function ImportForm({ onImport }: ImportFormProps) {
           escapeChar: '"',
           dynamicTyping: false,
           complete: (results) => {
-            results.data = results.data.filter((row: any) => {
+            results.data = results.data.filter((row) => {
               const fieldCount = Object.keys(row).length;
               if (fieldCount < 17) {
                 console.warn(`Skipping row with ${fieldCount} fields:`, row);
@@ -88,7 +115,7 @@ export default function ImportForm({ onImport }: ImportFormProps) {
           );
         }
 
-        const dataLines = result.data as any[];
+        const dataLines = result.data;
         if (dataLines.length === 0) {
           throw new Error("CSV file is empty or has no valid data rows.");
         }

@@ -2,8 +2,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Content } from "../../content-management/page"; 
+
 import { API_BASE_URL } from '../../../../utils/api';
+import { Category, Content } from "../../order-product-management/types";
 
 export interface User {
   username: string;
@@ -41,7 +42,7 @@ export default function ExportForm({ onExport }: ExportFormProps) {
         const categoriesData = await categoriesResponse.json();
 
         const allBooks: Content[] = [];
-        const fetchPromises = categoriesData.map(async (category: any) => {
+        const fetchPromises = categoriesData.map(async (category:Category) => {
           try {
             const booksResponse = await fetch(
               `${API_BASE_URL}/book-categories/${encodeURIComponent(category.name)}`
@@ -51,8 +52,8 @@ export default function ExportForm({ onExport }: ExportFormProps) {
               return [];
             }
             const booksData = await booksResponse.json();
-            const books = Array.isArray(booksData.books) ? booksData.books : [];
-            return books.map((book: any) => ({
+            const books:Content[] = Array.isArray(booksData.books) ? booksData.books : [];
+            return books.map((book) => ({
               id: book._id,
               title: book.title || "",
               categoryName: category.name,

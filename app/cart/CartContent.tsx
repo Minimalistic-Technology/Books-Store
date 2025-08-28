@@ -204,7 +204,7 @@ const onPaymentSubmit = async (data: FormData) => {
         setError(`Insufficient old stock for ${item.name}. Only ${quantityOld} available.`);
         return;
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error(`Error checking stock for item ${item._id}:`, err);
       setError(`Unable to verify stock for ${item.name}. Please try again or contact support.`);
       return;
@@ -249,9 +249,16 @@ const onPaymentSubmit = async (data: FormData) => {
     setCartItems([]);
     setShowPaymentForm(false);
     router.push("/orders");
-  } catch (err: any) {
-    console.error("Error placing order:", err.message);
-    setError(err.message || "Failed to place order. Please try again.");
+  } catch (err) {
+    if(err instanceof Error){
+
+      console.error("Error placing order:", err.message);
+      setError(err.message || "Failed to place order. Please try again.");
+    }else{
+
+      console.error("Error placing order:", err);
+      setError( "Failed to place order. Please try again.");
+    }
   }
 };
 

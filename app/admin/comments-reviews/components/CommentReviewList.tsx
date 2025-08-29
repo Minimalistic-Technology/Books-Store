@@ -1,6 +1,8 @@
 "use client";
 
-import { BookstoreReview } from "../page";
+import { BookstoreReview } from "../../order-product-management/types";
+
+
 
 type CommentReviewListProps = {
   onEdit: (item: BookstoreReview) => void;

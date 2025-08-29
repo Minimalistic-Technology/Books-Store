@@ -132,7 +132,7 @@ export default function Sidebar() {
                 <Link
                   href="/admin/DiscountManagement"
                   className={`block p-3 text-gray-800 rounded-lg transition-all duration-200 font-medium ${
-                    isActive("/admin/import-export")
+                    isActive("/admin/DiscountManagement")
                       ? "bg-yellow-200 text-yellow-900 shadow-md"
                       : "hover:bg-yellow-200 hover:shadow-md animate__pulse"
                   }`}

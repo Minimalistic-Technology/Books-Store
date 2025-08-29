@@ -3,9 +3,10 @@
 import { useState } from "react";
 import ImportForm from "./components/ImportForm";
 import ExportForm from "./components/ExportForm";
-import { Content2 } from "../content-management/page";
+
 import { User } from "./components/ExportForm";
 import { API_BASE_URL } from "../../../utils/api";
+import { Content } from "../order-product-management/types";
 
 type APIError = {
   errors?: { error: string }[];
@@ -20,7 +21,7 @@ export default function ImportExportManagement() {
   const handleImport = async (
     data:
       | { type: "users"; file: File | null; parsedData: User[] }
-      | { type: "products"; file: File | null; parsedData: Content2[] }
+      | { type: "products"; file: File | null; parsedData: Content[] }
   ) => {
     try {
       if (data.type === "users") {
@@ -28,8 +29,8 @@ export default function ImportExportManagement() {
         setSuccessMessage("Users imported successfully");
         setTimeout(() => setSuccessMessage(""), 3000);
       } else if (data.type === "products") {
-        const productsByCategory: { [key: string]: Content2[] } = {};
-        data.parsedData.forEach((product: Content2) => {
+        const productsByCategory: { [key: string]: Content[] } = {};
+        data.parsedData.forEach((product: Content) => {
           if (!productsByCategory[product.categoryName]) {
             productsByCategory[product.categoryName] = [];
           }
@@ -40,7 +41,7 @@ export default function ImportExportManagement() {
 
         const importPromises = Object.entries(productsByCategory).map(
           async ([category, products]) => {
-            const validatedProducts = products.map((product: Content2) => {
+            const validatedProducts = products.map((product: Content) => {
               const tagsArray =
                 product.tags && product.tags.trim()
                   ? product.tags
@@ -102,14 +103,17 @@ export default function ImportExportManagement() {
               };
             });
 
+            console.log(validatedProducts);
             const response = await fetch(
-              `${API_BASE_URL}/book-categories/${encodeURIComponent(category)}`,
+              `${API_BASE_URL}/products/bulk`,
+              // `${API_BASE_URL}/book-categories/${encodeURIComponent(category)}`,
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ books: validatedProducts }),
+                body: JSON.stringify({ products: validatedProducts }),
               }
             );
+            console.log(validatedProducts);
 
             if (!response.ok) {
               const errorData:APIError = await response.json().catch(() => ({}));

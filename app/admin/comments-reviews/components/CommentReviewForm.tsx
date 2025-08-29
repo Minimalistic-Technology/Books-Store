@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BookstoreReview } from "../page";
+
 
 type CommentReviewFormProps = {
   item?: {

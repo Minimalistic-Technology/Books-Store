@@ -15,6 +15,7 @@ import {
 import { useState, useEffect, useRef } from "react";
 import { API_BASE_URL } from "../../../utils/api";
 import BookCard from "./BookCard"; // Adjust path as needed
+import Link from "next/link";
 
 interface Book {
   _id: string;
@@ -201,13 +202,16 @@ export default function Home() {
                   }}
                 >
                   {bestSellers.map((book) => (
-                    <div
+                    <Link
+                      href={`/overview1/${
+                        book._id
+                      }`}
                       key={book._id}
                       className="min-w-20 h-60 "
                       // style={{ flex: "0 0 calc(25% - 18px)" }}
                     >
                       <BookCard book={book} />
-                    </div>
+                    </Link>
                   ))}
                 </div>
 

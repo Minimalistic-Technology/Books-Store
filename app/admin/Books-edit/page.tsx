@@ -96,6 +96,8 @@ const ContentList: React.FC<ContentListProps> = ({
                   <Image
                     src={content.imageUrl || defaultImageUrl}
                     alt={content.title}
+                    width={100}
+                    height={100}
                     className="h-24 w-24 object-cover rounded"
                     onError={(e) => {
                       e.currentTarget.src = defaultImageUrl;
@@ -218,6 +220,7 @@ export default function EBooksEdit() {
       const books = response.data.map((book) => ({
         id: book._id,
         title: book.bookName || book.title || "",
+        categoryName:book.categoryName,
         categoryPath: book.categoryPath || "",
         tags: Array.isArray(book.tags) ? book.tags.join(", ") : book.tags || "",
         seoTitle: book.seoTitle || "",
@@ -373,14 +376,8 @@ export default function EBooksEdit() {
     return pageNumbers;
   };
 
-  return (
-    <html>
-      <head>
-        <title>EBooks Management</title>
-        <link rel="icon" href="/favicon.ico" />
-        <script src="https://cdn.tailwindcss.com"></script>
-      </head>
-      <body className="p-6">
+  return (<>
+    
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900 pt-12">
             EBooks Management
@@ -485,7 +482,6 @@ export default function EBooksEdit() {
             </div>
           </>
         )}
-      </body>
-    </html>
+    </>  
   );
 }

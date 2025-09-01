@@ -56,7 +56,7 @@ export default function OtpForm() {
   };
 
   const handleResendCode = () => {
-    console.log("Resending OTP to:", email);
+    
     alert(`A new OTP has been sent to ${email}`);
   };
   const currentDateTime = new Date().toLocaleString("en-US", {

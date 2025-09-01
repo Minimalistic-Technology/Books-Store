@@ -39,7 +39,7 @@ export default function SiteSettings() {
         const response = await fetch(`${API_BASE_URL}/settings`);
         if (!response.ok) throw new Error("Failed to fetch settings");
         const data = await response.json();
-        console.log("API Response:", data);
+        
         if (data) {
           // Settings exist, update state with API data
           setSettings({
@@ -102,7 +102,7 @@ export default function SiteSettings() {
         __v: data.__v,
       });
       setSaveSuccess("Settings saved successfully!");
-      console.log("Settings saved:", data);
+      
     } catch (err) {
       if(err instanceof Error){
 

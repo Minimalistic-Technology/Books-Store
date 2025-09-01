@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -81,7 +81,12 @@ class ErrorBoundary extends Component<
 
 export default function CategoryPage() {
   const params = useParams();
+  const query = useSearchParams();
+
+
+  const [classRecieved, setClassRecieved] = useState<string | null>("");
   const path = (params.path as string[])?.join("/") || "school-books";
+
   const [category, setCategory] = useState<Category | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,7 +102,15 @@ export default function CategoryPage() {
     {}
   );
   const [isOpen, setIsOpen] = useState(false);
-
+  
+  useEffect(() => {
+    const classCategory = query.get("class");
+    if (classCategory) setClassRecieved(classCategory);
+  }, [query]);
+  useEffect(() => {
+    if (classRecieved)
+      setSelectedCategoryPath((prev) => prev + "/" + classRecieved);
+  }, [classRecieved]);
   useEffect(() => {
     const fetchCategoryAndBooks = async () => {
       try {
@@ -118,10 +131,7 @@ export default function CategoryPage() {
           );
         }
         const categoryData: Category = await categoryResponse.json();
-        console.log(
-          `[CategoryPage] Fetched category for ${path}:`,
-          JSON.stringify(categoryData, null, 2)
-        );
+       
         if (!categoryData.name || typeof categoryData.name !== "string") {
           throw new Error("Invalid category name");
         }
@@ -141,10 +151,7 @@ export default function CategoryPage() {
           throw new Error(`Failed to fetch books: ${booksResponse.statusText}`);
         }
         const booksData: Book[] = await booksResponse.json();
-        console.log(
-          `[CategoryPage] Fetched books for ${path}:`,
-          JSON.stringify(booksData, null, 2)
-        );
+        
         setBooks(
           (booksData || []).filter(
             (book) =>
@@ -324,171 +331,166 @@ export default function CategoryPage() {
             >
               <Filter />
             </span>
-            
-              <aside
-                className={` z-2 translate-x-[-200%] overflow-hidden transition duration-500 lg:w-1/4 lg:translate-x-[0]  lg:pr-6 mb-6 lg:mb-0 lg:block ${
-                  isOpen
-                    ? "block translate-x-[0] bg-white w-80 p-6 rounded-lg fixed top-0 left-0"
-                    : "hidden  "
-                }`}
-              >
-                <X
-                  className="block lg:hidden cursor-pointer"
-                  onClick={() => setIsOpen(false)}
-                />
-                <h2 className="text-xl font-semibold mb-4 text-gray-900">
-                  Subcategories
-                </h2>
-                <div className="border rounded-lg p-4 bg-gray-50 shadow-md mb-6">
-                  {category && (
-                    <div className="mb-4">
-                      <div className="flex items-center mb-2">
-                        <input
-                          type="radio"
-                          id={category.path}
-                          name="category"
-                          className="mr-2 accent-orange-500"
-                          onChange={() => handleCategoryChange(category.path)}
-                          checked={selectedCategoryPath === category.path}
-                        />
-                        <label
-                          htmlFor={category.path}
-                          className="text-gray-800 text-sm"
-                        >
-                          {bookCounts[category.path] > 0
-                            ? `${normalizeDisplayName(category.name)} - ${
-                                bookCounts[category.path]
-                              } books`
-                            : normalizeDisplayName(category.name)}
-                        </label>
-                      </div>
-                      {categoryHierarchy.map((cat, index) => (
-                        <div
-                          key={cat._id}
-                          className={`pl-${(index + 1) * 4} mb-2`}
-                        >
-                          {cat.children.map((subCat) => (
-                            <div
-                              key={subCat._id}
-                              className="flex items-center mb-2"
-                            >
-                              <input
-                                type="radio"
-                                id={subCat.path}
-                                name="category"
-                                className="mr-2 accent-orange-500"
-                                onChange={() =>
-                                  handleCategoryChange(subCat.path)
-                                }
-                                checked={selectedCategoryPath === subCat.path}
-                              />
-                              <label
-                                htmlFor={subCat.path}
-                                className="text-gray-800 text-sm"
-                              >
-                                {bookCounts[subCat.path] > 0
-                                  ? `${normalizeDisplayName(subCat.name)} - ${
-                                      bookCounts[subCat.path]
-                                    } books`
-                                  : normalizeDisplayName(subCat.name)}
-                              </label>
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <div className="flex items-center">
-                    <input
-                      type="radio"
-                      id=""
-                      name="category"
-                      className="mr-2 accent-orange-500"
-                      onChange={() => handleCategoryChange(path)}
-                      checked={selectedCategoryPath === path}
-                    />
-                    <label className="text-gray-800 text-sm">All</label>
-                  </div>
-                </div>
-                <h2 className="text-xl font-semibold mb-4 text-gray-900">
-                  Filter by Price
-                </h2>
-                <div className="border rounded-lg p-4 bg-gray-50 shadow-md mb-6">
-                  {["0to500", "500to1000", "1000to1500", "1500to2000"].map(
-                    (range) => (
-                      <div key={range} className="flex items-center mb-2">
-                        <input
-                          type="radio"
-                          id={range}
-                          name="price"
-                          className="mr-2 accent-orange-500"
-                          onChange={handlePriceChange}
-                          checked={priceRange === range}
-                        />
-                        <label
-                          htmlFor={range}
-                          className="text-gray-800 text-sm"
-                        >
-                          {range === "0to500"
-                            ? "₹0 - ₹500"
-                            : range === "500to1000"
-                            ? "₹500 - ₹1,000"
-                            : range === "1000to1500"
-                            ? "₹1,000 - ₹1,500"
-                            : "₹1,500 - ₹2,000"}
-                        </label>
-                      </div>
-                    )
-                  )}
-                  <div className="flex items-center">
-                    <input
-                      type="radio"
-                      id=""
-                      name="price"
-                      className="mr-2 accent-orange-500"
-                      onChange={() => setPriceRange("")}
-                      checked={priceRange === ""}
-                    />
-                    <label className="text-gray-800 text-sm">All</label>
-                  </div>
-                </div>
-                <h2 className="text-xl font-semibold mb-4 text-gray-900">
-                  Product Status
-                </h2>
-                <div className="border rounded-lg p-4 bg-gray-50 shadow-md">
-                  {["inStock", "outOfStock", "onSale"].map((stat) => (
-                    <div key={stat} className="flex items-center mb-2">
+
+            <aside
+              className={` z-2 translate-x-[-200%] overflow-hidden transition duration-500 lg:w-1/4 lg:translate-x-[0]  lg:pr-6 mb-6 lg:mb-0 lg:block ${
+                isOpen
+                  ? "block translate-x-[0] bg-white w-80 p-6 rounded-lg fixed top-0 left-0"
+                  : "hidden  "
+              }`}
+            >
+              <X
+                className="block lg:hidden cursor-pointer"
+                onClick={() => setIsOpen(false)}
+              />
+              <h2 className="text-xl font-semibold mb-4 text-gray-900">
+                Subcategories
+              </h2>
+              <div className="border rounded-lg p-4 bg-gray-50 shadow-md mb-6">
+                {category && (
+                  <div className="mb-4">
+                    <div className="flex items-center mb-2">
                       <input
                         type="radio"
-                        id={stat}
-                        name="status"
+                        id={category.path}
+                        name="category"
                         className="mr-2 accent-orange-500"
-                        onChange={handleStatusChange}
-                        checked={status === stat}
+                        onChange={() => handleCategoryChange(category.path)}
+                        checked={selectedCategoryPath === category.path}
                       />
-                      <label htmlFor={stat} className="text-gray-800 text-sm">
-                        {stat === "inStock"
-                          ? "In Stock"
-                          : stat === "outOfStock"
-                          ? "Out of Stock"
-                          : "On Sale"}
+                      <label
+                        htmlFor={category.path}
+                        className="text-gray-800 text-sm"
+                      >
+                        {bookCounts[category.path] > 0
+                          ? `${normalizeDisplayName(category.name)} - ${
+                              bookCounts[category.path]
+                            } books`
+                          : normalizeDisplayName(category.name)}
                       </label>
                     </div>
-                  ))}
-                  <div className="flex items-center">
+                    {categoryHierarchy.map((cat, index) => (
+                      <div
+                        key={cat._id}
+                        className={`pl-${(index + 1) * 4} mb-2`}
+                      >
+                        {cat.children.map((subCat) => (
+                          <div
+                            key={subCat._id}
+                            className="flex items-center mb-2"
+                          >
+                            <input
+                              type="radio"
+                              id={subCat.path}
+                              name="category"
+                              className="mr-2 accent-orange-500"
+                              onChange={() => handleCategoryChange(subCat.path)}
+                              checked={selectedCategoryPath === subCat.path}
+                            />
+                            <label
+                              htmlFor={subCat.path}
+                              className="text-gray-800 text-sm"
+                            >
+                              {bookCounts[subCat.path] > 0
+                                ? `${normalizeDisplayName(subCat.name)} - ${
+                                    bookCounts[subCat.path]
+                                  } books`
+                                : normalizeDisplayName(subCat.name)}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    id=""
+                    name="category"
+                    className="mr-2 accent-orange-500"
+                    onChange={() => handleCategoryChange(path)}
+                    checked={selectedCategoryPath === path}
+                  />
+                  <label className="text-gray-800 text-sm">All</label>
+                </div>
+              </div>
+              <h2 className="text-xl font-semibold mb-4 text-gray-900">
+                Filter by Price
+              </h2>
+              <div className="border rounded-lg p-4 bg-gray-50 shadow-md mb-6">
+                {["0to500", "500to1000", "1000to1500", "1500to2000"].map(
+                  (range) => (
+                    <div key={range} className="flex items-center mb-2">
+                      <input
+                        type="radio"
+                        id={range}
+                        name="price"
+                        className="mr-2 accent-orange-500"
+                        onChange={handlePriceChange}
+                        checked={priceRange === range}
+                      />
+                      <label htmlFor={range} className="text-gray-800 text-sm">
+                        {range === "0to500"
+                          ? "₹0 - ₹500"
+                          : range === "500to1000"
+                          ? "₹500 - ₹1,000"
+                          : range === "1000to1500"
+                          ? "₹1,000 - ₹1,500"
+                          : "₹1,500 - ₹2,000"}
+                      </label>
+                    </div>
+                  )
+                )}
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    id=""
+                    name="price"
+                    className="mr-2 accent-orange-500"
+                    onChange={() => setPriceRange("")}
+                    checked={priceRange === ""}
+                  />
+                  <label className="text-gray-800 text-sm">All</label>
+                </div>
+              </div>
+              <h2 className="text-xl font-semibold mb-4 text-gray-900">
+                Product Status
+              </h2>
+              <div className="border rounded-lg p-4 bg-gray-50 shadow-md">
+                {["inStock", "outOfStock", "onSale"].map((stat) => (
+                  <div key={stat} className="flex items-center mb-2">
                     <input
                       type="radio"
-                      id=""
+                      id={stat}
                       name="status"
                       className="mr-2 accent-orange-500"
-                      onChange={() => setStatus("")}
-                      checked={status === ""}
+                      onChange={handleStatusChange}
+                      checked={status === stat}
                     />
-                    <label className="text-gray-800 text-sm">All</label>
+                    <label htmlFor={stat} className="text-gray-800 text-sm">
+                      {stat === "inStock"
+                        ? "In Stock"
+                        : stat === "outOfStock"
+                        ? "Out of Stock"
+                        : "On Sale"}
+                    </label>
                   </div>
+                ))}
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    id=""
+                    name="status"
+                    className="mr-2 accent-orange-500"
+                    onChange={() => setStatus("")}
+                    checked={status === ""}
+                  />
+                  <label className="text-gray-800 text-sm">All</label>
                 </div>
-              </aside>
-            
+              </div>
+            </aside>
+
             <section className="w-full lg:w-3/4 pl-0 lg:pl-6">
               <h2 className="text-2xl font-semibold mb-4 text-gray-900">
                 {category

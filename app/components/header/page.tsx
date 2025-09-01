@@ -72,9 +72,12 @@ const CategoryMenu: React.FC<CategoryMenuProps> = ({
   toggleCategory,
   closeAll,
 }) => {
+
+
   const validCategories = categories.filter(
     (category) => category.name && typeof category.name === 'string'
   );
+  
 
   return (
     <ul
@@ -168,6 +171,21 @@ export default function Header() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({});
 
+   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  const token = typeof window !== "undefined" 
+  ? localStorage.getItem("bookstore-token") 
+  : null;
+
+  useEffect(() => {
+    if (token) setIsLoggedIn(true);
+  }, [token]);
+
+  const handleLogout=()=>{
+      localStorage.removeItem("bookstore-token")
+      setIsLoggedIn(false);
+    }
+
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -181,12 +199,14 @@ export default function Header() {
       }
     };
 
+    
+
     const fetchCategories = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/book-categories`);
         if (!response.ok) throw new Error('Failed to fetch categories');
         const data: Category[] = await response.json();
-        console.log('[Header] Raw API response:', JSON.stringify(data, null, 2));
+        
         const validCategories = data.filter(
           (category) => category.name && typeof category.name === 'string'
         );
@@ -223,8 +243,8 @@ export default function Header() {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
 
-      const results = await response.json();
-      console.log('[Header] Search results:', results);
+      
+      
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     } catch (err) {
       console.error('[Header] Search error:', err);
@@ -317,9 +337,11 @@ export default function Header() {
             <span className="text-black">+91 7977250185</span>
           </div>
           <div className='flex gap-4'>
-          <Link href="/login" className="hover:underline text-black">
+          {isLoggedIn?<>
+          <button className='p-2 bg-amber-200 rounded-lg text-black cursor-pointer hover:bg-amber-300' onClick={handleLogout}>Logout</button>
+          </>:<Link href="/login" className="hover:underline text-black">
             <FontAwesomeIcon icon={faUser} size="lg" className="text-lg sm:text-xl" />
-          </Link>
+          </Link>}
           <Link href="/cart" className="relative text-black hover:underline">
             <FontAwesomeIcon icon={faShoppingCart} size="lg" className="text-lg sm:text-xl" />
           </Link>

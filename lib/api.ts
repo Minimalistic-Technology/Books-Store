@@ -6,7 +6,7 @@ export async function fetchDashboardMetrics() {
 
 export async function sendEmail(subject: string, body: string, to: string[]) {
   // TODO: Integrate with email service (e.g., SendGrid, Nodemailer)
-  console.log("Sending email:", { subject, body, to });
+  
   return { success: true };
 }
 
@@ -38,12 +38,12 @@ export async function getErrorLogs() {
 // New functions for import/export
 export async function exportData(type: string, format: string) {
   // TODO: Generate and return file data from backend
-  console.log("Exporting:", { type, format });
+  
   return new Blob(["Mock export data"], { type: "text/csv" }); // Placeholder
 }
 
 export async function importData(file: File, type: string) {
   // TODO: Send file to backend for processing
-  console.log("Importing:", { fileName: file.name, type });
+  
   return { success: true, message: "Import processed" }; // Placeholder
 }

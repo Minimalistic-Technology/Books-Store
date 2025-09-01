@@ -2,11 +2,17 @@
 
 import Sidebar from "../components/Sidebar";
 import {  useState } from "react";
+import AdminProtected from "./ProtectedWrapper";
+
+
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isLoading] = useState(false); 
 
+
   return (
+    
+      <AdminProtected>
       <div className="page-container flex flex-row h-screen bg-yellow-50 overflow-hidden">
         <Sidebar />
         <div className="flex-1 flex flex-col min-h-0 overflow-auto">
@@ -21,5 +27,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </main>
         </div>
       </div>
+      </AdminProtected>
+      
   );
 }

@@ -61,7 +61,7 @@ export default function AddOrderForm({ onClose, onSave }: AddOrderFormProps) {
         });
         if (!response.ok) throw new Error("Failed to fetch categories");
         const data = await response.json();
-        console.log("Categories response:", data);
+        
         setCategories(Array.isArray(data) ? data : []);
       } catch (err) {
         if (err instanceof Error) {
@@ -102,7 +102,7 @@ export default function AddOrderForm({ onClose, onSave }: AddOrderFormProps) {
         );
         if (!response.ok) throw new Error("Failed to fetch subcategory tags");
         const data = await response.json();
-        console.log("Subcategories response:", data);
+        
         const tags = Array.isArray(data) ? data : data.tags ? data.tags : [];
         if (!Array.isArray(tags)) {
           console.error("Subcategories is not an array:", tags);
@@ -143,7 +143,7 @@ export default function AddOrderForm({ onClose, onSave }: AddOrderFormProps) {
         );
         if (!response.ok) throw new Error("Failed to fetch books");
         const data = await response.json();
-        console.log("Books response:", data);
+        
         const filteredBooks = (data.books || []).filter(
           (book: Book) => book.subCategory === selectedSubCategory
         );
@@ -254,7 +254,7 @@ export default function AddOrderForm({ onClose, onSave }: AddOrderFormProps) {
         condition: formData.condition,
         bookId: formData.bookId,
       };
-      console.log("Submitting payload:", payload);
+      
       const response = await fetch(`${API_BASE_URL}/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -265,7 +265,7 @@ export default function AddOrderForm({ onClose, onSave }: AddOrderFormProps) {
         throw new Error(errorData.message || "Failed to create order");
       }
       const result = await response.json();
-      console.log("Order creation response:", result);
+      
       onSave({
         id: result.order._id,
         customerName: result.order.customerName,

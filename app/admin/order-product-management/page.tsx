@@ -19,7 +19,7 @@ export default function OrderProductManagement() {
   const fetchCancelReasons = async () => {
     try {
       const url = `${API_BASE_URL}/cancel-reasons`;
-      console.log(`Fetching cancel reasons from: ${url}`);
+      
       const response = await fetch(url, { cache: "no-store" });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -46,7 +46,7 @@ export default function OrderProductManagement() {
   const fetchOrders = async () => {
     try {
       const url = `${API_BASE_URL}/orders`;
-      console.log(`Fetching orders from: ${url}`);
+      
       const response = await fetch(url, { cache: "no-store" });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -108,7 +108,7 @@ export default function OrderProductManagement() {
   const handleDeleteOrder = async (id: string) => {
     if (deletingOrderId) return;
     setDeletingOrderId(id);
-    console.log(`Orders state before deletion:`, orders);
+    
     const orderExists = orders.find((order) => order.id === id);
     if (!orderExists) {
       setError(
@@ -120,7 +120,7 @@ export default function OrderProductManagement() {
 
     try {
       const url = `${API_BASE_URL}/orders/${id}`;
-      console.log(`Sending DELETE request to: ${url}`);
+      
       const response = await fetch(url, {
         method: "DELETE",
       });
@@ -141,7 +141,7 @@ export default function OrderProductManagement() {
           );
         }
       } else {
-        console.log(`Order ${id} deleted successfully`);
+        
         setOrders((prev) => prev.filter((order) => order.id !== id));
         setError(null);
       }
@@ -161,7 +161,7 @@ export default function OrderProductManagement() {
   const handleCancelOrder = async (orderId: string, reason: string) => {
     try {
       const url = `${API_BASE_URL}/orders/${orderId}/cancel`;
-      console.log(`Sending CANCEL request to: ${url}`);
+      
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -201,7 +201,7 @@ export default function OrderProductManagement() {
   const handleSaveOrder = async (data: { id: string; status: string }) => {
     try {
       const url = `${API_BASE_URL}/orders/${data.id}`;
-      console.log(`Sending PUT request to: ${url}`);
+      
       const response = await fetch(url, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },

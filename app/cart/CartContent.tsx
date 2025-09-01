@@ -1,4 +1,3 @@
-// app/cart/CartContent.tsx
 "use client";
 
 import Link from "next/link";
@@ -53,6 +52,14 @@ export default function CartContent() {
   const [mobileNumber, setMobileNumber] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  const token = typeof window !== "undefined" 
+  ? localStorage.getItem("bookstore-token") 
+  : null;
+
+  useEffect(() => {
+    if (!token) setError("Please log in");
+  }, [token]);
+
   const {
     register,
     handleSubmit,
@@ -102,7 +109,6 @@ export default function CartContent() {
       const updatedCart = [...storedItems, newItem];
       setCartItems(updatedCart);
       localStorage.setItem("cart", JSON.stringify(updatedCart));
-      console.log("Added new item to cart:", newItem);
     } else {
       setCartItems(storedItems);
     }
@@ -125,15 +131,12 @@ export default function CartContent() {
     );
     setCartItems(updatedCart);
     localStorage.setItem("cart", JSON.stringify(updatedCart));
-    console.log("Updated quantity for item:", id, "to", newQuantity);
   };
 
   const removeItem = (id: string) => {
-    console.log("Removing item with id:", id);
     const updatedCart = cartItems.filter((item) => item._id !== id);
     setCartItems(updatedCart);
     localStorage.setItem("cart", JSON.stringify(updatedCart));
-    console.log("Cart after removal:", updatedCart);
   };
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -165,7 +168,7 @@ export default function CartContent() {
       setError("Please fill in all address fields.");
       return;
     }
-    console.log("Submitted address:", address);
+
     setError(null);
     setShowAddressForm(false);
     setShowPaymentForm(true);
@@ -185,7 +188,6 @@ export default function CartContent() {
   };
 
   const onPaymentSubmit = async (data: FormData) => {
-    console.log("Payment details submitted:", data);
     if (cartItems.length === 0) {
       setError("Cart is empty.");
       return;
@@ -219,7 +221,6 @@ export default function CartContent() {
           );
         }
         const book = await response.json();
-        console.log(`Fetched book details for ${item._id}:`, book);
 
         const quantityNew = book.quantityNew ?? 0;
         const quantityOld = book.quantityOld ?? 0;
@@ -281,7 +282,6 @@ export default function CartContent() {
               `Failed to place order for ${item.name}: HTTP ${response.status}`
           );
         }
-        console.log(`Order placed for ${item.name}:`, await response.json());
       }
       localStorage.removeItem("cart");
       setCartItems([]);
@@ -300,12 +300,24 @@ export default function CartContent() {
 
   const handleUpiVerify = () => {
     const upiId = watch("upiId");
-    console.log("Verifying UPI ID:", upiId);
+
     alert(
       "UPI verification simulated. Please integrate with a UPI API for real validation."
     );
   };
 
+  if (error) {
+    return (
+      <main className="flex items-center justify-center">
+        <Link
+          href="/login"
+          className="text-black mx-auto text-center block w-fit p-2 rounded-lg mt-3 bg-amber-200  hover:bg-amber-300"
+        >
+          Login
+        </Link>
+      </main>
+    );
+  }
   return (
     <main className="max-w-6xl mx-auto py-10 px-4">
       <nav className="flex items-center text-sm text-gray-500 mb-4">

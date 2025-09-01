@@ -7,6 +7,8 @@ import ChartComponent from "./components/ChartComponent";
 import { useRouter } from "next/navigation";
 import { API_BASE_URL } from "../../../utils/api";
 import DashboardContext from "../context/DashboardContext";
+import { tokenAtom } from "@/app/store/auth";
+import { useAtom } from "jotai";
 
 export default function Dashboard() {
   const [metrics, setMetrics] = useState<{
@@ -37,11 +39,16 @@ export default function Dashboard() {
   });
 
   const router = useRouter();
+    const [token] = useAtom(tokenAtom);
+  
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/users`);
+        const response = await fetch(`${API_BASE_URL}/users`,{headers:{
+          "Content-Type":"application/json",
+          "Authorization":`Bearer ${token}`
+        }});
         if (!response.ok) throw new Error("Failed to fetch users");
         const data = await response.json();
         setMetrics((prev) => ({

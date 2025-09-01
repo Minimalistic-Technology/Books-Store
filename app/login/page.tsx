@@ -4,13 +4,10 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { jwtDecode } from 'jwt-decode';
+
 import { API_BASE_URL } from '../../utils/api';
 
-interface JwtPayload {
-  id: string;
-  role: 'User' | 'Admin';
-}
+
 
 const BookStoreLoginPage: React.FC = () => {
   const router = useRouter();
@@ -73,7 +70,7 @@ const BookStoreLoginPage: React.FC = () => {
           role,
         };
 
-        console.log('Sending login request with:', loginData); 
+         
 
         const response = await fetch(`${API_BASE_URL}/auth/login`, {
           method: 'POST',
@@ -84,20 +81,18 @@ const BookStoreLoginPage: React.FC = () => {
         });
 
         const data = await response.json();
-        console.log('Login response:', data); 
+         
 
         if (!response.ok) {
           throw new Error(data.message || 'Login failed. Please try again.');
         }
-        const decodedToken: JwtPayload = jwtDecode(data.token);
-        localStorage.setItem('token', data.token);
+        
+        localStorage.setItem('bookstore-token', data.token);
 
         alert('Login successful!');
-        if (decodedToken.role === 'Admin') {
-          router.push('/admin/dashboard');
-        } else {
+        
           router.push('/');
-        }
+        
       } catch (error) {
         console.error('Login error:', error);
         setErrors((prev) => ({
@@ -185,7 +180,7 @@ const BookStoreLoginPage: React.FC = () => {
               className="w-full border border-gray-300 rounded-md px-4 py-2 mt-1 text-sm focus:ring-2 focus:ring-teal-500"
             >
               <option value="User">User</option>
-              <option value="Admin">Admin</option>
+              {/* <option value="Admin">Admin</option> */}
             </select>
             {errors.role && (
               <p className="text-sm text-red-500 mt-1">{errors.role}</p>
@@ -216,6 +211,14 @@ const BookStoreLoginPage: React.FC = () => {
               Don’t have an account?{' '}
               <Link href="/signup" className="text-teal-600 hover:underline">
                 Sign up.
+              </Link>
+            </p>
+          </div>
+          <div className="mt-4 text-center">
+            <p className="text-sm">
+              Switch to {" "}
+              <Link href="/admin-login" className="text-teal-600 hover:underline">
+                Admin Login
               </Link>
             </p>
           </div>

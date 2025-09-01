@@ -143,7 +143,7 @@ const RequestBookPage: React.FC = () => {
         }
 
         const result = await response.json();
-        console.log("Request submitted:", result);
+        
         setIsSubmitted(true);
         setApiError(null);
 

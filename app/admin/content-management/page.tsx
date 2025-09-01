@@ -93,13 +93,16 @@ export default function ContentManagement() {
       const categoriesResponse = await fetch(`${API_BASE_URL}/book-categories`);
       if (!categoriesResponse.ok) throw new Error("Failed to fetch categories");
       const categoriesData: Category[] = await categoriesResponse.json();
-      console.log("Categories Data:", categoriesData); // Debug
+       // Debug
       setCategories(categoriesData);
 
       const allBooks: Content[] = [];
       const fetchPromises = categoriesData.map(async (category: Category) => {
         if (!category.path) return []; // Skip invalid categories
         try {
+          // const booksResponse = await fetch(
+          //   `${API_BASE_URL}/products`
+          // );
           const booksResponse = await fetch(
             `${API_BASE_URL}/books/${encodeURIComponent(category.path)}`
           );

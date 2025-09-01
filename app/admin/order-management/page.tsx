@@ -106,7 +106,7 @@ export default function OrderManagement() {
     fetchOrders();
 
     const handleOrderUpdate = () => {
-      console.log("Order updated event received");
+      
       fetchOrders();
     };
 

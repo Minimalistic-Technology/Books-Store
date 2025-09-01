@@ -33,7 +33,7 @@ export default function OrderList({
     if (!confirm("Are you sure you want to delete this order?")) return;
     setDeletingOrderId(id);
     try {
-      console.log(`Triggering delete for order ID: ${id}`);
+      
       await onDelete(id);
       setErrors((prev) => ({ ...prev, [id]: "" }));
     } catch (err: unknown) {

@@ -81,7 +81,7 @@
 //     const reader = new FileReader();
 //     reader.onload = async (e: ProgressEvent<FileReader>) => {
 //       const text = e.target?.result as string;
-//       console.log("Raw CSV text:", text);
+//       
 //       let parsedData: User[] | Content[] | null = null;
 
 //       try {
@@ -355,8 +355,10 @@ interface UserRow {
 }
 
 interface ProductRow {
+  bookName:string;
   title: string;
   category: string;
+  categoryPath: string;
   subcategory: string;
   tags: string;
   author: string;
@@ -469,6 +471,7 @@ export default function ImportForm({ onImport }: ImportFormProps) {
               }
 
               return {
+                bookName:p.bookName,
                 title: p.title,
                 categoryName: p.category,
                 subCategory: p.subcategory,

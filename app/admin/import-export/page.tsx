@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ImportForm from "./components/ImportForm";
 import ExportForm from "./components/ExportForm";
 
@@ -17,6 +18,38 @@ type APIError = {
 export default function ImportExportManagement() {
   const [error, setError] = useState<string>("");
   const [successMessage, setSuccessMessage] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState([]);
+  const [uploadedData, setUploadedData] = useState<any>([]);
+  const [isCategoryPresent, setIsCategoryPresent] = useState<any>([]);
+
+  // useEffect(() => {
+  //   const fetchCategories = async () => {
+
+  //       
+  //       setSelectedCategory(matchedCategory[0]?.children);
+
+  //   };
+  //   fetchCategories();
+  // }, []);
+
+  // useEffect(() => {
+  //   
+  //   if (selectedCategory?.length > 0) {
+  //     
+  //     const isCategoryFound = selectedCategory.find(
+  //       (cat: any) => cat.name === uploadedData[0].subCategory
+  //     );
+  //     
+  //     setIsCategoryPresent(isCategoryFound);
+  //   }
+  // }, [selectedCategory]);
+
+  // const mapCategories = (categoriesArray: any) => {
+  //   categoriesArray.map((category: any) => {
+  //     if (category.children) mapCategories(category.children);
+  //     else return categoriesArray;
+  //   });
+  // };
 
   const handleImport = async (
     data:
@@ -25,7 +58,7 @@ export default function ImportExportManagement() {
   ) => {
     try {
       if (data.type === "users") {
-        console.log("Importing users:", data.parsedData);
+        
         setSuccessMessage("Users imported successfully");
         setTimeout(() => setSuccessMessage(""), 3000);
       } else if (data.type === "products") {
@@ -37,10 +70,11 @@ export default function ImportExportManagement() {
           productsByCategory[product.categoryName].push(product);
         });
 
-        console.log("Products by category:", productsByCategory);
+        
 
         const importPromises = Object.entries(productsByCategory).map(
           async ([category, products]) => {
+            
             const validatedProducts = products.map((product: Content) => {
               const tagsArray =
                 product.tags && product.tags.trim()
@@ -83,8 +117,10 @@ export default function ImportExportManagement() {
               }
 
               return {
+                bookName: product.bookName || product.title,
                 title: product.title,
                 categoryName: product.categoryName,
+                categoryPath: product.categoryPath,
                 subCategory: product.subCategory,
                 tags: tagsArray,
                 author: product.author,
@@ -103,7 +139,44 @@ export default function ImportExportManagement() {
               };
             });
 
-            console.log(validatedProducts);
+            
+            // setUploadedData(validatedProducts);
+
+            // 
+            const categoriesResponse = await fetch(
+              `${API_BASE_URL}/book-categories`
+            );
+            const data = await categoriesResponse.json();
+            
+            const matchedCategory = data.filter((el: any) =>
+              el.name === validatedProducts[0]?.categoryName ? el : false
+            );
+            
+            const isCategoryFound = matchedCategory[0].children.find(
+              (cat: any) => cat.name === validatedProducts[0].subCategory
+            );
+            // 
+            
+            if (!isCategoryFound) {
+              const response = await fetch(`${API_BASE_URL}/book-categories`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  name: validatedProducts[0]?.subCategory.trim(),
+                  parentPath: validatedProducts[0]?.categoryName.trim(),
+                }),
+              });
+
+              if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || "Failed to create category");
+              }
+              const data = await response.json();
+              
+            }
+
+            // );
+
             const response = await fetch(
               `${API_BASE_URL}/products/bulk`,
               // `${API_BASE_URL}/book-categories/${encodeURIComponent(category)}`,
@@ -113,10 +186,12 @@ export default function ImportExportManagement() {
                 body: JSON.stringify({ products: validatedProducts }),
               }
             );
-            console.log(validatedProducts);
+            
 
             if (!response.ok) {
-              const errorData:APIError = await response.json().catch(() => ({}));
+              const errorData: APIError = await response
+                .json()
+                .catch(() => ({}));
               throw new Error(
                 `Failed to import products for ${category}: ${
                   errorData.errors?.map((e) => e.error).join("; ") ||
@@ -149,7 +224,7 @@ export default function ImportExportManagement() {
 
   const handleExport = (data: { type: string; format: string }) => {
     try {
-      console.log("Exporting data:", data);
+      
       setSuccessMessage(`Exporting ${data.type} in ${data.format} format`);
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (err) {

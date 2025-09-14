@@ -27,8 +27,8 @@ export default function DiscountManagement() {
         const response = await fetch(`${API_BASE_URL}/book-categories`);
         const data = await response.json();
         setCategories(data);
-      } catch (error) {
-        console.error("Failed to fetch categories:", error);
+      } catch  {
+        
         setErrors({ general: "Failed to load categories. Please try again." });
       }
     };
@@ -42,8 +42,8 @@ export default function DiscountManagement() {
           const response = await fetch(`${API_BASE_URL}/book-categories/${selectedCategory}`);
           const data = await response.json();
           setDiscount(data.discount.toString() || "0");
-        } catch (error) {
-          console.error("Failed to fetch discount:", error);
+        } catch  {
+          
         }
       } else if (selectionType === "subcategory" && selectedSubCategory) {
         const path = `${selectedCategory}/${selectedSubCategory}`;
@@ -51,8 +51,8 @@ export default function DiscountManagement() {
           const response = await fetch(`${API_BASE_URL}/book-categories/${path}`);
           const data = await response.json();
           setDiscount(data.discount.toString() || "0");
-        } catch (error) {
-          console.error("Failed to fetch discount:", error);
+        } catch  {
+          
         }
       } else {
         setDiscount("");
@@ -105,10 +105,15 @@ export default function DiscountManagement() {
         `Discount of ${discount}% applied to ${selectionType === "category" ? normalizeDisplayName(selectedCategory) : `${normalizeDisplayName(selectedCategory)} - ${normalizeDisplayName(selectedSubCategory)}`}`
       );
       setDiscount("");
-    } catch (error: any) {
-      console.error("Error setting discount:", error);
-      setErrors({ general: error.message || "Failed to set discount. Please try again." });
+    } catch (err) { 
+      if(err instanceof Error){
+        
+      setErrors({ general: err.message});
+      }else{
+      
+      setErrors({ general: "Failed to set discount. Please try again." });
     }
+  }
   };
 
   return (

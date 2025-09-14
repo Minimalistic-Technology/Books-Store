@@ -18,11 +18,12 @@ export default function Users() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/users`);
+        const response = await fetch(`${API_BASE_URL}/users`,{credentials:"include"});
         const data = await response.json();
         setUsers(data);
-      } catch (error) {
-        console.error("Failed to fetch users:", error);
+        
+      } catch  {
+        
       }
     };
 

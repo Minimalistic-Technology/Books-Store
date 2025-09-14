@@ -50,8 +50,8 @@ export default function OrderDetails({ order, onClose, onUpdateOrder }: OrderDet
         onUpdateOrder(updatedOrder);
         setIsRefundProcessing(false);
         alert(`${isRefundProcessing ? "Refund" : "Cancellation"} processed for Order #${order.id}`);
-      } catch (error) {
-        console.error("Error processing refund/cancellation:", error);
+      } catch  {
+        
         alert("Failed to process refund/cancellation. Please try again.");
       }
     }

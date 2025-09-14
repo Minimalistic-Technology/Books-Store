@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import OrderList from "./components/OrderList";
-import { API_BASE_URL } from '../../../utils/api';
+import { API_BASE_URL } from "../../../utils/api";
 
 export interface Order {
   id: string;
@@ -27,6 +27,31 @@ export interface Order {
   title: string;
   imageUrl?: string;
 }
+interface OrderDTO {
+  _id?: string;
+  id?: string;
+  customerName?: string;
+  totalAmount?: number;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  email?: string;
+  mobileNumber?: string;
+  address?: {
+    street: string;
+    city: string;
+    state: string;
+    country: string;
+    pinCode: string;
+  };
+  paymentType?: string;
+  quantity?: number;
+  price?: number;
+  condition?: string;
+  title?: string;
+  imageUrl?: string;
+}
+
 
 export default function OrderManagement() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -38,13 +63,13 @@ export default function OrderManagement() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/orders`);
+      const response = await fetch(`${API_BASE_URL}/orders`,{credentials:"include"});
       if (!response.ok) throw new Error("Network response was not ok");
       const data = await response.json();
       if (!Array.isArray(data.orders)) {
         throw new Error("Invalid data format: 'orders' is not an array");
       }
-      const mappedOrders = data.orders.map((item: any) => ({
+      const mappedOrders:Order[] = data.orders.map((item:OrderDTO) => ({
         id: item.id || item._id,
         customerName: item.customerName || "Anonymous",
         totalAmount: item.totalAmount || 0,
@@ -53,7 +78,13 @@ export default function OrderManagement() {
         updatedAt: item.updatedAt,
         email: item.email || "",
         mobileNumber: item.mobileNumber || "",
-        address: item.address || { street: "", city: "", state: "", country: "", pinCode: "" },
+        address: item.address || {
+          street: "",
+          city: "",
+          state: "",
+          country: "",
+          pinCode: "",
+        },
         paymentType: item.paymentType || "UPI",
         quantity: item.quantity || 0,
         price: item.price || 0,
@@ -63,8 +94,8 @@ export default function OrderManagement() {
       }));
       setOrders(mappedOrders);
       setError(null);
-    } catch (err) {
-      console.error("Error fetching orders:", err);
+    } catch  {
+      
       setError("Failed to load orders. Please try again later.");
     } finally {
       setLoading(false);
@@ -75,7 +106,7 @@ export default function OrderManagement() {
     fetchOrders();
 
     const handleOrderUpdate = () => {
-      console.log("Order updated event received");
+      
       fetchOrders();
     };
 
@@ -85,40 +116,49 @@ export default function OrderManagement() {
   }, []);
 
   const filteredOrders = orders.filter((order) => {
-    const matchesStatus = filterStatus === "All" || order.status === filterStatus;
-    const matchesSearch = order.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      filterStatus === "All" || order.status === filterStatus;
+    const matchesSearch = order.customerName
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
     return matchesStatus && matchesSearch;
   });
 
   const handleUpdateOrder = async (updatedOrder: Order) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/orders/${updatedOrder.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customerName: updatedOrder.customerName,
-          totalAmount: updatedOrder.totalAmount,
-          status: updatedOrder.status,
-          createdAt: updatedOrder.createdAt,
-          updatedAt: updatedOrder.updatedAt || new Date().toISOString(),
-          email: updatedOrder.email,
-          mobileNumber: updatedOrder.mobileNumber,
-          address: updatedOrder.address,
-          paymentType: updatedOrder.paymentType,
-          quantity: updatedOrder.quantity,
-          price: updatedOrder.price,
-          condition: updatedOrder.condition,
-          title: updatedOrder.title,
-          imageUrl: updatedOrder.imageUrl,
-        }),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/orders/${updatedOrder.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            customerName: updatedOrder.customerName,
+            totalAmount: updatedOrder.totalAmount,
+            status: updatedOrder.status,
+            createdAt: updatedOrder.createdAt,
+            updatedAt: updatedOrder.updatedAt || new Date().toISOString(),
+            email: updatedOrder.email,
+            mobileNumber: updatedOrder.mobileNumber,
+            address: updatedOrder.address,
+            paymentType: updatedOrder.paymentType,
+            quantity: updatedOrder.quantity,
+            price: updatedOrder.price,
+            condition: updatedOrder.condition,
+            title: updatedOrder.title,
+            imageUrl: updatedOrder.imageUrl,
+          }),
+          credentials:"include"
+        }
+      );
       if (!response.ok) throw new Error("Failed to update order");
       setOrders((prevOrders) =>
-        prevOrders.map((order) => (order.id === updatedOrder.id ? updatedOrder : order))
+        prevOrders.map((order) =>
+          order.id === updatedOrder.id ? updatedOrder : order
+        )
       );
       window.dispatchEvent(new Event("orderUpdated"));
-    } catch (err) {
-      console.error("Error updating order:", err);
+    } catch {
+      
       setError("Failed to update order. Reverting to last known state.");
       fetchOrders();
     }
@@ -126,7 +166,9 @@ export default function OrderManagement() {
 
   return (
     <div className="space-y-8 p-4 animate__fadeIn">
-      <h1 className="text-4xl font-bold text-yellow-900">Order Management - Books Store</h1>
+      <h1 className="text-4xl font-bold text-yellow-900">
+        Order Management - Books Store
+      </h1>
       {error && <p className="text-red-500">{error}</p>}
       {loading ? (
         <p className="text-gray-500 text-center">Loading orders...</p>
@@ -153,7 +195,10 @@ export default function OrderManagement() {
               className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 w-full"
             />
           </div>
-          <OrderList orders={filteredOrders} onUpdateOrder={handleUpdateOrder} />
+          <OrderList
+            orders={filteredOrders}
+            onUpdateOrder={handleUpdateOrder}
+          />
         </>
       )}
     </div>

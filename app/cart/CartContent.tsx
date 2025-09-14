@@ -1,15 +1,68 @@
-// app/cart/CartContent.tsx
 "use client";
+declare global {
+  interface Window {
+    Razorpay: new (options: RazorpayOptions) => RazorpayInstance;
+  }
+}
+
+interface RazorpayOptions {
+  key: string;
+  amount: number;
+  currency: string;
+  name?: string;
+  description?: string;
+  image?: string;
+  order_id?: string;
+  handler?: (response: RazorpayResponse) => void;
+  prefill?: {
+    name?: string;
+    email?: string;
+    contact?: string;
+  };
+  notes?: Record<string, string>;
+  theme?: {
+    color?: string;
+  };
+}
+
+interface RazorpayInstance {
+  open: () => void;
+  on: (
+    event: string,
+    callback: (response: RazorpayResponseError) => void
+  ) => void;
+}
+
+interface RazorpayResponse {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+}
+
+interface RazorpayResponseError {
+  error: {
+    code: string;
+    description: string;
+    source: string;
+    step: string;
+    reason: string;
+    metadata: {
+      order_id: string;
+      payment_id: string;
+    };
+  };
+}
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faShoppingCart } from "@fortawesome/free-solid-svg-icons";
-import { API_BASE_URL } from "../../utils/api";
 
-const defaultImageUrl = "https://images.pexels.com/photos/373465/pexels-photo-373465.jpeg";
+import { API_BASE_URL } from "../../utils/api";
+import Image from "next/image";
+
+const defaultImageUrl =
+  "https://images.pexels.com/photos/373465/pexels-photo-373465.jpeg";
 
 interface CartItem {
   _id: string;
@@ -50,8 +103,30 @@ export default function CartContent() {
   const [email, setEmail] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [, setToken] = useState<string | null>(null);
+  const [, setLoading] = useState(true);
+  const [quantityNew, setQuantityNew] = useState<number | null>(0);
+  const [quantityOld, setQuantityOld] = useState<number | null>(0);
 
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<FormData>({
+  useEffect(() => {
+    setLoading(true);
+    if (typeof window !== "undefined") {
+      const storedToken = localStorage.getItem("bookstore-token");
+      if (storedToken) {
+        setToken(storedToken);
+        setLoading(false);
+      } else {
+        router.replace("/login");
+        
+      }
+    }
+  }, [router]);
+
+  const {
+    handleSubmit,
+
+    formState: {},
+  } = useForm<FormData>({
     defaultValues: {
       paymentMethod: "",
       cardNumber: "",
@@ -74,32 +149,54 @@ export default function CartContent() {
     const discountedPrice = searchParams.get("discountedPrice");
     const categoryName = searchParams.get("category") || "Non-Academics";
 
-    if (id && name && price && !storedItems.some((item: CartItem) => item._id === id)) {
+    if (
+      id &&
+      name &&
+      price &&
+      !storedItems.some((item: CartItem) => item._id === id)
+    ) {
       const newItem: CartItem = {
         _id: id,
         name,
         price: parseFloat(price),
         imageUrl,
         condition: condition || "New",
-        discountedPrice: discountedPrice ? parseFloat(discountedPrice) : parseFloat(price),
+        discountedPrice: discountedPrice
+          ? parseFloat(discountedPrice)
+          : parseFloat(price),
         quantity: 1,
         categoryName,
       };
       const updatedCart = [...storedItems, newItem];
       setCartItems(updatedCart);
       localStorage.setItem("cart", JSON.stringify(updatedCart));
-      console.log("Added new item to cart:", newItem);
     } else {
       setCartItems(storedItems);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      
+      document.body.removeChild(script);
+    };
+  }, []);
 
   const getEffectivePrice = (item: CartItem) => {
     return item.discountedPrice > 0 ? item.discountedPrice : item.price;
   };
 
   const getTotal = () => {
-    return cartItems.reduce((total, item) => total + getEffectivePrice(item) * (item.quantity || 1), 0);
+    return cartItems.reduce(
+      (total, item) => total + getEffectivePrice(item) * (item.quantity || 1),
+      0
+    );
   };
 
   const updateQuantity = (id: string, newQuantity: number) => {
@@ -108,15 +205,12 @@ export default function CartContent() {
     );
     setCartItems(updatedCart);
     localStorage.setItem("cart", JSON.stringify(updatedCart));
-    console.log("Updated quantity for item:", id, "to", newQuantity);
   };
 
   const removeItem = (id: string) => {
-    console.log("Removing item with id:", id);
     const updatedCart = cartItems.filter((item) => item._id !== id);
     setCartItems(updatedCart);
     localStorage.setItem("cart", JSON.stringify(updatedCart));
-    console.log("Cart after removal:", updatedCart);
   };
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -138,132 +232,190 @@ export default function CartContent() {
       setError("Please enter a valid mobile number.");
       return;
     }
-    if (!address.street || !address.city || !address.state || !address.country || !address.postalCode) {
+    if (
+      !address.street ||
+      !address.city ||
+      !address.state ||
+      !address.country ||
+      !address.postalCode
+    ) {
       setError("Please fill in all address fields.");
       return;
     }
-    console.log("Submitted address:", address);
+
     setError(null);
     setShowAddressForm(false);
     setShowPaymentForm(true);
   };
 
   const mapConditionToOrderSchema = (bookCondition: string): string => {
-    if (bookCondition === "NEW - ORIGINAL PRICE" || bookCondition === "New") return "New";
-    if (bookCondition === "OLD " || bookCondition === "Old" || bookCondition === "OLD - 35% OFF") return "Old";
+    if (bookCondition === "NEW - ORIGINAL PRICE" || bookCondition === "New")
+      return "New";
+    if (
+      bookCondition === "OLD " ||
+      bookCondition === "Old" ||
+      bookCondition === "OLD - 35% OFF"
+    )
+      return "Old";
     if (bookCondition === "BOTH") return "New";
     throw new Error(`Invalid book condition: ${bookCondition}`);
   };
 
-  
-const onPaymentSubmit = async (data: FormData) => {
-  console.log("Payment details submitted:", data);
-  if (cartItems.length === 0) {
-    setError("Cart is empty.");
-    return;
-  }
-
-  const paymentMethod = data.paymentMethod;
-  if (!["creditCard", "debitCard", "upi", "cod"].includes(paymentMethod)) {
-    setError("Please select a valid payment method.");
-    return;
-  }
-
-  const paymentTypeMap: { [key: string]: string } = {
-    creditCard: "Credit Card",
-    debitCard: "Debit Card",
-    upi: "UPI",
-    cod: "Cash on Delivery",
-  };
-  const paymentType = paymentTypeMap[paymentMethod] || "Cash on Delivery";
-
-  // Validate stock for all items
-  for (const item of cartItems) {
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/books/${item._id}?t=${new Date().getTime()}`,
-        { cache: "no-store" }
-      );
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
-      }
-      const book = await response.json();
-      console.log(`Fetched book details for ${item._id}:`, book);
-
-      const quantityNew = book.quantityNew ?? 0;
-      const quantityOld = book.quantityOld ?? 0;
-      const itemCondition = mapConditionToOrderSchema(item.condition);
-
-      if (itemCondition === "New" && quantityNew < (item.quantity || 1)) {
-        setError(`Insufficient new stock for ${item.name}. Only ${quantityNew} available.`);
-        return;
-      }
-      if (itemCondition === "Old" && quantityOld < (item.quantity || 1)) {
-        setError(`Insufficient old stock for ${item.name}. Only ${quantityOld} available.`);
-        return;
-      }
-    } catch (err: any) {
-      console.error(`Error checking stock for item ${item._id}:`, err);
-      setError(`Unable to verify stock for ${item.name}. Please try again or contact support.`);
+  const onPaymentSubmit = async () => {
+    if (cartItems.length === 0) {
+      setError("Cart is empty.");
       return;
     }
-  }
 
-  // Create orders for all items
-  try {
+    
     for (const item of cartItems) {
-      const orderCondition = mapConditionToOrderSchema(item.condition);
-      const orderData = {
-        customerName,
-        email,
-        mobileNumber,
-        address: {
-          street: address.street,
-          city: address.city,
-          state: address.state,
-          country: address.country,
-          pinCode: address.postalCode,
-        },
-        paymentType,
-        quantity: item.quantity || 1,
-        price: getEffectivePrice(item) * (item.quantity || 1),
-        status: "Shipped",
-        condition: orderCondition,
-        bookId: item._id,
-      };
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/books/${item._id}?t=${new Date().getTime()}`,
+          { cache: "no-store" }
+        );
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            errorData.error || `HTTP error! Status: ${response.status}`
+          );
+        }
+        const book = await response.json();
 
-      const response = await fetch(`${API_BASE_URL}/orders`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(orderData),
-      });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Failed to place order for ${item.name}: HTTP ${response.status}`);
+        const quantityNew = book.quantityNew ?? 0;
+        setQuantityNew(quantityNew);
+        const quantityOld = book.quantityOld ?? 0;
+        setQuantityOld(quantityOld);
+        const itemCondition = mapConditionToOrderSchema(item.condition);
+        
+
+        if (itemCondition === "New" && quantityNew < (item.quantity || 1)) {
+          setError(
+            `Insufficient new stock for ${item.name}. Only ${quantityNew} available.`
+          );
+          return;
+        }
+        if (itemCondition === "Old" && quantityOld < (item.quantity || 1)) {
+          setError(
+            `Insufficient old stock for ${item.name}. Only ${quantityOld} available.`
+          );
+          return;
+        }
+      } catch  {
+        
+        setError(
+          `Unable to verify stock for ${item.name}. Please try again or contact support.`
+        );
+        return;
       }
-      console.log(`Order placed for ${item.name}:`, await response.json());
     }
-    localStorage.removeItem("cart");
-    setCartItems([]);
-    setShowPaymentForm(false);
-    router.push("/orders");
-  } catch (err: any) {
-    console.error("Error placing order:", err.message);
-    setError(err.message || "Failed to place order. Please try again.");
-  }
-};
 
-  const handleUpiVerify = () => {
-    const upiId = watch("upiId");
-    console.log("Verifying UPI ID:", upiId);
-    alert("UPI verification simulated. Please integrate with a UPI API for real validation.");
+    
+    try {
+      for (const item of cartItems) {
+        const orderCondition = mapConditionToOrderSchema(item.condition);
+        const orderData = {
+          customerName,
+          email,
+          mobileNumber,
+          address: {
+            street: address.street,
+            city: address.city,
+            state: address.state,
+            country: address.country,
+            pinCode: address.postalCode,
+          },
+          
+          quantity: item.quantity || 1,
+          amount: getEffectivePrice(item) * (item.quantity || 1) * 100,
+          price: item.price,
+          
+          condition: orderCondition,
+          bookId: item._id,
+        };
+
+        
+        const resp = await fetch(`${API_BASE_URL}/order`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(orderData),
+          
+          credentials: "include",
+        }).then((r) => r.json());
+       
+
+        const options = {
+          key: resp.keyId,
+          amount: resp.amount,
+          currency: resp.currency,
+          order_id: resp.orderId,
+          name: "Your Store",
+          prefill: {
+            email: resp.email,
+            contact: resp.phone,
+            name: resp.username,
+          },
+          callback_url: resp.callback_url, 
+          handler: async (response: RazorpayResponse) => {
+            try {
+              const verifyRes = await fetch(`${API_BASE_URL}/verify`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(response),
+              }).then((r) => r.json());
+
+              if (verifyRes.ok) {
+                localStorage.removeItem("cart");
+                setCartItems([]);
+                setShowPaymentForm(false);
+                router.push("/profile?tab=orders");
+              } else {
+                setError(
+                  "Payment verification failed. Please contact support."
+                );
+              }
+            } catch  {
+              
+              setError("Payment verification failed. Please try again.");
+            }
+          },
+
+          
+          modal: {
+            ondismiss: () => {
+              
+              setError("Payment cancelled. You can try again.");
+            },
+          },
+        };
+
+        
+        const rzp = new window.Razorpay(options);
+
+        
+        rzp.on("payment.failed", (response: RazorpayResponseError) => {
+          
+          setError(
+            `Payment failed: ${response.error.description} (${response.error.reason})`
+          );
+        });
+
+        
+        rzp.open();
+      
+      }
+    } catch  {
+      
+    }
   };
 
   return (
     <main className="max-w-6xl mx-auto py-10 px-4">
       <nav className="flex items-center text-sm text-gray-500 mb-4">
-        <Link href="/" className="hover:underline">Home</Link> / <span>Cart</span>
+        <Link href="/" className="hover:underline">
+          Home
+        </Link>{" "}
+        / <span>Cart</span>
       </nav>
       <h1 className="text-4xl font-semibold mb-6 text-black">Your Book Cart</h1>
       {error && <p className="text-red-500 mb-4">{error}</p>}
@@ -280,9 +432,11 @@ const onPaymentSubmit = async (data: FormData) => {
             {cartItems.map((item) => (
               <div
                 key={item._id}
-                className="flex items-center justify-between bg-white p-4 rounded-lg shadow-md"
+                className="flex flex-wrap gap-4 items-center justify-between bg-white p-4 rounded-lg shadow-md"
               >
-                <img
+                <Image
+                  width={100}
+                  height={130}
                   src={item.imageUrl || defaultImageUrl}
                   alt={item.name}
                   className="w-24 h-32 object-cover rounded-md"
@@ -292,32 +446,56 @@ const onPaymentSubmit = async (data: FormData) => {
                 />
                 <div className="flex-1 ml-4">
                   <h3 className="text-lg font-semibold">{item.name}</h3>
-                  <div className="flex items-center space-x-2">
-                    {item.discountedPrice > 0 && item.discountedPrice < item.price ? (
+                  <div className="flex  flex-wrap gap-4 items-center space-x-2">
+                    {item.discountedPrice > 0 &&
+                    item.discountedPrice < item.price ? (
                       <>
-                        <span className="text-sm text-gray-500 line-through">₹{item.price.toFixed(2)}</span>
-                        <span className="text-orange-500 font-bold">₹{item.discountedPrice.toFixed(2)}</span>
+                        <span className="text-sm text-gray-500 line-through">
+                          ₹{item.price.toFixed(2)}
+                        </span>
+                        <span className="text-orange-500 font-bold">
+                          ₹{item.discountedPrice.toFixed(2)}
+                        </span>
                         <span className="text-sm text-gray-600">
-                          ({((1 - item.discountedPrice / item.price) * 100).toFixed(0)}% off)
+                          (
+                          {(
+                            (1 - item.discountedPrice / item.price) *
+                            100
+                          ).toFixed(0)}
+                          % off)
                         </span>
                       </>
                     ) : (
-                      <span className="text-orange-500 font-bold">₹{item.price.toFixed(2)}</span>
+                      <span className="text-orange-500 font-bold">
+                        ₹{item.price.toFixed(2)}
+                      </span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600">Condition: {item.condition}</p>
+                  <p className="text-sm text-gray-600">
+                    Condition: {item.condition}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Stock:{" "}
+                    {item.condition === "New" ? quantityNew : quantityOld}
+                  </p>
                 </div>
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-2">
                     <button
-                      onClick={() => updateQuantity(item._id, (item.quantity || 1) - 1)}
+                      onClick={() =>
+                        updateQuantity(item._id, (item.quantity || 1) - 1)
+                      }
                       className="w-8 h-8 bg-gray-200 text-black rounded-full hover:bg-gray-300"
                     >
                       -
                     </button>
-                    <span className="w-8 text-center">{item.quantity || 1}</span>
+                    <span className="w-8 text-center">
+                      {item.quantity || 1}
+                    </span>
                     <button
-                      onClick={() => updateQuantity(item._id, (item.quantity || 1) + 1)}
+                      onClick={() =>
+                        updateQuantity(item._id, (item.quantity || 1) + 1)
+                      }
                       className="w-8 h-8 bg-gray-200 text-black rounded-full hover:bg-gray-300"
                     >
                       +
@@ -337,7 +515,9 @@ const onPaymentSubmit = async (data: FormData) => {
             <h2 className="text-xl font-semibold text-black">Order Summary</h2>
             <p className="text-gray-600">Subtotal: ₹{getTotal().toFixed(2)}</p>
             <p className="text-gray-600">Shipping: Free (over ₹100)</p>
-            <p className="text-gray-600 font-semibold mt-2">Total: ₹{getTotal().toFixed(2)}</p>
+            <p className="text-gray-600 font-semibold mt-2">
+              Total: ₹{getTotal().toFixed(2)}
+            </p>
             {showAddressForm ? (
               <form onSubmit={handleAddressSubmit} className="mt-4 space-y-4">
                 <div className="grid grid-cols-1 gap-4">
@@ -437,77 +617,7 @@ const onPaymentSubmit = async (data: FormData) => {
                 onSubmit={handleSubmit(onPaymentSubmit)}
                 className="mt-4 space-y-4"
               >
-                <div>
-                  <select
-                    {...register("paymentMethod", { required: "Payment method is required" })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  >
-                    <option value="" disabled>
-                      Select Payment Method
-                    </option>
-                    <option value="creditCard">Credit Card</option>
-                    <option value="debitCard">Debit Card</option>
-                    <option value="upi">UPI</option>
-                    <option value="cod">Cash on Delivery</option>
-                  </select>
-                  {errors.paymentMethod && <p className="text-red-500 text-sm">{errors.paymentMethod.message}</p>}
-                </div>
-                {(watch("paymentMethod") === "creditCard" || watch("paymentMethod") === "debitCard") && (
-                  <>
-                    <input
-                      type="text"
-                      {...register("cardNumber", { required: "Card number is required" })}
-                      placeholder="1234 5678 9012 3456"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
-                    {errors.cardNumber && <p className="text-red-500 text-sm">{errors.cardNumber.message}</p>}
-                    <input
-                      type="text"
-                      {...register("cardholderName", { required: "Cardholder name is required" })}
-                      placeholder="John Doe"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
-                    {errors.cardholderName && <p className="text-red-500 text-sm">{errors.cardholderName.message}</p>}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <input
-                          type="text"
-                          {...register("cvv", { required: "CVV is required" })}
-                          placeholder="123"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        />
-                        {errors.cvv && <p className="text-red-500 text-sm">{errors.cvv.message}</p>}
-                      </div>
-                      <div>
-                        <input
-                          type="text"
-                          {...register("expiryDate", { required: "Expiry date is required" })}
-                          placeholder="MM/YY"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        />
-                        {errors.expiryDate && <p className="text-red-500 text-sm">{errors.expiryDate.message}</p>}
-                      </div>
-                    </div>
-                  </>
-                )}
-                {watch("paymentMethod") === "upi" && (
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      {...register("upiId", { required: "UPI ID is required" })}
-                      placeholder="example@upi"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
-                    {errors.upiId && <p className="text-red-500 text-sm">{errors.upiId.message}</p>}
-                    <button
-                      type="button"
-                      onClick={handleUpiVerify}
-                      className="bg-gray-200 text-black rounded-full py-2 px-4 hover:bg-gray-300"
-                    >
-                      Verify
-                    </button>
-                  </div>
-                )}
+               
                 <button
                   type="submit"
                   className="w-full bg-teal-600 text-white rounded-full py-2 hover:bg-teal-700"
@@ -518,7 +628,7 @@ const onPaymentSubmit = async (data: FormData) => {
             ) : (
               <button
                 onClick={() => setShowAddressForm(true)}
-                className="mt-4 w-full bg-teal-600 text-white rounded-full py-2 hover:bg-teal-700"
+                className="mt-4 w-full  md:w-50 bg-teal-600 text-white rounded-full py-2 hover:bg-teal-700"
               >
                 Proceed to Checkout
               </button>

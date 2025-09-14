@@ -1,5 +1,7 @@
 import React from "react";
-import { Content } from "../page";
+import { Content } from "../../order-product-management/types";
+import Image from "next/image";
+
 
 interface ContentListProps {
   contents: Content[];
@@ -39,7 +41,9 @@ const ContentList: React.FC<ContentListProps> = ({ contents, onEdit, onDelete })
             {contents.map((content) => (
               <tr key={content.id}>
                 <td className="px-2 py-2 whitespace-nowrap">
-                  <img
+                  <Image
+                  width={100}
+                  height={100}
                     src={content.imageUrl || defaultImageUrl}
                     alt={content.title}
                     className="h-24 w-24 object-cover rounded"

@@ -5,7 +5,7 @@ import Image from 'next/image';
 export default function Footer() {
   return (
     <footer className="bg-gray-900 text-white py-6">
-      <div className="container mx-auto px-29 flex flex-col md:flex-row justify-between items-start space-y-6 md:space-y-0">
+      <div className="container md:mx-auto px-20 md:px-29 flex flex-col md:flex-row justify-between items-start space-y-6 md:space-y-0 ">
         {/* Logo and Contact Info */}
         <div className="flex flex-col items-start">
           <div className="flex items-center mb-2 rounded-xl">
@@ -60,7 +60,7 @@ export default function Footer() {
             <li><p  className="hover:underline">About Us</p></li>
             <li><p  className="hover:underline">Disclaimer</p></li>
             <li><p  className="hover:underline">Privacy Policy</p></li>
-            <li><p  className="hover:underline">FAQ's</p></li>
+            <li><p  className="hover:underline">FAQ&apos;s</p></li>
           </ul>
         </div>
 
@@ -77,7 +77,7 @@ export default function Footer() {
       </div>
 
       {/* Bottom Section */}
-      <div className="container mx-auto px-29 mt-6 border-t border-gray-700 pt-4 flex flex-col md:flex-row justify-between items-center text-sm">
+      <div className="container mx-auto px-20 md:px-29 mt-6 border-t border-gray-700 pt-4 flex flex-col md:flex-row justify-between items-center text-sm">
         <p>Copyright © 2025 Harsh Book Center</p>
         <div className="flex space-x-2 mt-2 md:mt-0">
           <span>We Using Safe Payment For</span>

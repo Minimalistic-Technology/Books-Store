@@ -11,30 +11,31 @@ import {
   faAngleDoubleRight,
 } from "@fortawesome/free-solid-svg-icons";
 import { API_BASE_URL } from "../../../utils/api";
+import { Content } from "../order-product-management/types";
 
-export type Content = {
-  id?: string;
-  title: string;
-  categoryName: string;
-  subCategory: string;
-  categoryPath: string;
-  tags: string;
-  author: string;
-  publisher: string;
-  price: number;
-  condition: string;
-  quantityNew?: number;
-  discountNew?: number;
-  quantityOld?: number;
-  discountOld?: number;
-  imageUrl: string;
-  estimatedDelivery: string;
-  description: string;
-  seoTitle?: string;
-  seoDescription?: string;
-  createdAt?: string;
-  updatedAt?: string;
-};
+// export type Content = {
+//   id?: string;
+//   title: string;
+//   categoryName: string;
+//   subCategory: string;
+//   categoryPath: string;
+//   tags: string;
+//   author: string;
+//   publisher: string;
+//   price: number;
+//   condition: string;
+//   quantityNew?: number;
+//   discountNew?: number;
+//   quantityOld?: number;
+//   discountOld?: number;
+//   imageUrl: string;
+//   estimatedDelivery: string;
+//   description: string;
+//   seoTitle?: string;
+//   seoDescription?: string;
+//   createdAt?: string;
+//   updatedAt?: string;
+// };
 
 interface Category {
   _id: string;
@@ -45,12 +46,12 @@ interface Category {
 }
 
 // Non-exported utility function to avoid type conflict
-const updateProducts = (
-  newProducts: Content[],
-  callback: (products: Content[]) => void
-) => {
-  callback(newProducts);
-};
+// const updateProducts = (
+//   newProducts: Content[],
+//   callback: (products: Content[]) => void
+// ) => {
+//   callback(newProducts);
+// };
 
 // Helper function to flatten category hierarchy for dropdown
 const flattenCategories = (
@@ -92,23 +93,26 @@ export default function ContentManagement() {
       const categoriesResponse = await fetch(`${API_BASE_URL}/book-categories`);
       if (!categoriesResponse.ok) throw new Error("Failed to fetch categories");
       const categoriesData: Category[] = await categoriesResponse.json();
-      console.log("Categories Data:", categoriesData); // Debug
+       // Debug
       setCategories(categoriesData);
 
       const allBooks: Content[] = [];
       const fetchPromises = categoriesData.map(async (category: Category) => {
         if (!category.path) return []; // Skip invalid categories
         try {
+          // const booksResponse = await fetch(
+          //   `${API_BASE_URL}/products`
+          // );
           const booksResponse = await fetch(
             `${API_BASE_URL}/books/${encodeURIComponent(category.path)}`
           );
           if (!booksResponse.ok) {
-            console.warn(`Failed to fetch books for ${category.path}`);
+            
             return [];
           }
           const booksData = await booksResponse.json();
-          const books = Array.isArray(booksData) ? booksData : [];
-          return books.map((book: any) => ({
+          const books: Content[] = Array.isArray(booksData) ? booksData : [];
+          return books.map((book) => ({
             id: book._id,
             title: book.bookName || book.title || "",
             categoryName: book.categoryName || "",
@@ -138,11 +142,8 @@ export default function ContentManagement() {
             createdAt: book.createdAt || "",
             updatedAt: book.updatedAt || "",
           }));
-        } catch (error) {
-          console.error(
-            `Error fetching books for category ${category.path}:`,
-            error
-          );
+        } catch {
+          
           return [];
         }
       });
@@ -150,9 +151,14 @@ export default function ContentManagement() {
       const results = await Promise.all(fetchPromises);
       allBooks.push(...results.flat());
       setContents(allBooks);
-    } catch (err: any) {
-      setError(err.message || "Failed to load categories or books");
-      setTimeout(() => setError(""), 5000);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+        setTimeout(() => setError(""), 5000);
+      } else {
+        setError("Failed to load categories or books");
+        setTimeout(() => setError(""), 5000);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -192,6 +198,7 @@ export default function ContentManagement() {
           discountOld: data.discountOld ?? 0,
           categoryPath: data.categoryPath,
         }),
+        credentials:"include"
       });
 
       if (!response.ok) {
@@ -249,11 +256,16 @@ export default function ContentManagement() {
       setIsFormOpen(false);
       setEditingContent(undefined);
       await fetchCategoriesAndContents();
-    } catch (err: any) {
-      setError(
-        err.message || `Failed to ${data.id ? "update" : "create"} book`
-      );
-      setTimeout(() => setError(""), 5000);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(
+          err.message || `Failed to ${data.id ? "update" : "create"} book`
+        );
+        setTimeout(() => setError(""), 5000);
+      } else {
+        setError(`Failed to ${data.id ? "update" : "create"} book`);
+        setTimeout(() => setError(""), 5000);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -276,9 +288,14 @@ export default function ContentManagement() {
       setContents((prev) => prev.filter((content) => content.id !== id));
       setSuccessMessage("Book deleted successfully");
       setTimeout(() => setSuccessMessage(""), 3000);
-    } catch (err: any) {
-      setError(err.message || "Failed to delete book");
-      setTimeout(() => setError(""), 5000);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message || "Failed to delete book");
+        setTimeout(() => setError(""), 5000);
+      } else {
+        setError("Failed to delete book");
+        setTimeout(() => setError(""), 5000);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -298,7 +315,7 @@ export default function ContentManagement() {
         body: JSON.stringify({
           name: newCategoryName.trim(),
           parentPath: parentPath || undefined,
-        }),
+        }),credentials:"include"
       });
       if (!response.ok) {
         const errorData = await response.json();
@@ -323,9 +340,14 @@ export default function ContentManagement() {
       setParentPath("");
       setSuccessMessage(`Category '${newCategoryName}' added successfully`);
       setTimeout(() => setSuccessMessage(""), 3000);
-    } catch (err: any) {
-      setError(err.message || "Failed to create category");
-      setTimeout(() => setError(""), 3000);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+        setTimeout(() => setError(""), 3000);
+      } else {
+        setError("Failed to create category");
+        setTimeout(() => setError(""), 3000);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -346,7 +368,9 @@ export default function ContentManagement() {
     try {
       setIsLoading(true);
       const response = await fetch(
-        `${API_BASE_URL}/book-categories/${encodeURIComponent(categoryToDelete)}`,
+        `${API_BASE_URL}/book-categories/${encodeURIComponent(
+          categoryToDelete
+        )}`,
         { method: "DELETE" }
       );
       if (!response.ok) {
@@ -375,9 +399,14 @@ export default function ContentManagement() {
       setSuccessMessage(`Category '${categoryToDelete}' deleted successfully`);
       setTimeout(() => setSuccessMessage(""), 3000);
       await fetchCategoriesAndContents();
-    } catch (err: any) {
-      setError(err.message || "Failed to delete category");
-      setTimeout(() => setError(""), 3000);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+        setTimeout(() => setError(""), 3000);
+      } else {
+        setError("Failed to delete category");
+        setTimeout(() => setError(""), 3000);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -401,7 +430,7 @@ export default function ContentManagement() {
     const pageNumbers: (number | string)[] = [];
     const maxVisiblePages = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
 
     if (endPage - startPage < maxVisiblePages - 1) {
       startPage = Math.max(1, endPage - maxVisiblePages + 1);
@@ -427,9 +456,11 @@ export default function ContentManagement() {
   const flattenedCategories = flattenCategories(categories);
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Content Management</h1>
+    <div className="p-6 pt-12">
+      <div className="flex flex-wrap justify-between items-center mb-6 gap-4 md:gap-0">
+        <h1 className="text-[27px] md:text-3xl font-bold text-gray-900">
+          Content Management
+        </h1>
         <button
           onClick={() => {
             setEditingContent(undefined);
@@ -443,7 +474,7 @@ export default function ContentManagement() {
       </div>
 
       <div className="mb-6">
-        <div className="flex items-center gap-4 mb-4">
+        <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mb-4">
           <input
             type="text"
             value={searchTerm}
@@ -482,7 +513,7 @@ export default function ContentManagement() {
             <label className="block text-gray-800 font-medium mb-2">
               Add New Category
             </label>
-            <div className="flex gap-2">
+            <div className="p-2 flex flex-wrap gap-2">
               <input
                 type="text"
                 value={newCategoryName}
@@ -494,7 +525,7 @@ export default function ContentManagement() {
               <select
                 value={parentPath}
                 onChange={(e) => setParentPath(e.target.value)}
-                className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="flex-1 min-w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                 disabled={isLoading}
               >
                 <option value="">Select Parent Category (Root)</option>
@@ -518,7 +549,7 @@ export default function ContentManagement() {
             <label className="block text-gray-800 font-medium mb-2">
               Delete Category
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <select
                 value={categoryToDelete}
                 onChange={(e) => setCategoryToDelete(e.target.value)}
@@ -574,8 +605,14 @@ export default function ContentManagement() {
             </button>
             {getPageNumbers().map((page, index) => (
               <button
-                key={typeof page === "number" ? `page-${page}` : `ellipsis-${index}`}
-                onClick={() => typeof page === "number" && handlePageChange(page)}
+                key={
+                  typeof page === "number"
+                    ? `page-${page}`
+                    : `ellipsis-${index}`
+                }
+                onClick={() =>
+                  typeof page === "number" && handlePageChange(page)
+                }
                 disabled={page === "..." || currentPage === page}
                 className={`px-3 py-1 rounded-md ${
                   currentPage === page

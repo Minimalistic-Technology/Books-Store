@@ -125,7 +125,7 @@ export default function PasswordSetupForm() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen w-full bg-white font-serif text-gray-900">
+    <div className="flex flex-col min-h-screen w-full bg-white  text-gray-900">
       <div className="flex flex-col items-center justify-center flex-1 px-4 py-10">
         <div className="flex flex-col items-center mb-6">
           <img
@@ -213,7 +213,7 @@ export default function PasswordSetupForm() {
               className="w-full border border-gray-300 rounded-md px-4 py-2 mt-1 text-sm focus:ring-2 focus:ring-teal-500"
             >
               <option value="User">User</option>
-              <option value="Admin">Admin</option>
+              {/* <option value="Admin">Admin</option> */}
             </select>
             {errors.role && (
               <p className="text-sm text-red-500 mt-1">{errors.role}</p>

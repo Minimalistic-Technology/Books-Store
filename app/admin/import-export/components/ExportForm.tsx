@@ -2,13 +2,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Content } from "../../content-management/page"; 
-import { API_BASE_URL } from '../../../../utils/api';
 
-export interface User {
-  username: string;
-  email: string;
-}
+import { API_BASE_URL } from '../../../../utils/api';
+import {  Content, User } from "../../order-product-management/types";
+
+
 
 type ExportFormProps = {
   onExport: (data: { type: "users" | "products"; format: "csv" | "excel" }) => void;
@@ -24,68 +22,25 @@ export default function ExportForm({ onExport }: ExportFormProps) {
     const fetchUsers = async () => {
       setLoading(true);
       try {
-        const response = await fetch(`${API_BASE_URL}/users`);
+        const response = await fetch(`${API_BASE_URL}/users`,{credentials:"include"});
         if (!response.ok) throw new Error("Failed to fetch users");
         const data = await response.json();
         setUsers(data);
-      } catch (error) {
-        console.error("Failed to fetch users:", error);
+      } catch  {
+        
       }
     };
 
     const fetchProducts = async () => {
       setLoading(true);
       try {
-        const categoriesResponse = await fetch(`${API_BASE_URL}/book-categories`);
-        if (!categoriesResponse.ok) throw new Error("Failed to fetch categories");
-        const categoriesData = await categoriesResponse.json();
+        const booksRes = await fetch(`${API_BASE_URL}/books`,{credentials:"include"});
+        const books = await booksRes.json()
+        
+        setProducts(books);
 
-        const allBooks: Content[] = [];
-        const fetchPromises = categoriesData.map(async (category: any) => {
-          try {
-            const booksResponse = await fetch(
-              `${API_BASE_URL}/book-categories/${encodeURIComponent(category.name)}`
-            );
-            if (!booksResponse.ok) {
-              console.warn(`Failed to fetch books for ${category.name}`);
-              return [];
-            }
-            const booksData = await booksResponse.json();
-            const books = Array.isArray(booksData.books) ? booksData.books : [];
-            return books.map((book: any) => ({
-              id: book._id,
-              title: book.title || "",
-              categoryName: category.name,
-              subCategory: book.subCategory || "",
-              tags: Array.isArray(book.tags) ? book.tags.join(", ") : book.tags || "",
-              seoTitle: book.seoTitle || "",
-              seoDescription: book.seoDescription || "",
-              price: book.price || 0,
-              description: book.description || "",
-              estimatedDelivery: book.estimatedDelivery || "",
-              condition: book.condition || "NEW - ORIGINAL PRICE",
-              author: book.author || "",
-              publisher: book.publisher || "",
-              imageUrl: book.imageUrl || "",
-              quantityNew: book.quantityNew || 0,
-              quantityOld: book.quantityOld || 0,
-              discountNew: book.discountNew || 0,
-              discountOld: book.discountOld || 0,
-              bookName: book.bookName || "",
-              createdAt: book.createdAt || "",
-              updatedAt: book.updatedAt || "",
-            }));
-          } catch (error) {
-            console.error(`Error fetching books for category ${category.name}:`, error);
-            return [];
-          }
-        });
-
-        const results = await Promise.all(fetchPromises);
-        allBooks.push(...results.flat());
-        setProducts(allBooks);
-      } catch (error) {
-        console.error("Failed to fetch products:", error);
+      } catch  {
+        
       } finally {
         setLoading(false);
       }
@@ -174,8 +129,8 @@ export default function ExportForm({ onExport }: ExportFormProps) {
           ...products.map((product) =>
             [
               `"${product.title}"`,
-              `"${product.categoryName}"`,
-              `"${product.subCategory}"`,
+              `"${product.categoryPath.split("/")[0]}"`,
+              `"${product.categoryPath.split("/")[1]}"`,
               `"${product.tags}"`,
               `"${product.author}"`,
               `"${product.publisher}"`,
@@ -208,8 +163,8 @@ export default function ExportForm({ onExport }: ExportFormProps) {
           ...products.map((product) =>
             [
               product.title,
-              product.categoryName,
-              product.subCategory,
+              product.categoryPath.split("/")[0],
+              product.categoryPath.split("/")[1],
               product.tags,
               product.author,
               product.publisher,

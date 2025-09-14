@@ -121,6 +121,7 @@ const RequestBookPage: React.FC = () => {
 
     if (!hasErrors) {
       try {
+        
         const response = await fetch(`${API_BASE_URL}/book-requests`, {
           method: 'POST',
           headers: {
@@ -133,32 +134,33 @@ const RequestBookPage: React.FC = () => {
             bookTitle: formData.bookTitle.trim(),
             publisher: formData.publisher.trim(),
             author: formData.author.trim(),
-            classLevel: formData.className.trim(),
+            classLevel: formData.className.trim().toLowerCase(),
             message: formData.message.trim(),
           }),
+          credentials:"include"
         });
 
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
 
-        const result = await response.json();
-        console.log("Request submitted:", result);
+        // const result = await response.json();
+        
         setIsSubmitted(true);
         setApiError(null);
 
         setTimeout(() => {
-          router.push("/");
+          router.push("/profile?tab=requests");
         }, 3000);
-      } catch (err) {
-        console.error("API error:", err);
+      } catch  {
+        
         setApiError("Failed to submit request. Please try again later.");
       }
     }
   };
 
   return (
-    <div className="flex flex-col min-h-screen w-full bg-white font-serif relative">
+    <div className="flex flex-col min-h-screen w-full bg-white  relative">
       <div className="absolute top-10 left-10 text-orange-600 opacity-20 animate-pulse">
         <FontAwesomeIcon icon={faBookOpen} size="3x" />
       </div>
@@ -170,7 +172,7 @@ const RequestBookPage: React.FC = () => {
       </div>
 
       <div className="relative flex flex-1 items-center justify-center p-6 z-10">
-        <div className="w-full max-w-lg bg-white border border-gray-200 rounded-xl p-6 shadow-xl">
+        <div className="w-full max-w-lg  border border-gray-200 rounded-xl p-6 shadow-xl">
           <div className="flex flex-col items-center mb-6">
             <Link href="/">
               <Image
@@ -185,7 +187,7 @@ const RequestBookPage: React.FC = () => {
               Request a Book
             </h1>
             <p className="text-base md:text-lg text-gray-600 text-center">
-              Let us know which book you'd like us to source for you.
+              Let us know which book you&apos;d like us to source for you.
             </p>
           </div>
 

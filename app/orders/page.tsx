@@ -6,32 +6,33 @@ import Footer from "../components/footer/page";
 import Link from "next/link";
 import Image from "next/image";
 import { API_BASE_URL } from '../../utils/api';
+import { Order } from "../admin/order-product-management/types";
 
-interface Order {
-  id: string;
-  customerName: string;
-  email: string;
-  mobileNumber: string;
-  address: {
-    street: string;
-    city: string;
-    state: string;
-    country: string;
-    pinCode: string;
-  };
-  paymentType: 'Credit Card' | 'Debit Card' | 'UPI' | 'Cash on Delivery';
-  quantity: number;
-  price: number;
-  status: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
-  condition: 'New' | 'Old';
-  createdAt: string;
-  updatedAt: string;
-  bookId: string;
-  date?: string;
-  title?: string;
-  imageUrl?: string | null;
-  cancelReason?: string | null;
-}
+// interface Order {
+//   id: string;
+//   customerName: string;
+//   email: string;
+//   mobileNumber: string;
+//   address: {
+//     street: string;
+//     city: string;
+//     state: string;
+//     country: string;
+//     pinCode: string;
+//   };
+//   paymentType: 'Credit Card' | 'Debit Card' | 'UPI' | 'Cash on Delivery';
+//   quantity: number;
+//   price: number;
+//   status: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
+//   condition: 'New' | 'Old';
+//   createdAt: string;
+//   updatedAt: string;
+//   bookId: string;
+//   date?: string;
+//   title?: string;
+//   imageUrl?: string | null;
+//   cancelReason?: string | null;
+// }
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -46,13 +47,14 @@ const OrdersPage = () => {
       try {
         const response = await fetch(`${API_BASE_URL}/cancel-reasons`, {
           cache: "no-store",
+          credentials:"include"
         });
         if (!response.ok) throw new Error(`Failed to fetch cancel reasons: ${response.status}`);
         const data = await response.json();
-        console.log("Cancel reasons response:", data);
+        
         setReasonOptions(data.reasons || []);
-      } catch (err: any) {
-        console.error("Error fetching cancel reasons:", err);
+      } catch  {
+        
       }
     };
     fetchCancelReasons();
@@ -62,18 +64,19 @@ const OrdersPage = () => {
     const fetchOrders = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${API_BASE_URL}/orders`, {
+        const response = await fetch(`${API_BASE_URL}/my-orders`, {
           cache: "no-store",
+          credentials:"include"
         });
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
         }
         const data = await response.json();
-        console.log("Raw orders API response:", data);
+        
         const ordersArray = Array.isArray(data) ? data : data.orders || [];
-        console.log("Orders array:", ordersArray);
-        const mappedOrders = ordersArray.map((order: any) => ({
+        
+        const mappedOrders = ordersArray.map((order:Order) => ({
           id: order._id,
           customerName: order.customerName,
           email: order.email,
@@ -92,11 +95,11 @@ const OrdersPage = () => {
           imageUrl: order.imageUrl || null,
           cancelReason: order.cancelReason || null,
         }));
-        console.log("Mapped orders:", mappedOrders);
+        
         setOrders(mappedOrders);
         setError(null);
-      } catch (err: any) {
-        console.error("Error fetching orders:", err);
+      } catch (err) {
+        if(err instanceof Error)
         setError(err.message || "Failed to fetch orders. Please try again later.");
       } finally {
         setLoading(false);
@@ -106,9 +109,9 @@ const OrdersPage = () => {
   }, []);
 
   const handleCancelOrder = async (orderId: string) => {
-    console.log("Attempting to cancel order with ID:", orderId);
+    
     if (!orderId) {
-      console.error("Order ID is undefined");
+      
       setError("Invalid order ID.");
       return;
     }
@@ -128,7 +131,7 @@ const OrdersPage = () => {
         throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
       }
       const updatedOrder = await response.json();
-      console.log("Cancel order response:", updatedOrder);
+      
       setOrders((prev) =>
         prev.map((order) =>
           order.id === orderId
@@ -152,16 +155,16 @@ const OrdersPage = () => {
         return newCustomReasons;
       });
       setError(null);
-    } catch (err: any) {
-      console.error("Error cancelling order:", err);
+    } catch (err) {
+      if(err instanceof Error)
       setError(err.message || "Failed to cancel order. Please try again.");
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-yellow-50 text-yellow-900 font-serif">
+    <div className="min-h-screen flex flex-col bg-yellow-50 text-yellow-900 ">
       <Header />
-      <main className="flex-grow p-6 w-full max-w-6xl mx-auto">
+      <main className="flex-col p-6 w-full max-w-6xl mx-auto">
         <h1 className="text-3xl font-semibold mb-6">Your Orders</h1>
         {loading && <p className="text-yellow-900">Loading...</p>}
         {error && <p className="text-red-500 mb-4">{error}</p>}
@@ -176,7 +179,7 @@ const OrdersPage = () => {
           <div className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto scrollable-orders">
             <div className="grid grid-cols-1 gap-4">
               {orders.map((order) => (
-                <div key={order.id} className="bg-white p-4 rounded-lg shadow-md flex items-center justify-between w-full">
+                <div key={order.id} className="bg-white p-4 rounded-lg shadow-md flex flex-col md:flex-row items-center justify-between w-full">
                   <div className="flex items-center space-x-4">
                     {order.imageUrl ? (
                       <Image
@@ -228,13 +231,13 @@ const OrdersPage = () => {
                       )}
                     </div>
                   </div>
-                  <div className="flex space-x-2 items-center">
+                  <div className="flex flex-col md:flex-row gap-3 space-x-2 items-center">
                     {(order.status === "Processing" || order.status === "Shipped") && (
                       <div className="flex flex-col space-y-2">
                         <select
                           value={cancelReasons[order.id] || ""}
                           onChange={(e) => setCancelReasons((prev) => ({ ...prev, [order.id]: e.target.value }))}
-                          className="px-2 py-1 border rounded-lg text-gray-900"
+                          className="px-2 w-full py-1 border rounded-lg text-gray-900 my-2"
                         >
                           <option value="" disabled>Select a reason</option>
                           {reasonOptions.map((reason) => (

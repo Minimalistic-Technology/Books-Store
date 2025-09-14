@@ -61,14 +61,24 @@ export default function AddOrderForm({ onClose, onSave }: AddOrderFormProps) {
         });
         if (!response.ok) throw new Error("Failed to fetch categories");
         const data = await response.json();
-        console.log("Categories response:", data);
+        
         setCategories(Array.isArray(data) ? data : []);
-      } catch (err: any) {
-        console.error("Error fetching categories:", err);
+      } catch (err) {
+        if (err instanceof Error) {
+            
         setErrors((prev) => ({
           ...prev,
           general: "Failed to load categories",
         }));
+          
+        } else {
+            
+        setErrors((prev) => ({
+          ...prev,
+          general: "Failed to load categories",
+        }));
+        }
+    
       } finally {
         setIsLoading(false);
       }
@@ -85,17 +95,17 @@ export default function AddOrderForm({ onClose, onSave }: AddOrderFormProps) {
     const fetchSubCategories = async () => {
       setIsLoading(true);
       try {
-        console.time("fetchSubCategories");
+        
         const response = await fetch(
           `${API_BASE_URL}/book-categories/${encodeURIComponent(selectedCategory)}/tags`,
           { cache: "no-store" }
         );
         if (!response.ok) throw new Error("Failed to fetch subcategory tags");
         const data = await response.json();
-        console.log("Subcategories response:", data);
+        
         const tags = Array.isArray(data) ? data : data.tags ? data.tags : [];
         if (!Array.isArray(tags)) {
-          console.error("Subcategories is not an array:", tags);
+          
           setErrors((prev) => ({
             ...prev,
             general: "Invalid subcategory data received",
@@ -104,9 +114,9 @@ export default function AddOrderForm({ onClose, onSave }: AddOrderFormProps) {
         } else {
           setSubCategories(tags);
         }
-        console.timeEnd("fetchSubCategories");
-      } catch (err: any) {
-        console.error("Error fetching subcategories:", err);
+        
+      } catch  {
+        
         setErrors((prev) => ({
           ...prev,
           general: "Failed to load subcategories",
@@ -133,13 +143,13 @@ export default function AddOrderForm({ onClose, onSave }: AddOrderFormProps) {
         );
         if (!response.ok) throw new Error("Failed to fetch books");
         const data = await response.json();
-        console.log("Books response:", data);
+        
         const filteredBooks = (data.books || []).filter(
           (book: Book) => book.subCategory === selectedSubCategory
         );
         setBooks(filteredBooks);
-      } catch (err: any) {
-        console.error("Error fetching books:", err);
+      } catch  {
+        
         setErrors((prev) => ({ ...prev, general: "Failed to load books" }));
       } finally {
         setIsLoading(false);
@@ -244,7 +254,7 @@ export default function AddOrderForm({ onClose, onSave }: AddOrderFormProps) {
         condition: formData.condition,
         bookId: formData.bookId,
       };
-      console.log("Submitting payload:", payload);
+      
       const response = await fetch(`${API_BASE_URL}/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -255,7 +265,7 @@ export default function AddOrderForm({ onClose, onSave }: AddOrderFormProps) {
         throw new Error(errorData.message || "Failed to create order");
       }
       const result = await response.json();
-      console.log("Order creation response:", result);
+      
       onSave({
         id: result.order._id,
         customerName: result.order.customerName,
@@ -280,12 +290,23 @@ export default function AddOrderForm({ onClose, onSave }: AddOrderFormProps) {
         shippingAddress: result.order.address,
       });
       onClose();
-    } catch (err: any) {
-      console.error("Error creating order:", err);
-      setErrors((prev) => ({
-        ...prev,
-        general: err.message || "Failed to create order. Please try again.",
-      }));
+    } catch (err) {
+      if(err instanceof Error){
+
+        
+        setErrors((prev) => ({
+          ...prev,
+          general: err.message || "Failed to create order. Please try again.",
+        }));
+      }
+      else{
+        
+        setErrors((prev) => ({
+          ...prev,
+          general: "Failed to create order. Please try again.",
+        }));
+
+      }
     }
   };
 

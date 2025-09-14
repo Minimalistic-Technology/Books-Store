@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Content } from "../page";
-import { API_BASE_URL } from "../../../../utils/api";
+
+
+import Image from "next/image";
+import { Content } from "../../order-product-management/types";
 
 interface Category {
   _id: string;
@@ -131,10 +133,17 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
 
         const data = await response.json();
         return data.secure_url;
-      } catch (err: any) {
-        console.error("Image upload error:", err);
+      } catch (err) {
+        if (err instanceof Error) {
+          
         setError(`Failed to upload image: ${err.message}. Using default image.`);
         return defaultImageUrl;
+          
+        } else {
+          
+        setError(`Failed to upload image: ${err}. Using default image.`);
+        return defaultImageUrl;
+        }
       }
     }
 
@@ -210,10 +219,17 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
       setError("");
       setIsSubmitting(false);
       onClose();
-    } catch (err: any) {
-      console.error("Error saving content:", err);
-      setError(err.message || "Failed to save content");
+    } catch (err) {
+     if (err instanceof Error) {
+       
+      setError(err.message);
       setIsSubmitting(false);
+      
+     } else {
+       
+      setError( "Failed to save content");
+      setIsSubmitting(false);
+     }
     }
   };
 
@@ -432,7 +448,9 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
                 disabled={isSubmitting}
               />
               <div className="mt-2">
-                <img
+                <Image
+                width={200}
+                height={190}
                   src={formData.imageUrl || defaultImageUrl}
                   alt="Preview"
                   className="h-48 w-auto object-cover rounded-md"

@@ -39,7 +39,7 @@ export default function SiteSettings() {
         const response = await fetch(`${API_BASE_URL}/settings`);
         if (!response.ok) throw new Error("Failed to fetch settings");
         const data = await response.json();
-        console.log("API Response:", data);
+        
         if (data) {
           // Settings exist, update state with API data
           setSettings({
@@ -58,8 +58,8 @@ export default function SiteSettings() {
           // No settings found, keep default settings and set optional error
           setError("No settings found. You can create new settings.");
         }
-      } catch (err) {
-        console.error("Error fetching settings:", err);
+      } catch  {
+        
         setError("Failed to load settings. Please try again later.");
       } finally {
         setLoading(false);
@@ -102,10 +102,18 @@ export default function SiteSettings() {
         __v: data.__v,
       });
       setSaveSuccess("Settings saved successfully!");
-      console.log("Settings saved:", data);
-    } catch (err: any) {
-      console.error("Error saving settings:", err);
-      setSaveError(err.message || "Failed to save settings. Please try again.");
+      
+    } catch (err) {
+      if(err instanceof Error){
+
+        
+        setSaveError(err.message || "Failed to save settings. Please try again.");
+      }
+      else{
+
+        
+        setSaveError( "Failed to save settings. Please try again.");
+      }
     } finally {
       setSaving(false);
     }

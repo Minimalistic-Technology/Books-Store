@@ -5,8 +5,11 @@ import { useEffect, useState } from "react";
 import MetricsCard from "./components/MetricsCard";
 import ChartComponent from "./components/ChartComponent";
 import { useRouter } from "next/navigation";
-import { API_BASE_URL } from '../../../utils/api';
-import DashboardContext, { useDashboard } from '../context/DashboardContext';
+import { API_BASE_URL } from "../../../utils/api";
+import DashboardContext from "../context/DashboardContext";
+import { tokenAtom } from "@/app/store/auth";
+import { useAtom } from "jotai";
+
 export default function Dashboard() {
   const [metrics, setMetrics] = useState<{
     userCount: number | null;
@@ -17,7 +20,9 @@ export default function Dashboard() {
     orderCount: null,
     completedOrders: null,
   });
+
   const [loading, setLoading] = useState(true);
+
   type ChartData = {
     labels: string[];
     datasets: {
@@ -32,32 +37,40 @@ export default function Dashboard() {
     labels: [],
     datasets: [],
   });
+
   const router = useRouter();
+    const [token] = useAtom(tokenAtom);
+  
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/users`);
+        const response = await fetch(`${API_BASE_URL}/users`,{headers:{
+          "Content-Type":"application/json",
+          "Authorization":`Bearer ${token}`
+        },credentials:"include"});
         if (!response.ok) throw new Error("Failed to fetch users");
         const data = await response.json();
         setMetrics((prev) => ({
           ...prev,
           userCount: Array.isArray(data) ? data.length : 0,
         }));
-      } catch (error) {
-        console.error("Failed to fetch users:", error);
+      } catch  {
+        
         setMetrics((prev) => ({ ...prev, userCount: 0 }));
       }
     };
 
     const fetchOrders = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/orders`);
+        const response = await fetch(`${API_BASE_URL}/orders`,{credentials:"include"});
         if (!response.ok) throw new Error("Failed to fetch orders");
         const data = await response.json();
         const orders = Array.isArray(data.orders) ? data.orders : [];
         const orderCount = orders.length;
-        const completedOrders = orders.filter((order: any) => order.status === "Delivered").length;
+        const completedOrders = orders.filter(
+          (order: { status?: string }) => order.status === "Delivered"
+        ).length;
 
         setMetrics((prev) => ({
           ...prev,
@@ -65,16 +78,14 @@ export default function Dashboard() {
           completedOrders,
         }));
 
-        // Generate chart data based on orders
+        // Dummy chart trend
         const labels = Array.from({ length: 31 }, (_, i) => `Jul ${i + 1}`);
-        const orderTrend = Array.from({ length: 31 }, (_, i) => {
-          const daysWithOrders = Math.floor(orderCount * (i + 1) / 31); // Distribute orders across days
-          return daysWithOrders;
-        });
-        const completedTrend = Array.from({ length: 31 }, (_, i) => {
-          const daysWithCompleted = Math.floor(completedOrders * (i + 1) / 31); // Distribute completed orders across days
-          return daysWithCompleted;
-        });
+        const orderTrend = Array.from({ length: 31 }, (_, i) =>
+          Math.floor((orderCount * (i + 1)) / 31)
+        );
+        const completedTrend = Array.from({ length: 31 }, (_, i) =>
+          Math.floor((completedOrders * (i + 1)) / 31)
+        );
 
         setChartData({
           labels,
@@ -93,14 +104,24 @@ export default function Dashboard() {
             },
           ],
         });
-      } catch (error) {
-        console.error("Failed to fetch orders:", error);
+      } catch  {
+        
         setMetrics((prev) => ({ ...prev, orderCount: 0, completedOrders: 0 }));
         setChartData({
           labels: Array.from({ length: 31 }, (_, i) => `Jul ${i + 1}`),
           datasets: [
-            { label: "Orders Count Trend", data: Array(31).fill(0), borderColor: "rgb(75, 192, 192)", tension: 0.1 },
-            { label: "Completed Orders Trend", data: Array(31).fill(0), borderColor: "rgb(255, 99, 132)", tension: 0.1 },
+            {
+              label: "Orders Count Trend",
+              data: Array(31).fill(0),
+              borderColor: "rgb(75, 192, 192)",
+              tension: 0.1,
+            },
+            {
+              label: "Completed Orders Trend",
+              data: Array(31).fill(0),
+              borderColor: "rgb(255, 99, 132)",
+              tension: 0.1,
+            },
           ],
         });
       }
@@ -121,43 +142,49 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="space-y-8 p-4 animate__fadeIn">
-        <p className="text-gray-500 text-center">Loading dashboard...</p>
+      <div className="flex justify-center items-center h-64 animate__fadeIn">
+        <p className="text-gray-500">Loading dashboard...</p>
       </div>
     );
   }
 
   return (
     <DashboardContext.Provider value={{ setMetrics }}>
-      <div className="space-y-8 p-4 animate__fadeIn">
-        <h1 className="text-4xl font-bold text-yellow-900">
+      <div className="space-y-8 p-4 sm:p-6 lg:p-8 animate__fadeIn pt-12">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-yellow-900 text-center sm:text-left">
           Dashboard - Books Store
         </h1>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        {/* Metrics Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <MetricsCard
             title="User Count"
             value={metrics.userCount}
             onClick={handleUserCountClick}
           />
           <MetricsCard title="Order Count" value={metrics.orderCount} />
-          <MetricsCard title="Completed Orders" value={metrics.completedOrders} />
+          <MetricsCard
+            title="Completed Orders"
+            value={metrics.completedOrders}
+          />
         </div>
-        <div
-          className="card bg-blue-200 p-6 rounded-lg shadow-lg"
-          style={{ maxHeight: "400px", overflowY: "auto" }}
-        >
-          <h2 className="text-2xl font-semibold mb-4 text-yellow-900">
-            Daily/Monthly Trends
+
+        {/* Chart Section */}
+        <div className="card bg-blue-200 p-4 sm:p-6 rounded-lg shadow-lg">
+          <h2 className="text-xl sm:text-2xl font-semibold mb-4 text-yellow-900 text-center sm:text-left">
+            Daily / Monthly Trends
           </h2>
-          <div style={{ height: "300px" }}>
+          <div className="h-64 sm:h-72 lg:h-80">
             <ChartComponent data={chartData} />
           </div>
         </div>
-        <div className="card bg-blue-200 p-6 rounded-lg shadow-lg">
-          <h2 className="text-2xl font-semibold mb-4 text-yellow-900">
+
+        {/* Quick Links */}
+        <div className="card bg-blue-200 p-4 sm:p-6 rounded-lg shadow-lg">
+          <h2 className="text-xl sm:text-2xl font-semibold mb-4 text-yellow-900 text-center sm:text-left">
             Quick Links to Major Modules
           </h2>
-          <ul className="list-disc pl-5 space-y-2">
+          <ul className="list-disc pl-5 space-y-2 text-center sm:text-left">
             <li>
               <a
                 href="/admin/content-management"

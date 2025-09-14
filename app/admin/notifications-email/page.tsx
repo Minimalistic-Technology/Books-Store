@@ -44,7 +44,7 @@ export default function NotificationsEmailManagement() {
   useEffect(() => {
     const fetchSubscribers = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/subscribers`);
+        const response = await fetch(`${API_BASE_URL}/subscribers`,{credentials:"include"});
         if (!response.ok)
           throw new Error(`HTTP error! status: ${response.status}`);
 
@@ -60,10 +60,10 @@ export default function NotificationsEmailManagement() {
         setSubscribers(mappedSubscribers);
       } catch (error) {
         if (error instanceof Error) {
-          console.error("Failed to fetch subscribers:", error);
+          
           alert(`Failed to fetch subscribers: ${error.message}`);
         } else {
-          console.error("Unknown error:", error);
+          
           alert("Failed to fetch subscribers: Unknown error");
         }
       }
@@ -71,7 +71,7 @@ export default function NotificationsEmailManagement() {
 
     const fetchEmailLogs = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/email-logs`);
+        const response = await fetch(`${API_BASE_URL}/email-logs`,{credentials:"include"});
         if (!response.ok)
           throw new Error(`HTTP error! status: ${response.status}`);
 
@@ -79,10 +79,10 @@ export default function NotificationsEmailManagement() {
         setEmailLogs(logs);
       } catch (error) {
         if (error instanceof Error) {
-          console.error("Failed to fetch email logs:", error);
+          
           alert(`Failed to fetch email logs: ${error.message}`);
         } else {
-          console.error("Unknown error:", error);
+          
           alert("Failed to fetch email logs: Unknown error");
         }
       }
@@ -95,7 +95,7 @@ export default function NotificationsEmailManagement() {
   const handleDeleteSubscriber = async (id: string) => {
     try {
       const response = await fetch(`${API_BASE_URL}/subscribers/${id}`, {
-        method: "DELETE",
+        method: "DELETE",credentials:"include"
       });
       if (!response.ok)
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -104,7 +104,7 @@ export default function NotificationsEmailManagement() {
       alert("Subscriber deleted successfully!");
     } catch (error) {
       if (error instanceof Error) {
-        console.error("Failed to delete subscriber:", error);
+        
         alert(`Failed to delete subscriber: ${error.message}`);
       }
     }
@@ -124,12 +124,13 @@ export default function NotificationsEmailManagement() {
           subject: "Welcome to Harsh Bookstore!",
           body: `Dear ${newSubscriber.name},\n\nThank you for subscribing to Harsh Bookstore! Stay tuned for updates, promotions, and events.\n\nBest regards,\nHarsh Bookstore Team`,
         }),
+        credentials:"include"
       });
 
       if (!response.ok)
         throw new Error(`HTTP error! status: ${response.status}`);
 
-      const subscribersResponse = await fetch(`${API_BASE_URL}/subscribers`);
+      const subscribersResponse = await fetch(`${API_BASE_URL}/subscribers`,{credentials:"include"});
       if (subscribersResponse.ok) {
         const updatedSubscribers: SubscriberApiResponse[] =
           await subscribersResponse.json();
@@ -145,7 +146,7 @@ export default function NotificationsEmailManagement() {
       alert("Subscriber added and welcome email sent!");
     } catch (error) {
       if (error instanceof Error) {
-        console.error("Failed to add subscriber:", error);
+        
         alert(`Failed to add subscriber: ${error.message}`);
       }
     }
@@ -161,12 +162,13 @@ export default function NotificationsEmailManagement() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(emailData),
+        credentials:"include"
       });
 
       if (!response.ok)
         throw new Error(`HTTP error! status: ${response.status}`);
 
-      const logsResponse = await fetch(`${API_BASE_URL}/email-logs`);
+      const logsResponse = await fetch(`${API_BASE_URL}/email-logs`,{credentials:"include"});
       if (logsResponse.ok) {
         const logs: EmailLogApiResponse[] = await logsResponse.json();
         setEmailLogs(logs);
@@ -174,7 +176,7 @@ export default function NotificationsEmailManagement() {
       alert("Emails sent successfully!");
     } catch (error) {
       if (error instanceof Error) {
-        console.error("Failed to send emails:", error);
+        
         alert(`Failed to send emails: ${error.message}`);
       }
     }

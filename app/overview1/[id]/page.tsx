@@ -155,12 +155,8 @@ export default function Overview() {
           if (newItem.quantityOld > 0) conditions.push("Old");
           setAvailableConditions(conditions);
           setError(null);
-        } catch (err: any) {
-          console.error("Fetch item error:", {
-            message: err.message,
-            stack: err.stack,
-            id,
-          });
+        } catch (err) {
+          if(err instanceof Error)
           setError(
             `Item not found. Please check the item ID (${id}) or try a different one.`
           );
@@ -202,10 +198,7 @@ export default function Overview() {
         );
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          console.error("Fetch reviews failed:", {
-            status: response.status,
-            errorData,
-          });
+          
           throw new Error(
             errorData.error || `HTTP error! Status: ${response.status}`
           );
@@ -228,12 +221,9 @@ export default function Overview() {
         );
         setReviews(reviews);
         setReviewError(null);
-      } catch (err: any) {
-        console.error("Fetch reviews error:", {
-          message: err.message,
-          stack: err.stack,
-          id,
-        });
+      } catch (err) {
+          if(err instanceof Error)
+        
         setReviewError(
           err.message || "Failed to load reviews. Please try again later."
         );
@@ -289,15 +279,12 @@ export default function Overview() {
         });
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          console.error("Post review failed:", {
-            status: response.status,
-            errorData,
-          });
+          
           throw new Error(
             errorData.error || `HTTP error! Status: ${response.status}`
           );
         }
-        const newReview = await response.json();
+        // const newReview = await response.json();
         
         setShowSuccessMessage(true);
         setRating(0);
@@ -308,19 +295,9 @@ export default function Overview() {
         setTimeout(() => {
           setShowSuccessMessage(false);
         }, 5000);
-      } catch (err: any) {
-        console.error("Post review error:", {
-          message: err.message,
-          stack: err.stack,
-          payload: {
-            bookId: item._id,
-            name,
-            email,
-            rating,
-            comment: reviewDescription,
-            categoryName: category,
-          },
-        });
+      } catch (err) {
+          if(err instanceof Error)
+       
         setReviewError(
           err.message || "Failed to submit review. Please try again later."
         );

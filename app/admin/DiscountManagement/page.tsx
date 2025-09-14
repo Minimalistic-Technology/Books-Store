@@ -27,8 +27,8 @@ export default function DiscountManagement() {
         const response = await fetch(`${API_BASE_URL}/book-categories`);
         const data = await response.json();
         setCategories(data);
-      } catch (error) {
-        console.error("Failed to fetch categories:", error);
+      } catch  {
+        
         setErrors({ general: "Failed to load categories. Please try again." });
       }
     };
@@ -42,8 +42,8 @@ export default function DiscountManagement() {
           const response = await fetch(`${API_BASE_URL}/book-categories/${selectedCategory}`);
           const data = await response.json();
           setDiscount(data.discount.toString() || "0");
-        } catch (error) {
-          console.error("Failed to fetch discount:", error);
+        } catch  {
+          
         }
       } else if (selectionType === "subcategory" && selectedSubCategory) {
         const path = `${selectedCategory}/${selectedSubCategory}`;
@@ -51,8 +51,8 @@ export default function DiscountManagement() {
           const response = await fetch(`${API_BASE_URL}/book-categories/${path}`);
           const data = await response.json();
           setDiscount(data.discount.toString() || "0");
-        } catch (error) {
-          console.error("Failed to fetch discount:", error);
+        } catch  {
+          
         }
       } else {
         setDiscount("");
@@ -107,10 +107,10 @@ export default function DiscountManagement() {
       setDiscount("");
     } catch (err) { 
       if(err instanceof Error){
-        console.error("Error setting discount:", err);
+        
       setErrors({ general: err.message});
       }else{
-      console.error("Error setting discount:", err);
+      
       setErrors({ general: "Failed to set discount. Please try again." });
     }
   }

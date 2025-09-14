@@ -1,58 +1,36 @@
 // app/components/header.tsx
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import Image from 'next/image';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUser,
   faShoppingCart,
   faBars,
-  faSearch,
   faChevronDown,
   faChevronUp,
   faChevronRight,
-} from '@fortawesome/free-solid-svg-icons';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+} from "@fortawesome/free-solid-svg-icons";
+import { Button } from "@/components/ui/button";
 import { API_BASE_URL } from "@/utils/api";
+import { useAtom } from "jotai";
+import { categoriesAtom, siteSettingsAtom } from "@/app/store/data";
+import {
+  Category,
+  SiteSettings,
+} from "@/app/admin/order-product-management/types";
+import { useRouter } from "next/navigation";
 
-interface Category {
-  _id: string;
-  name: string;
-  path: string;
-  children: Category[];
-  books: string[];
-  tags: string[];
-  seoTitle?: string;
-  seoDescription?: string;
-  discount: number;
-  createdAt: string;
-  updatedAt: string;
-  __v: number;
-}
 
-interface SiteSettings {
-  _id: string;
-  logo: string | null;
-  title: string;
-  metaDescription: string;
-  metaKeywords: string;
-  apiKey: string;
-  maintenanceMode: boolean;
-  createdAt: string;
-  updatedAt: string;
-  __v: number;
-}
 
 const normalizeDisplayName = (name: string | undefined | null) => {
-  if (!name || typeof name !== 'string') {
-    console.warn('[normalizeDisplayName] Invalid category name:', name);
-    return 'Unnamed Category';
+  if (!name || typeof name !== "string") {
+    
+    return "Unnamed Category";
   }
-  return name.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  return name.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 };
 
 interface CategoryMenuProps {
@@ -72,16 +50,15 @@ const CategoryMenu: React.FC<CategoryMenuProps> = ({
   toggleCategory,
   closeAll,
 }) => {
-
-
   const validCategories = categories.filter(
-    (category) => category.name && typeof category.name === 'string'
+    (category) => category.name && typeof category.name === "string"
   );
-  
 
   return (
     <ul
-      className={`${isMobile ? 'py-2' : 'py-1'} ${level > 0 && !isMobile ? 'border-l' : ''}`}
+      className={`${isMobile ? "py-2" : "py-1"} ${
+        level > 0 && !isMobile ? "border-l" : ""
+      }`}
     >
       {validCategories.map((category) => {
         const isOpen = openCategories[category._id];
@@ -90,33 +67,48 @@ const CategoryMenu: React.FC<CategoryMenuProps> = ({
         return (
           <li
             key={category._id}
-            className={isMobile ? 'mb-2' : 'relative'}
-            onMouseEnter={!isMobile ? () => toggleCategory(category._id) : undefined}
-            onMouseLeave={!isMobile ? () => toggleCategory(category._id) : undefined}
+            className={isMobile ? "mb-2" : "relative"}
+            onMouseEnter={
+              !isMobile ? () => toggleCategory(category._id) : undefined
+            }
+            onMouseLeave={
+              !isMobile ? () => toggleCategory(category._id) : undefined
+            }
           >
             {/* Main category button/link */}
             <div
               className={`flex items-center justify-between transition-all duration-200
-                ${isOpen ? 'bg-orange-400 text-white' : 'hover:bg-orange-300 hover:text-white'}
-                ${isMobile ? 'text-gray-600 text-sm p-2' : 'text-gray-700 font-bold text-sm px-3 py-2'}
+                ${
+                  isOpen
+                    ? "bg-orange-400 text-white"
+                    : "hover:bg-orange-300 hover:text-white"
+                }
+                ${
+                  isMobile
+                    ? "text-gray-600 text-sm p-2"
+                    : "text-gray-700 font-bold text-sm px-3 py-2"
+                }
               `}
               style={{
-                width: 'fit-content',
-                minWidth: '100%',
-                whiteSpace: 'nowrap',
+                width: "fit-content",
+                minWidth: "100%",
+                whiteSpace: "nowrap",
               }}
             >
-              <Link
-                href={`/categories/${category.path}`}
-                className="flex-1"
-              >
+              <Link href={`/categories/${category.path}`} className="flex-1">
                 {normalizeDisplayName(category.name)}
               </Link>
               {hasChildren && (
                 <button
                   onClick={() => toggleCategory(category._id)}
-                  className={`p-2 ${isMobile ? 'text-gray-600 hover:text-orange-600' : 'text-gray-500'}`}
-                  aria-label={`Toggle ${normalizeDisplayName(category.name)} subcategories`}
+                  className={`p-2 ${
+                    isMobile
+                      ? "text-gray-600 hover:text-orange-600"
+                      : "text-gray-500"
+                  }`}
+                  aria-label={`Toggle ${normalizeDisplayName(
+                    category.name
+                  )} subcategories`}
                 >
                   <FontAwesomeIcon
                     icon={
@@ -135,11 +127,15 @@ const CategoryMenu: React.FC<CategoryMenuProps> = ({
             {/* Submenu */}
             {isOpen && hasChildren && (
               <div
-                className={`${isMobile ? 'pl-4 mt-2 bg-white shadow-lg' : 'absolute top-0 left-full bg-white shadow-2xl z-50'}`}
+                className={`${
+                  isMobile
+                    ? "pl-4 mt-2 bg-white shadow-lg"
+                    : "absolute top-0 left-full bg-white shadow-2xl z-50"
+                }`}
                 style={{
-                  width: 'max-content',
-                  minWidth: '150px',
-                  whiteSpace: 'nowrap',
+                  width: "max-content",
+                  minWidth: "150px",
+                  whiteSpace: "nowrap",
                 }}
               >
                 <CategoryMenu
@@ -160,60 +156,78 @@ const CategoryMenu: React.FC<CategoryMenuProps> = ({
 };
 
 export default function Header() {
-  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({});
 
-   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>(
+    {}
+  );
 
-  const token = typeof window !== "undefined" 
-  ? localStorage.getItem("bookstore-token") 
-  : null;
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [categoriesAtomState, setCategoriesAtomState] = useAtom(categoriesAtom);
+  const [siteSettingsAtomState, setSiteSettingsAtomState] =
+    useAtom(siteSettingsAtom);
+    const router = useRouter()
+
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("bookstore-token")
+      : null;
 
   useEffect(() => {
     if (token) setIsLoggedIn(true);
   }, [token]);
 
-  const handleLogout=()=>{
-      localStorage.removeItem("bookstore-token")
-      setIsLoggedIn(false);
-    }
+  const handleLogout = () => {
+    localStorage.removeItem("bookstore-token");
 
+    setIsLoggedIn(false);
+    router.replace("/login")
+  };
+  
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/settings`);
-        if (!response.ok) throw new Error('Failed to fetch settings');
-        const data = await response.json();
-        setSettings(data);
-      } catch (err) {
-        console.error('[Header] Error fetching settings:', err);
-        setError('Failed to load site settings.');
+        if (!siteSettingsAtomState) {
+          const response = await fetch(`${API_BASE_URL}/settings`);
+          if (!response.ok) throw new Error("Failed to fetch settings");
+          const data = await response.json();
+          setSettings(data);
+          setSiteSettingsAtomState(data);
+        } else {
+          setSettings(siteSettingsAtomState);
+        }
+      } catch  {
+        
+        setError("Failed to load site settings.");
       }
     };
 
-    
-
     const fetchCategories = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/book-categories`);
-        if (!response.ok) throw new Error('Failed to fetch categories');
-        const data: Category[] = await response.json();
+        if (siteSettingsAtomState) {
+          if (
+            !(categoriesAtomState?.length && categoriesAtomState.length > 0)
+          ) {
+            const response = await fetch(`${API_BASE_URL}/book-categories`);
+            if (!response.ok) throw new Error("Failed to fetch categories");
+            const data: Category[] = await response.json();
+
+            const validCategories = data.filter(
+              (category) => category.name && typeof category.name === "string"
+            );
+            setCategories(validCategories);
+            setCategoriesAtomState(validCategories);
+          } else {
+            setCategories(categoriesAtomState);
+          }
+        }
+      } catch {
         
-        const validCategories = data.filter(
-          (category) => category.name && typeof category.name === 'string'
-        );
-        setCategories(validCategories);
-      } catch (err) {
-        console.error('[Header] Error fetching categories:', err);
-        setError('Error loading categories. Please try again later.');
+        setError("Error loading categories. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -221,38 +235,12 @@ export default function Header() {
 
     fetchSettings();
     fetchCategories();
-  }, []);
-
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) {
-      setSearchError('Please enter a search query');
-      return;
-    }
-
-    setSearchLoading(true);
-    setSearchError(null);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(searchQuery.trim())}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-
-      
-      
-      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-    } catch (err) {
-      console.error('[Header] Search error:', err);
-      setSearchError('Failed to perform search. Please try again later.');
-    } finally {
-      setSearchLoading(false);
-    }
-  };
+  }, [
+    categoriesAtomState,
+    setCategoriesAtomState,
+    setSiteSettingsAtomState,
+    siteSettingsAtomState,
+  ]);
 
   const toggleCategory = (categoryId: string) => {
     setOpenCategories((prev) => ({
@@ -272,14 +260,17 @@ export default function Header() {
         <div className="flex md:w-1/2 items-center md:min-w-sm w-full">
           <Link href="/">
             <Image
-              src={settings?.logo || 'https://images.pexels.com/photos/373465/pexels-photo-373465.jpeg'}
+              src={
+                settings?.logo ||
+                "https://images.pexels.com/photos/373465/pexels-photo-373465.jpeg"
+              }
               alt="Books Store Logo"
               width={80}
               height={80}
               className="ml-2 rounded-full hover:opacity-80 transition-opacity duration-300 min-w-[80px]"
             />
           </Link>
-          <div className="relative md:max-w-2xl   ml-4  sm:flex items-center">
+          {/* <div className="relative md:max-w-2xl   ml-4  sm:flex items-center">
             <form onSubmit={handleSearch} className="flex items-center w-full">
               <Input
                 type="text"
@@ -329,22 +320,41 @@ export default function Header() {
             {searchError && (
               <p className="text-sm text-red-500 mt-1 absolute bottom-[-1.5rem] left-0">{searchError}</p>
             )}
-          </div>
+          </div> */}
         </div>
         <div className="flex flex-col  md:flex-row items-center min-w-[30%] space-x-4 ">
           <div className="flex flex-wrap items-center text-sm sm:text-base min-w-[200px] border-b mb-4">
             <span className="text-orange-500 mr-2">Need help? Call us:</span>
             <span className="text-black">+91 7977250185</span>
           </div>
-          <div className='flex gap-4'>
-          {isLoggedIn?<>
-          <button className='p-2 bg-amber-200 rounded-lg text-black cursor-pointer hover:bg-amber-300' onClick={handleLogout}>Logout</button>
-          </>:<Link href="/login" className="hover:underline text-black">
-            <FontAwesomeIcon icon={faUser} size="lg" className="text-lg sm:text-xl" />
-          </Link>}
-          <Link href="/cart" className="relative text-black hover:underline">
-            <FontAwesomeIcon icon={faShoppingCart} size="lg" className="text-lg sm:text-xl" />
-          </Link>
+          <div className="flex gap-4">
+            <>
+              <button
+                className="p-2 bg-amber-200 rounded-lg text-black cursor-pointer hover:bg-amber-300"
+                onClick={handleLogout}
+              >
+                Logout
+              </button>
+            </>
+
+            <Link
+              href={`/${isLoggedIn ? "profile" : "login"}`}
+              className="hover:underline text-black"
+            >
+              <FontAwesomeIcon
+                icon={faUser}
+                size="lg"
+                className="text-lg sm:text-xl"
+              />
+            </Link>
+
+            <Link href="/cart" className="relative text-black hover:underline">
+              <FontAwesomeIcon
+                icon={faShoppingCart}
+                size="lg"
+                className="text-lg sm:text-xl"
+              />
+            </Link>
           </div>
         </div>
       </div>
@@ -389,7 +399,11 @@ export default function Header() {
           <p className="text-red-500 text-center p-4">{error}</p>
         ) : (
           <>
-            <ul className={`${isMenuOpen ? 'block' : 'hidden'} xl:hidden p-4 space-y-2 bg-yellow-200`}>
+            <ul
+              className={`${
+                isMenuOpen ? "block" : "hidden"
+              } xl:hidden p-4 space-y-2 bg-yellow-200`}
+            >
               <CategoryMenu
                 categories={categories}
                 level={0}
@@ -417,7 +431,9 @@ export default function Header() {
                         <Link
                           href={`/categories/${category.path}`}
                           className={`whitespace-nowrap font-bold text-gray-800 text-xs lg:text-sm px-2 lg:px-3 py-2 transition-all duration-300 ${
-                            openCategories[category._id] ? 'bg-orange-400 text-white' : 'hover:bg-orange-300 hover:text-white'
+                            openCategories[category._id]
+                              ? "bg-orange-400 text-white"
+                              : "hover:bg-orange-300 hover:text-white"
                           }`}
                         >
                           {normalizeDisplayName(category.name)}
@@ -425,30 +441,37 @@ export default function Header() {
                         {category.children.length > 0 && (
                           <button
                             className="p-1 lg:p-2 text-gray-600 hover:text-orange-300"
-                            aria-label={`Toggle ${normalizeDisplayName(category.name)} subcategories`}
+                            aria-label={`Toggle ${normalizeDisplayName(
+                              category.name
+                            )} subcategories`}
                           >
                             <FontAwesomeIcon
-                              icon={openCategories[category._id] ? faChevronUp : faChevronDown}
+                              icon={
+                                openCategories[category._id]
+                                  ? faChevronUp
+                                  : faChevronDown
+                              }
                               className="h-2 w-2 lg:h-3 lg:w-3"
                             />
                           </button>
                         )}
                       </div>
-                      {openCategories[category._id] && category.children.length > 0 && (
-                        <div
-                          className="absolute left-0 mt-0 bg-white shadow-2xl z-50"
-                          style={{ width: 'max-content', minWidth: '150px' }}
-                        >
-                          <CategoryMenu
-                            categories={category.children}
-                            level={1}
-                            isMobile={false}
-                            openCategories={openCategories}
-                            toggleCategory={toggleCategory}
-                            closeAll={() => setOpenCategories({})}
-                          />
-                        </div>
-                      )}
+                      {openCategories[category._id] &&
+                        category.children.length > 0 && (
+                          <div
+                            className="absolute left-0 mt-0 bg-white shadow-2xl z-50"
+                            style={{ width: "max-content", minWidth: "150px" }}
+                          >
+                            <CategoryMenu
+                              categories={category.children}
+                              level={1}
+                              isMobile={false}
+                              openCategories={openCategories}
+                              toggleCategory={toggleCategory}
+                              closeAll={() => setOpenCategories({})}
+                            />
+                          </div>
+                        )}
                     </li>
                   ))}
                 </ul>

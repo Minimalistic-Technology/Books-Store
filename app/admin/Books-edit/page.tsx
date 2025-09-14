@@ -216,7 +216,7 @@ export default function EBooksEdit() {
   const fetchBooks = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await axios.get<Content[]>(`${API_BASE_URL}/books`);
+      const response = await axios.get<Content[]>(`${API_BASE_URL}/books`,{withCredentials:true});
       const books = response.data.map((book) => ({
         id: book._id,
         title: book.bookName || book.title || "",
@@ -291,7 +291,8 @@ export default function EBooksEdit() {
         {
           isBestSeller: flags.bestSeller,
           isNewArrival: flags.newArrival,
-        }
+        },
+        {withCredentials:true}
       );
       setContents((prevBooks) =>
         prevBooks.map((b) => (b.id === bookId ? { ...b, ...response.data } : b))
@@ -319,7 +320,7 @@ export default function EBooksEdit() {
       await axios.delete(
         `http://localhost:5000/api/bookstore/books/${encodeURIComponent(
           categoryPath
-        )}/${id}`
+        )}/${id}`,{withCredentials:true}
       );
       setContents((prev) => prev.filter((content) => content.id !== id));
       setSuccessMessage("Book deleted successfully");

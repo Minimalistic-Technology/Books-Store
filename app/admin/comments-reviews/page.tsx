@@ -21,6 +21,7 @@ export default function CommentsReviews() {
     try {
       const response = await fetch(`${API_BASE_URL}/book-categories?t=` + new Date().getTime(), {
         cache: "no-store",
+        credentials:"include"
       });
       if (!response.ok) {
         throw new Error("Failed to fetch books");
@@ -34,9 +35,9 @@ export default function CommentsReviews() {
         }))
       );
       setBooks(books);
-    } catch (err) {
+    } catch {
       setError("Failed to load books. Please try again.");
-      console.error("Error fetching books:", err);
+      
     }
   };
 
@@ -45,6 +46,7 @@ export default function CommentsReviews() {
     try {
       const response = await fetch(`${API_BASE_URL}/reviews?t=` + new Date().getTime(), {
         cache: "no-store",
+        credentials:"include"
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -67,9 +69,9 @@ export default function CommentsReviews() {
       }));
       setItems(reviews);
       setError(null);
-    } catch (err) {
+    } catch  {
       setError("Failed to load reviews. Please try again.");
-      console.error("Error fetching reviews:", err);
+      
     }
   };
 
@@ -89,6 +91,7 @@ export default function CommentsReviews() {
       const response = await fetch(`${API_BASE_URL}/reviews/${id}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
+        credentials:"include"
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -98,11 +101,11 @@ export default function CommentsReviews() {
       setError(null);
     } catch (err) {
       if(err instanceof Error){
-        console.error('[CategoryPage] Error:',err);
+        
         setError(err.message || 'Failed to load category or books. Please try again later')
       }
       setError("Failed to delete review. Please try again.");
-      console.error("Error deleting review:", err);
+      
     }
   };
 
@@ -135,6 +138,7 @@ export default function CommentsReviews() {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ rating: data.rating, comment: data.comment, status: data.status }),
+          credentials:"include"
         });
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
@@ -146,6 +150,7 @@ export default function CommentsReviews() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(reviewData),
+          credentials:"include"
         });
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
@@ -156,9 +161,9 @@ export default function CommentsReviews() {
       // Fetch reviews to sync state
       await fetchReviews();
       setError(null);
-    } catch (err) {
+    } catch  {
       setError(data.id ? "Failed to update review. Please try again." : "Failed to create review. Please try again.");
-      console.error("Error saving review:", err);
+      
     }
     setSelectedItem(null);
     setIsModerating(false);

@@ -47,13 +47,14 @@ const OrdersPage = () => {
       try {
         const response = await fetch(`${API_BASE_URL}/cancel-reasons`, {
           cache: "no-store",
+          credentials:"include"
         });
         if (!response.ok) throw new Error(`Failed to fetch cancel reasons: ${response.status}`);
         const data = await response.json();
         
         setReasonOptions(data.reasons || []);
-      } catch (err: any) {
-        console.error("Error fetching cancel reasons:", err);
+      } catch  {
+        
       }
     };
     fetchCancelReasons();
@@ -63,8 +64,9 @@ const OrdersPage = () => {
     const fetchOrders = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${API_BASE_URL}/orders`, {
+        const response = await fetch(`${API_BASE_URL}/my-orders`, {
           cache: "no-store",
+          credentials:"include"
         });
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
@@ -96,8 +98,8 @@ const OrdersPage = () => {
         
         setOrders(mappedOrders);
         setError(null);
-      } catch (err: any) {
-        console.error("Error fetching orders:", err);
+      } catch (err) {
+        if(err instanceof Error)
         setError(err.message || "Failed to fetch orders. Please try again later.");
       } finally {
         setLoading(false);
@@ -109,7 +111,7 @@ const OrdersPage = () => {
   const handleCancelOrder = async (orderId: string) => {
     
     if (!orderId) {
-      console.error("Order ID is undefined");
+      
       setError("Invalid order ID.");
       return;
     }
@@ -153,8 +155,8 @@ const OrdersPage = () => {
         return newCustomReasons;
       });
       setError(null);
-    } catch (err: any) {
-      console.error("Error cancelling order:", err);
+    } catch (err) {
+      if(err instanceof Error)
       setError(err.message || "Failed to cancel order. Please try again.");
     }
   };

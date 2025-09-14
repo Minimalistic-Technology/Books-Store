@@ -1,62 +1,86 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 
-import { API_BASE_URL } from '../../utils/api';
-
-
+import { API_BASE_URL } from "../../utils/api";
+import axios from "axios";
 
 const BookStoreLoginPage: React.FC = () => {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'User' | 'Admin'>('User');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role] = useState<"User">("User");
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({
-    email: '',
-    password: '',
-    role: '',
-    apiError: '',
+    email: "",
+    password: "",
+    role: "",
+    apiError: "",
   });
   const [isMounted, setIsMounted] = useState(false);
+  const [forgotMessage, setForgotMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [, setToken] = useState<string | null>();
 
+  useEffect(() => {
+    setLoading(true);
+    if (typeof window !== "undefined") {
+      const storedToken = localStorage.getItem("bookstore-token");
+      if (storedToken) {
+        setToken(storedToken);
+        router.replace("/");
+      }else{
+        setLoading(false)
+      }
+    }
+  }, [router]);
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
   if (!isMounted) return null;
+  if (loading)
+    return (
+      <div className="flex justify-center items-center w-full h-full">
+        <h1>Loading...</h1>
+      </div>
+    );
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     let hasErrors = false;
     const newErrors = {
-      email: '',
-      password: '',
-      role: '',
-      apiError: '',
+      email: "",
+      password: "",
+      role: "",
+      apiError: "",
     };
 
     if (!email.trim()) {
-      newErrors.email = 'This field is mandatory';
+      newErrors.email = "This field is mandatory";
       hasErrors = true;
-    } else if (!email.includes('@') || !email.toLowerCase().endsWith('@gmail.com')) {
-      newErrors.email = 'Please enter a valid Gmail address (e.g., example@gmail.com)';
+    } else if (
+      !email.includes("@") ||
+      !email.toLowerCase().endsWith("@gmail.com")
+    ) {
+      newErrors.email =
+        "Please enter a valid Gmail address (e.g., example@gmail.com)";
       hasErrors = true;
     }
 
     if (!password.trim()) {
-      newErrors.password = 'This field is mandatory';
+      newErrors.password = "This field is mandatory";
       hasErrors = true;
     } else if (password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters long';
+      newErrors.password = "Password must be at least 8 characters long";
       hasErrors = true;
     }
 
     if (!role) {
-      newErrors.role = 'Please select a role';
+      newErrors.role = "Please select a role";
       hasErrors = true;
     }
 
@@ -70,37 +94,49 @@ const BookStoreLoginPage: React.FC = () => {
           role,
         };
 
-         
-
         const response = await fetch(`${API_BASE_URL}/auth/login`, {
-          method: 'POST',
+        // const response = await fetch(` https://simpsons-charms-blast-tender.trycloudflare.com/auth/login`, {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify(loginData),
+          credentials: "include",
         });
 
         const data = await response.json();
-         
 
         if (!response.ok) {
-          throw new Error(data.message || 'Login failed. Please try again.');
+          throw new Error(data.message || "Login failed. Please try again.");
         }
-        
-        localStorage.setItem('bookstore-token', data.token);
 
-        alert('Login successful!');
-        
-          router.push('/');
-        
+        localStorage.setItem("bookstore-token", data.token);
+
+        alert("Login successful!");
+
+        router.push("/");
       } catch (error) {
-        console.error('Login error:', error);
+        
         setErrors((prev) => ({
           ...prev,
-          apiError: (error as Error).message || 'An error occurred during login. Please try again.',
+          apiError:
+            (error as Error).message ||
+            "An error occurred during login. Please try again.",
         }));
       }
     }
+  };
+
+  const handleForgotPassword = async (
+    e: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    e.preventDefault();
+    if (!email) return;
+    const res = await axios.post(`${API_BASE_URL}/auth/forgot-password`, {
+      email,
+    });
+    
+    setForgotMessage(res.data.message);
   };
 
   return (
@@ -117,7 +153,7 @@ const BookStoreLoginPage: React.FC = () => {
         </div>
         <h1 className="text-3xl font-bold mb-2">Log In to Your Account</h1>
         <p className="text-sm text-center mb-6">
-          Welcome back to{' '}
+          Welcome back to{" "}
           <Link href="/" className="text-teal-600 hover:underline font-medium">
             Harsh Book Store
           </Link>
@@ -149,7 +185,7 @@ const BookStoreLoginPage: React.FC = () => {
             </label>
             <div className="relative">
               <input
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -161,7 +197,7 @@ const BookStoreLoginPage: React.FC = () => {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-teal-600"
               >
-                {showPassword ? 'Hide' : 'Show'}
+                {showPassword ? "Hide" : "Show"}
               </button>
             </div>
             {errors.password && (
@@ -169,23 +205,12 @@ const BookStoreLoginPage: React.FC = () => {
             )}
           </div>
 
-          <div className="mb-4">
+          {/* <div className="mb-4">
             <label htmlFor="role" className="block text-sm font-medium">
               Role
             </label>
-            <select
-              id="role"
-              value={role}
-              onChange={(e) => setRole(e.target.value as 'User' | 'Admin')}
-              className="w-full border border-gray-300 rounded-md px-4 py-2 mt-1 text-sm focus:ring-2 focus:ring-teal-500"
-            >
-              <option value="User">User</option>
-              {/* <option value="Admin">Admin</option> */}
-            </select>
-            {errors.role && (
-              <p className="text-sm text-red-500 mt-1">{errors.role}</p>
-            )}
-          </div>
+            
+          </div> */}
 
           {errors.apiError && (
             <p className="text-center text-sm text-red-600 mb-4">
@@ -194,9 +219,19 @@ const BookStoreLoginPage: React.FC = () => {
           )}
 
           <div className="mb-4 text-center">
-            <p className="text-sm text-teal-600 hover:underline">
-              Forgot password?
-            </p>
+            {forgotMessage ? (
+              <h1 className="text-green-500 underline">
+                Please check your email!
+              </h1>
+            ) : (
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                className="text-sm text-teal-600 hover:text-teal-900 cursor-pointer"
+              >
+                Forgot password?
+              </button>
+            )}
           </div>
 
           <button
@@ -208,7 +243,7 @@ const BookStoreLoginPage: React.FC = () => {
 
           <div className="mt-4 text-center">
             <p className="text-sm">
-              Don’t have an account?{' '}
+              Don’t have an account?{" "}
               <Link href="/signup" className="text-teal-600 hover:underline">
                 Sign up.
               </Link>
@@ -216,8 +251,11 @@ const BookStoreLoginPage: React.FC = () => {
           </div>
           <div className="mt-4 text-center">
             <p className="text-sm">
-              Switch to {" "}
-              <Link href="/admin-login" className="text-teal-600 hover:underline">
+              Switch to{" "}
+              <Link
+                href="/admin-login"
+                className="text-teal-600 hover:underline"
+              >
                 Admin Login
               </Link>
             </p>
@@ -229,7 +267,9 @@ const BookStoreLoginPage: React.FC = () => {
         <p className="font-medium">
           Legal restrictions and terms of use applicable to this site
         </p>
-        <p className="text-gray-400">Use of this site signifies agreement to terms.</p>
+        <p className="text-gray-400">
+          Use of this site signifies agreement to terms.
+        </p>
         <p>© 1998 - 2025 Harsh Book Store. All rights reserved.</p>
       </footer>
     </div>

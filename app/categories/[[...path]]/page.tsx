@@ -13,34 +13,12 @@ import { API_BASE_URL } from "@/utils/api";
 import { normalizeUrlParam, normalizeDisplayName } from "@/utils/stringUtils";
 import { Filter, X } from "lucide-react";
 
+import { Book } from "@/app/admin/order-product-management/types";
+import { useAtom } from "jotai";
+import { categoriesAtom } from "@/app/store/data";
+
 const defaultImageUrl =
   "https://images.pexels.com/photos/373465/pexels-photo-373465.jpeg";
-
-interface Book {
-  _id: string;
-  bookName: string;
-  title: string;
-  categoryPath: string;
-  tags: string[];
-  seoTitle?: string;
-  seoDescription?: string;
-  price?: number;
-  description?: string;
-  estimatedDelivery?: string;
-  condition: "new" | "used";
-  author?: string;
-  publisher?: string;
-  imageUrl?: string;
-  quantityNew: number;
-  quantityOld: number;
-  discountNew: number;
-  discountOld: number;
-  effectiveDiscount: number;
-  discountedPrice: number;
-  createdAt: string;
-  updatedAt: string;
-  __v: number;
-}
 
 interface Category {
   _id: string;
@@ -83,7 +61,6 @@ export default function CategoryPage() {
   const params = useParams();
   const query = useSearchParams();
 
-
   const [classRecieved, setClassRecieved] = useState<string | null>("");
   const path = (params.path as string[])?.join("/") || "school-books";
 
@@ -102,7 +79,10 @@ export default function CategoryPage() {
     {}
   );
   const [isOpen, setIsOpen] = useState(false);
-  
+  const [categoriesAtomState] = useAtom(categoriesAtom);
+  // 🔹 Search state
+  const [searchQuery, setSearchQuery] = useState("");
+
   useEffect(() => {
     const classCategory = query.get("class");
     if (classCategory) setClassRecieved(classCategory);
@@ -115,27 +95,35 @@ export default function CategoryPage() {
     const fetchCategoryAndBooks = async () => {
       try {
         setLoading(true);
-        // Fetch category
-        const categoryResponse = await fetch(
-          `${API_BASE_URL}/book-categories/${encodeURIComponent(path)}`,
-          {
-            cache: "no-store",
-          }
+        const categoryArrayFound = categoriesAtomState?.find(
+          (category) => category.name === path
         );
-        if (!categoryResponse.ok) {
-          if (categoryResponse.status === 404) {
-            throw new Error(`Category '${path}' not found`);
-          }
-          throw new Error(
-            `Failed to fetch category: ${categoryResponse.statusText}`
-          );
-        }
-        const categoryData: Category = await categoryResponse.json();
-       
-        if (!categoryData.name || typeof categoryData.name !== "string") {
-          throw new Error("Invalid category name");
-        }
-        setCategory(categoryData);
+        if (categoryArrayFound) setCategory(categoryArrayFound);
+        // // if (!(categoriesAtomState?.length && categoriesAtomState.length > 0)) {
+        //   // Fetch category
+        //   const categoryResponse = await fetch(
+        //     `${API_BASE_URL}/book-categories/${encodeURIComponent(path)}`,
+        //     {
+        //       cache: "no-store",
+        //     }
+        //   );
+        //   if (!categoryResponse.ok) {
+        //     if (categoryResponse.status === 404) {
+        //       throw new Error(`Category '${path}' not found`);
+        //     }
+        //     throw new Error(
+        //       `Failed to fetch category: ${categoryResponse.statusText}`
+        //     );
+        //   }
+        //   const categoryData: Category = await categoryResponse.json();
+
+        //   if (!categoryData.name || typeof categoryData.name !== "string") {
+        //     throw new Error("Invalid category name");
+        //   }
+        //   setCategory(categoryData);
+        // }else{
+        //   setCategory(categoriesAtomState)
+        // }
 
         // Fetch all books under the root category path
         const booksResponse = await fetch(
@@ -151,7 +139,7 @@ export default function CategoryPage() {
           throw new Error(`Failed to fetch books: ${booksResponse.statusText}`);
         }
         const booksData: Book[] = await booksResponse.json();
-        
+
         setBooks(
           (booksData || []).filter(
             (book) =>
@@ -161,13 +149,13 @@ export default function CategoryPage() {
         setBooksToShow(booksData?.length || 0);
       } catch (err) {
         if (err instanceof Error) {
-          console.error("[CategoryPage] Error:", err);
+          
           setError(
             err.message ||
               "Failed to load category or books. Please try again later."
           );
         } else {
-          console.error("[CategoryPage] Error:", err);
+          
           setError("Failed to load category or books. Please try again later.");
         }
       } finally {
@@ -230,6 +218,13 @@ export default function CategoryPage() {
 
   const filteredBooks = books
     .filter((book) => {
+      // ✅ Search filter
+      const matchesSearch =
+        searchQuery.trim() === "" ||
+        book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        book.bookName?.toLowerCase().includes(searchQuery.toLowerCase());
+
+      if (!matchesSearch) return false;
       const matchesCategory =
         book.categoryPath === selectedCategoryPath ||
         book.categoryPath.startsWith(`${selectedCategoryPath}/`);
@@ -247,7 +242,7 @@ export default function CategoryPage() {
         (status === "outOfStock" &&
           (book.quantityNew || 0) + (book.quantityOld || 0) === 0) ||
         (status === "onSale" && (book.effectiveDiscount || 0) > 0);
-      return matchesCategory && matchesPrice && matchesStatus;
+      return matchesSearch && matchesCategory && matchesPrice && matchesStatus;
     })
     .sort((a, b) => {
       const priceA = a.discountedPrice || a.price || 0;
@@ -322,11 +317,23 @@ export default function CategoryPage() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Header />
+
+      <section className="mb-6 px-6 sm:px-8 md:px-12">
+        <div className="flex items-center w-full max-w-xl mx-auto border rounded-lg shadow-md">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)} // reactive search
+            placeholder="Search books..."
+            className="flex-grow px-4 py-2 rounded-l-lg outline-none"
+          />
+        </div>
+      </section>
       <ErrorBoundary>
-        <main className="flex-grow px-6 sm:px-8 md:px-12 py-6">
-          <div className="flex relative">
+        <main className="flex-grow px-6 sm:px-8 md:px-12 py-6 relative">
+          <div className="flex ">
             <span
-              className="fixed top-65 left-1 p-4 flex justify-center items-center rounded-br-lg rounded-tr-lg bg-white lg:hidden shadow-xl w-15 h-10 z-1 cursor-pointer"
+              className="absolute top-15 left-1 p-4 flex justify-center items-center rounded-br-lg rounded-tr-lg bg-white lg:hidden shadow-xl w-15 h-10 z-1 cursor-pointer"
               onClick={() => setIsOpen(true)}
             >
               <Filter />
@@ -335,17 +342,19 @@ export default function CategoryPage() {
             <aside
               className={` z-2 translate-x-[-200%] overflow-hidden transition duration-500 lg:w-1/4 lg:translate-x-[0]  lg:pr-6 mb-6 lg:mb-0 lg:block ${
                 isOpen
-                  ? "block translate-x-[0] bg-white w-80 p-6 rounded-lg fixed top-0 left-0"
+                  ? "block  translate-x-[0] bg-white w-80 p-6 rounded-lg absolute top-0 left-0 lg:static"
                   : "hidden  "
               }`}
             >
-              <X
-                className="block lg:hidden cursor-pointer"
-                onClick={() => setIsOpen(false)}
-              />
+              <span className=" flex justify-between">
               <h2 className="text-xl font-semibold mb-4 text-gray-900">
                 Subcategories
               </h2>
+              {isOpen && <X
+                className="block lg:hidden cursor-pointer"
+                onClick={() => setIsOpen(false)}
+              />}
+              </span>
               <div className="border rounded-lg p-4 bg-gray-50 shadow-md mb-6">
                 {category && (
                   <div className="mb-4">

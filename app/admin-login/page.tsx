@@ -32,6 +32,9 @@ const AdminLogin = () => {
   };
 
   const handleSubmit = async () => {
+    try{
+
+    
     if (!formData.email || !formData.password) {
       setError("Please fill in all fields");
       return;
@@ -45,7 +48,7 @@ const AdminLogin = () => {
     const response = await axios.post(`${API_BASE_URL}/auth/admin/login`, {
       email: formData.email,
       password: formData.password,
-    });
+    },{withCredentials:true});
     
     if (response) {
       const { token, role } = response.data;
@@ -63,7 +66,12 @@ const AdminLogin = () => {
     //   token: response.data.token,
     //   role: response.data.role,
     // });
-    setLoading(false);
+    setLoading(false);}
+    catch(err){
+      
+      setError((err as Error).message)
+      setLoading(false)
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {

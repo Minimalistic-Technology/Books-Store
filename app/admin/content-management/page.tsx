@@ -107,7 +107,7 @@ export default function ContentManagement() {
             `${API_BASE_URL}/books/${encodeURIComponent(category.path)}`
           );
           if (!booksResponse.ok) {
-            console.warn(`Failed to fetch books for ${category.path}`);
+            
             return [];
           }
           const booksData = await booksResponse.json();
@@ -142,11 +142,8 @@ export default function ContentManagement() {
             createdAt: book.createdAt || "",
             updatedAt: book.updatedAt || "",
           }));
-        } catch (error) {
-          console.error(
-            `Error fetching books for category ${category.path}:`,
-            error
-          );
+        } catch {
+          
           return [];
         }
       });
@@ -201,6 +198,7 @@ export default function ContentManagement() {
           discountOld: data.discountOld ?? 0,
           categoryPath: data.categoryPath,
         }),
+        credentials:"include"
       });
 
       if (!response.ok) {
@@ -317,7 +315,7 @@ export default function ContentManagement() {
         body: JSON.stringify({
           name: newCategoryName.trim(),
           parentPath: parentPath || undefined,
-        }),
+        }),credentials:"include"
       });
       if (!response.ok) {
         const errorData = await response.json();

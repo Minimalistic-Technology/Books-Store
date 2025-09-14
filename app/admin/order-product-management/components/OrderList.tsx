@@ -38,13 +38,13 @@ export default function OrderList({
       setErrors((prev) => ({ ...prev, [id]: "" }));
     } catch (err: unknown) {
       if (err instanceof Error) {
-        console.error("Error triggering delete:", err);
+        
         setErrors((prev) => ({
           ...prev,
           [id]: err.message,
         }));
       } else {
-        console.error("Error triggering delete:", err);
+        
         setErrors((prev) => ({
           ...prev,
           [id]: "Failed to delete order. Please try again.",

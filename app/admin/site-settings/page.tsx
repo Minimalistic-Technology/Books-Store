@@ -58,8 +58,8 @@ export default function SiteSettings() {
           // No settings found, keep default settings and set optional error
           setError("No settings found. You can create new settings.");
         }
-      } catch (err) {
-        console.error("Error fetching settings:", err);
+      } catch  {
+        
         setError("Failed to load settings. Please try again later.");
       } finally {
         setLoading(false);
@@ -106,12 +106,12 @@ export default function SiteSettings() {
     } catch (err) {
       if(err instanceof Error){
 
-        console.error("Error saving settings:", err);
+        
         setSaveError(err.message || "Failed to save settings. Please try again.");
       }
       else{
 
-        console.error("Error saving settings:", err);
+        
         setSaveError( "Failed to save settings. Please try again.");
       }
     } finally {

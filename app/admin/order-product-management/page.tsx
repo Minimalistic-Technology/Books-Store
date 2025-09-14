@@ -20,7 +20,7 @@ export default function OrderProductManagement() {
     try {
       const url = `${API_BASE_URL}/cancel-reasons`;
       
-      const response = await fetch(url, { cache: "no-store" });
+      const response = await fetch(url, { cache: "no-store",credentials:"include" });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(
@@ -34,10 +34,10 @@ export default function OrderProductManagement() {
       setError(null);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        console.error("Error fetching cancel reasons:", err.message);
+        
         setError("Failed to load cancellation reasons.");
       } else {
-        console.error("Error fetching cancel reasons:", err);
+        
         setError("Failed to load cancellation reasons.");
       }
     }
@@ -47,7 +47,7 @@ export default function OrderProductManagement() {
     try {
       const url = `${API_BASE_URL}/orders`;
       
-      const response = await fetch(url, { cache: "no-store" });
+      const response = await fetch(url, { cache: "no-store",credentials:"include" });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(
@@ -84,10 +84,10 @@ export default function OrderProductManagement() {
       setError(null);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        console.error("Error fetching orders:", err.message);
+        
         setError("Failed to fetch orders. Please try again.");
       } else {
-        console.error("Error fetching orders:", err);
+        
         setError("Failed to fetch orders. Please try again.");
       }
     } finally {
@@ -122,14 +122,11 @@ export default function OrderProductManagement() {
       const url = `${API_BASE_URL}/orders/${id}`;
       
       const response = await fetch(url, {
-        method: "DELETE",
+        method: "DELETE",credentials:"include"
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error(
-          `Delete failed with status ${response.status}:`,
-          errorData
-        );
+       
         if (response.status === 404) {
           setError(
             "Order not found on the server. It may have been deleted already."
@@ -147,10 +144,10 @@ export default function OrderProductManagement() {
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
-        console.error("Error deleting order:", err.message);
+        
         setError(err.message || "Failed to delete order. Please try again.");
       } else {
-        console.error("Error deleting order:", err);
+        
         setError("Failed to delete order. Please try again.");
       }
     } finally {
@@ -166,6 +163,7 @@ export default function OrderProductManagement() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason }),
+        credentials:"include"
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -189,10 +187,10 @@ export default function OrderProductManagement() {
       setError(null);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        console.error("Error cancelling order:", err.message);
+        
         setError("Failed to cancel order. Please try again.");
       } else {
-        console.error("Error cancelling order:", err);
+        
         setError("Failed to cancel order. Please try again.");
       }
     }
@@ -206,6 +204,7 @@ export default function OrderProductManagement() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: data.status }),
+        credentials:"include"
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -224,10 +223,10 @@ export default function OrderProductManagement() {
       setError(null);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        console.error("Error updating order:", err.message);
+        
         setError("Failed to update order. Please try again.");
       } else {
-        console.error("Error updating order:", err);
+        
         setError("Failed to update order. Please try again.");
       }
     }

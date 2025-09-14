@@ -63,7 +63,7 @@ export default function OrderManagement() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/orders`);
+      const response = await fetch(`${API_BASE_URL}/orders`,{credentials:"include"});
       if (!response.ok) throw new Error("Network response was not ok");
       const data = await response.json();
       if (!Array.isArray(data.orders)) {
@@ -94,8 +94,8 @@ export default function OrderManagement() {
       }));
       setOrders(mappedOrders);
       setError(null);
-    } catch (err) {
-      console.error("Error fetching orders:", err);
+    } catch  {
+      
       setError("Failed to load orders. Please try again later.");
     } finally {
       setLoading(false);
@@ -147,6 +147,7 @@ export default function OrderManagement() {
             title: updatedOrder.title,
             imageUrl: updatedOrder.imageUrl,
           }),
+          credentials:"include"
         }
       );
       if (!response.ok) throw new Error("Failed to update order");
@@ -156,8 +157,8 @@ export default function OrderManagement() {
         )
       );
       window.dispatchEvent(new Event("orderUpdated"));
-    } catch (err) {
-      console.error("Error updating order:", err);
+    } catch {
+      
       setError("Failed to update order. Reverting to last known state.");
       fetchOrders();
     }

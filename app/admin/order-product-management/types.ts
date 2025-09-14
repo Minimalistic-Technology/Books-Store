@@ -101,13 +101,13 @@ export interface Book {
   tags: string[];
   seoTitle?: string;
   seoDescription?: string;
-  price?: number;
+  price: number;
   description?: string;
   estimatedDelivery?: string;
-  condition: 'new' | 'used';
+  condition: "new" | "used";
   author?: string;
   publisher?: string;
-  imageUrl?: string;
+  imageUrl: string;
   quantityNew: number;
   quantityOld: number;
   discountNew: number;
@@ -131,4 +131,32 @@ export interface Category {
   createdAt: string;
   updatedAt: string;
   __v: number;
+}
+export interface SiteSettings {
+  _id: string;
+  logo: string | null;
+  title: string;
+  metaDescription: string;
+  metaKeywords: string;
+  apiKey: string;
+  maintenanceMode: boolean;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+}
+
+export interface User {
+  username: string;
+  email: string;
+}
+
+export interface BookRequest {
+  name: string;
+  email: string;
+  mobile: string;
+  bookTitle: string;
+  publisher: string;
+  author: string;
+  classLevel: string;
+  message: string;
 }

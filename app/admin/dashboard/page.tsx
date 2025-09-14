@@ -48,22 +48,22 @@ export default function Dashboard() {
         const response = await fetch(`${API_BASE_URL}/users`,{headers:{
           "Content-Type":"application/json",
           "Authorization":`Bearer ${token}`
-        }});
+        },credentials:"include"});
         if (!response.ok) throw new Error("Failed to fetch users");
         const data = await response.json();
         setMetrics((prev) => ({
           ...prev,
           userCount: Array.isArray(data) ? data.length : 0,
         }));
-      } catch (error) {
-        console.error("Failed to fetch users:", error);
+      } catch  {
+        
         setMetrics((prev) => ({ ...prev, userCount: 0 }));
       }
     };
 
     const fetchOrders = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/orders`);
+        const response = await fetch(`${API_BASE_URL}/orders`,{credentials:"include"});
         if (!response.ok) throw new Error("Failed to fetch orders");
         const data = await response.json();
         const orders = Array.isArray(data.orders) ? data.orders : [];
@@ -104,8 +104,8 @@ export default function Dashboard() {
             },
           ],
         });
-      } catch (error) {
-        console.error("Failed to fetch orders:", error);
+      } catch  {
+        
         setMetrics((prev) => ({ ...prev, orderCount: 0, completedOrders: 0 }));
         setChartData({
           labels: Array.from({ length: 31 }, (_, i) => `Jul ${i + 1}`),

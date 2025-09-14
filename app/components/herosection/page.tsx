@@ -1,8 +1,8 @@
 "use client";
 
-// import Link from "next/link";
-// import Image from "next/image";
+import { useState, useEffect, useRef } from "react";
 import Head from "next/head";
+import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBook,
@@ -12,21 +12,12 @@ import {
   faChevronLeft,
   faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
-import { useState, useEffect, useRef } from "react";
 import { API_BASE_URL } from "../../../utils/api";
-import BookCard from "./BookCard"; // Adjust path as needed
-import Link from "next/link";
-
-interface Book {
-  _id: string;
-  bookName: string;
-  title: string;
-  price: number;
-  discountedPrice: number;
-  imageUrl: string;
-  subCategory: string;
-  viewCount: number;
-}
+import BookCard from "./BookCard";
+import SearchComponent from "../SearchComponent";
+import { siteSettingsAtom } from "@/app/store/data";
+import { useAtom } from "jotai";
+import { Book } from "@/app/admin/order-product-management/types";
 
 interface SiteSettings {
   _id: string;
@@ -51,6 +42,9 @@ export default function Home() {
   const bestSellersRef = useRef<HTMLDivElement | null>(null);
   const newArrivalsRef = useRef<HTMLDivElement | null>(null);
 
+  const [siteSettingsAtomState, setSiteSettingsAtomState] =
+    useAtom(siteSettingsAtom);
+
   const classes = [
     { name: "Class I", query: "class-1" },
     { name: "Class II", query: "class-2" },
@@ -69,12 +63,17 @@ export default function Home() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/settings`);
-        if (!response.ok) throw new Error("Failed to fetch settings");
-        const data = await response.json();
-        setSettings(data);
-      } catch (err) {
-        console.error("Error fetching settings:", err);
+        if (!siteSettingsAtomState) {
+          const response = await fetch(`${API_BASE_URL}/settings`);
+          if (!response.ok) throw new Error("Failed to fetch settings");
+          const data = await response.json();
+          setSettings(data);
+          setSiteSettingsAtomState(data);
+        } else {
+          setSettings(siteSettingsAtomState);
+        }
+      } catch  {
+        
         setError("Failed to load site settings.");
       } finally {
         setLoading(false);
@@ -92,8 +91,8 @@ export default function Home() {
         if (!newRes.ok) throw new Error("Failed to fetch new arrivals");
         const newData = await newRes.json();
         setNewArrivals(newData);
-      } catch (err) {
-        console.error("Error fetching books:", err);
+      } catch {
+        
       }
     };
 
@@ -132,6 +131,8 @@ export default function Home() {
       </Head>
 
       <main className="container mx-auto p-4 flex-grow">
+        <SearchComponent />
+
         <section className="text-center mb-8">
           {loading ? (
             <p className="text-gray-500 text-lg">Loading...</p>
@@ -149,7 +150,6 @@ export default function Home() {
           )}
         </section>
 
-        {/* Shop by Class Section */}
         <section className="mb-12">
           <h2 className="text-2xl font-semibold mb-6 text-center md:text-left md:px-29 text-black">
             Shop by Class
@@ -209,8 +209,7 @@ export default function Home() {
                   <Link
                     href={`/overview1/${book._id}`}
                     key={book._id}
-                    className="min-w-20 h-60 h-60  md:h-82 md:p-4 hover:shadow-2xl rounded-lg"
-                    // style={{ flex: "0 0 calc(25% - 18px)" }}
+                    className="min-w-20 h-60   md:h-82 md:p-4 hover:shadow-2xl rounded-lg"
                   >
                     <BookCard book={book} />
                   </Link>
@@ -251,7 +250,6 @@ export default function Home() {
                     href={`/overview1/${book._id}`}
                     key={book._id}
                     className="min-w-20 h-60  md:h-82 md:p-4 hover:shadow-2xl rounded-lg"
-                    // style={{ flex: "0 0 calc(25% - 18px)" }}
                   >
                     <BookCard book={book} />
                   </Link>
@@ -265,6 +263,15 @@ export default function Home() {
                   <FontAwesomeIcon icon={faChevronRight} />
                 </button>
               )}
+            </div>
+
+            <div className="mt-8 text-center">
+              <Link
+                href="/request-book"
+                className="inline-block bg-orange-500 text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:bg-orange-600 transition duration-200"
+              >
+                Request a Book
+              </Link>
             </div>
           </section>
 

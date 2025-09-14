@@ -1,11 +1,63 @@
 "use client";
+declare global {
+  interface Window {
+    Razorpay: new (options: RazorpayOptions) => RazorpayInstance;
+  }
+}
+
+interface RazorpayOptions {
+  key: string;
+  amount: number;
+  currency: string;
+  name?: string;
+  description?: string;
+  image?: string;
+  order_id?: string;
+  handler?: (response: RazorpayResponse) => void;
+  prefill?: {
+    name?: string;
+    email?: string;
+    contact?: string;
+  };
+  notes?: Record<string, string>;
+  theme?: {
+    color?: string;
+  };
+}
+
+interface RazorpayInstance {
+  open: () => void;
+  on: (
+    event: string,
+    callback: (response: RazorpayResponseError) => void
+  ) => void;
+}
+
+interface RazorpayResponse {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+}
+
+interface RazorpayResponseError {
+  error: {
+    code: string;
+    description: string;
+    source: string;
+    step: string;
+    reason: string;
+    metadata: {
+      order_id: string;
+      payment_id: string;
+    };
+  };
+}
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter, useSearchParams } from "next/navigation";
-// import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-// import { faShoppingCart } from "@fortawesome/free-solid-svg-icons";
+
 import { API_BASE_URL } from "../../utils/api";
 import Image from "next/image";
 
@@ -51,20 +103,29 @@ export default function CartContent() {
   const [email, setEmail] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
   const [error, setError] = useState<string | null>(null);
-
-  const token = typeof window !== "undefined" 
-  ? localStorage.getItem("bookstore-token") 
-  : null;
+  const [, setToken] = useState<string | null>(null);
+  const [, setLoading] = useState(true);
+  const [quantityNew, setQuantityNew] = useState<number | null>(0);
+  const [quantityOld, setQuantityOld] = useState<number | null>(0);
 
   useEffect(() => {
-    if (!token) setError("Please log in");
-  }, [token]);
+    setLoading(true);
+    if (typeof window !== "undefined") {
+      const storedToken = localStorage.getItem("bookstore-token");
+      if (storedToken) {
+        setToken(storedToken);
+        setLoading(false);
+      } else {
+        router.replace("/login");
+        
+      }
+    }
+  }, [router]);
 
   const {
-    register,
     handleSubmit,
-    watch,
-    formState: { errors },
+
+    formState: {},
   } = useForm<FormData>({
     defaultValues: {
       paymentMethod: "",
@@ -113,6 +174,19 @@ export default function CartContent() {
       setCartItems(storedItems);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      
+      document.body.removeChild(script);
+    };
+  }, []);
 
   const getEffectivePrice = (item: CartItem) => {
     return item.discountedPrice > 0 ? item.discountedPrice : item.price;
@@ -187,27 +261,13 @@ export default function CartContent() {
     throw new Error(`Invalid book condition: ${bookCondition}`);
   };
 
-  const onPaymentSubmit = async (data: FormData) => {
+  const onPaymentSubmit = async () => {
     if (cartItems.length === 0) {
       setError("Cart is empty.");
       return;
     }
 
-    const paymentMethod = data.paymentMethod;
-    if (!["creditCard", "debitCard", "upi", "cod"].includes(paymentMethod)) {
-      setError("Please select a valid payment method.");
-      return;
-    }
-
-    const paymentTypeMap: { [key: string]: string } = {
-      creditCard: "Credit Card",
-      debitCard: "Debit Card",
-      upi: "UPI",
-      cod: "Cash on Delivery",
-    };
-    const paymentType = paymentTypeMap[paymentMethod] || "Cash on Delivery";
-
-    // Validate stock for all items
+    
     for (const item of cartItems) {
       try {
         const response = await fetch(
@@ -223,8 +283,11 @@ export default function CartContent() {
         const book = await response.json();
 
         const quantityNew = book.quantityNew ?? 0;
+        setQuantityNew(quantityNew);
         const quantityOld = book.quantityOld ?? 0;
+        setQuantityOld(quantityOld);
         const itemCondition = mapConditionToOrderSchema(item.condition);
+        
 
         if (itemCondition === "New" && quantityNew < (item.quantity || 1)) {
           setError(
@@ -238,8 +301,8 @@ export default function CartContent() {
           );
           return;
         }
-      } catch (err) {
-        console.error(`Error checking stock for item ${item._id}:`, err);
+      } catch  {
+        
         setError(
           `Unable to verify stock for ${item.name}. Please try again or contact support.`
         );
@@ -247,7 +310,7 @@ export default function CartContent() {
       }
     }
 
-    // Create orders for all items
+    
     try {
       for (const item of cartItems) {
         const orderCondition = mapConditionToOrderSchema(item.condition);
@@ -262,62 +325,90 @@ export default function CartContent() {
             country: address.country,
             pinCode: address.postalCode,
           },
-          paymentType,
+          
           quantity: item.quantity || 1,
-          price: getEffectivePrice(item) * (item.quantity || 1),
-          status: "Shipped",
+          amount: getEffectivePrice(item) * (item.quantity || 1) * 100,
+          price: item.price,
+          
           condition: orderCondition,
           bookId: item._id,
         };
 
-        const response = await fetch(`${API_BASE_URL}/orders`, {
+        
+        const resp = await fetch(`${API_BASE_URL}/order`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(orderData),
-        });
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(
-            errorData.message ||
-              `Failed to place order for ${item.name}: HTTP ${response.status}`
+          
+          credentials: "include",
+        }).then((r) => r.json());
+       
+
+        const options = {
+          key: resp.keyId,
+          amount: resp.amount,
+          currency: resp.currency,
+          order_id: resp.orderId,
+          name: "Your Store",
+          prefill: {
+            email: resp.email,
+            contact: resp.phone,
+            name: resp.username,
+          },
+          callback_url: resp.callback_url, 
+          handler: async (response: RazorpayResponse) => {
+            try {
+              const verifyRes = await fetch(`${API_BASE_URL}/verify`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(response),
+              }).then((r) => r.json());
+
+              if (verifyRes.ok) {
+                localStorage.removeItem("cart");
+                setCartItems([]);
+                setShowPaymentForm(false);
+                router.push("/profile?tab=orders");
+              } else {
+                setError(
+                  "Payment verification failed. Please contact support."
+                );
+              }
+            } catch  {
+              
+              setError("Payment verification failed. Please try again.");
+            }
+          },
+
+          
+          modal: {
+            ondismiss: () => {
+              
+              setError("Payment cancelled. You can try again.");
+            },
+          },
+        };
+
+        
+        const rzp = new window.Razorpay(options);
+
+        
+        rzp.on("payment.failed", (response: RazorpayResponseError) => {
+          
+          setError(
+            `Payment failed: ${response.error.description} (${response.error.reason})`
           );
-        }
+        });
+
+        
+        rzp.open();
+      
       }
-      localStorage.removeItem("cart");
-      setCartItems([]);
-      setShowPaymentForm(false);
-      router.push("/orders");
-    } catch (err) {
-      if (err instanceof Error) {
-        console.error("Error placing order:", err.message);
-        setError(err.message || "Failed to place order. Please try again.");
-      } else {
-        console.error("Error placing order:", err);
-        setError("Failed to place order. Please try again.");
-      }
+    } catch  {
+      
     }
   };
 
-  const handleUpiVerify = () => {
-    const upiId = watch("upiId");
-
-    alert(
-      "UPI verification simulated. Please integrate with a UPI API for real validation."
-    );
-  };
-
-  if (error) {
-    return (
-      <main className="flex items-center justify-center">
-        <Link
-          href="/login"
-          className="text-black mx-auto text-center block w-fit p-2 rounded-lg mt-3 bg-amber-200  hover:bg-amber-300"
-        >
-          Login
-        </Link>
-      </main>
-    );
-  }
   return (
     <main className="max-w-6xl mx-auto py-10 px-4">
       <nav className="flex items-center text-sm text-gray-500 mb-4">
@@ -382,6 +473,10 @@ export default function CartContent() {
                   </div>
                   <p className="text-sm text-gray-600">
                     Condition: {item.condition}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Stock:{" "}
+                    {item.condition === "New" ? quantityNew : quantityOld}
                   </p>
                 </div>
                 <div className="flex items-center space-x-4">
@@ -522,110 +617,7 @@ export default function CartContent() {
                 onSubmit={handleSubmit(onPaymentSubmit)}
                 className="mt-4 space-y-4"
               >
-                <div>
-                  <select
-                    {...register("paymentMethod", {
-                      required: "Payment method is required",
-                    })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  >
-                    <option value="" disabled>
-                      Select Payment Method
-                    </option>
-                    <option value="creditCard">Credit Card</option>
-                    <option value="debitCard">Debit Card</option>
-                    <option value="upi">UPI</option>
-                    <option value="cod">Cash on Delivery</option>
-                  </select>
-                  {errors.paymentMethod && (
-                    <p className="text-red-500 text-sm">
-                      {errors.paymentMethod.message}
-                    </p>
-                  )}
-                </div>
-                {(watch("paymentMethod") === "creditCard" ||
-                  watch("paymentMethod") === "debitCard") && (
-                  <>
-                    <input
-                      type="text"
-                      {...register("cardNumber", {
-                        required: "Card number is required",
-                      })}
-                      placeholder="1234 5678 9012 3456"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
-                    {errors.cardNumber && (
-                      <p className="text-red-500 text-sm">
-                        {errors.cardNumber.message}
-                      </p>
-                    )}
-                    <input
-                      type="text"
-                      {...register("cardholderName", {
-                        required: "Cardholder name is required",
-                      })}
-                      placeholder="John Doe"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
-                    {errors.cardholderName && (
-                      <p className="text-red-500 text-sm">
-                        {errors.cardholderName.message}
-                      </p>
-                    )}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <input
-                          type="text"
-                          {...register("cvv", { required: "CVV is required" })}
-                          placeholder="123"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        />
-                        {errors.cvv && (
-                          <p className="text-red-500 text-sm">
-                            {errors.cvv.message}
-                          </p>
-                        )}
-                      </div>
-                      <div>
-                        <input
-                          type="text"
-                          {...register("expiryDate", {
-                            required: "Expiry date is required",
-                          })}
-                          placeholder="MM/YY"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        />
-                        {errors.expiryDate && (
-                          <p className="text-red-500 text-sm">
-                            {errors.expiryDate.message}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </>
-                )}
-                {watch("paymentMethod") === "upi" && (
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      {...register("upiId", { required: "UPI ID is required" })}
-                      placeholder="example@upi"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
-                    {errors.upiId && (
-                      <p className="text-red-500 text-sm">
-                        {errors.upiId.message}
-                      </p>
-                    )}
-                    <button
-                      type="button"
-                      onClick={handleUpiVerify}
-                      className="bg-gray-200 text-black rounded-full py-2 px-4 hover:bg-gray-300"
-                    >
-                      Verify
-                    </button>
-                  </div>
-                )}
+               
                 <button
                   type="submit"
                   className="w-full bg-teal-600 text-white rounded-full py-2 hover:bg-teal-700"

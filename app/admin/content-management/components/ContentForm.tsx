@@ -135,12 +135,12 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
         return data.secure_url;
       } catch (err) {
         if (err instanceof Error) {
-          console.error("Image upload error:", err.message);
+          
         setError(`Failed to upload image: ${err.message}. Using default image.`);
         return defaultImageUrl;
           
         } else {
-          console.error("Image upload error:", err);
+          
         setError(`Failed to upload image: ${err}. Using default image.`);
         return defaultImageUrl;
         }
@@ -221,12 +221,12 @@ export const ContentForm: React.FC<ContentFormProps> = ({ content, onClose, onSa
       onClose();
     } catch (err) {
      if (err instanceof Error) {
-       console.error("Error saving content:", err);
+       
       setError(err.message);
       setIsSubmitting(false);
       
      } else {
-       console.error("Error saving content:", err);
+       
       setError( "Failed to save content");
       setIsSubmitting(false);
      }

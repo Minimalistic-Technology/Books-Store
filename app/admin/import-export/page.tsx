@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import ImportForm from "./components/ImportForm";
 import ExportForm from "./components/ExportForm";
 
-import { User } from "./components/ExportForm";
+// import { User } from "./components/ExportForm";
 import { API_BASE_URL } from "../../../utils/api";
-import { Content } from "../order-product-management/types";
+import { Content, User } from "../order-product-management/types";
 
 type APIError = {
   errors?: { error: string }[];
@@ -18,14 +18,14 @@ type APIError = {
 export default function ImportExportManagement() {
   const [error, setError] = useState<string>("");
   const [successMessage, setSuccessMessage] = useState<string>("");
-  const [selectedCategory, setSelectedCategory] = useState([]);
-  const [uploadedData, setUploadedData] = useState<any>([]);
-  const [isCategoryPresent, setIsCategoryPresent] = useState<any>([]);
+  // const [selectedCategory, setSelectedCategory] = useState([]);
+  // const [uploadedData, setUploadedData] = useState<any>([]);
+  // const [isCategoryPresent, setIsCategoryPresent] = useState<any>([]);
 
   // useEffect(() => {
   //   const fetchCategories = async () => {
 
-  //       
+  //
   //       setSelectedCategory(matchedCategory[0]?.children);
 
   //   };
@@ -33,13 +33,13 @@ export default function ImportExportManagement() {
   // }, []);
 
   // useEffect(() => {
-  //   
+  //
   //   if (selectedCategory?.length > 0) {
-  //     
+  //
   //     const isCategoryFound = selectedCategory.find(
   //       (cat: any) => cat.name === uploadedData[0].subCategory
   //     );
-  //     
+  //
   //     setIsCategoryPresent(isCategoryFound);
   //   }
   // }, [selectedCategory]);
@@ -58,7 +58,27 @@ export default function ImportExportManagement() {
   ) => {
     try {
       if (data.type === "users") {
+        // Validate users
+        const validatedUsers = data.parsedData;
+        if (!validatedUsers.length) {
+          throw new Error("No valid users found in uploaded data.");
+        }
+
+        const response = await fetch(`${API_BASE_URL}/users/bulk`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ users: validatedUsers }),
+          credentials: "include",
+        });
+
+        const result = await response.json();
+
+
         
+        if (!response.ok) {
+          throw new Error(result.message || "Failed to import users");
+        }
+
         setSuccessMessage("Users imported successfully");
         setTimeout(() => setSuccessMessage(""), 3000);
       } else if (data.type === "products") {
@@ -70,11 +90,8 @@ export default function ImportExportManagement() {
           productsByCategory[product.categoryName].push(product);
         });
 
-        
-
         const importPromises = Object.entries(productsByCategory).map(
           async ([category, products]) => {
-            
             const validatedProducts = products.map((product: Content) => {
               const tagsArray =
                 product.tags && product.tags.trim()
@@ -139,24 +156,23 @@ export default function ImportExportManagement() {
               };
             });
 
-            
             // setUploadedData(validatedProducts);
 
-            // 
+            //
             const categoriesResponse = await fetch(
-              `${API_BASE_URL}/book-categories`
+              `${API_BASE_URL}/book-categories`,
+              { credentials: "include" }
             );
             const data = await categoriesResponse.json();
-            
+
             const matchedCategory = data.filter((el: any) =>
               el.name === validatedProducts[0]?.categoryName ? el : false
             );
-            
+
             const isCategoryFound = matchedCategory[0].children.find(
               (cat: any) => cat.name === validatedProducts[0].subCategory
             );
-            // 
-            
+
             if (!isCategoryFound) {
               const response = await fetch(`${API_BASE_URL}/book-categories`, {
                 method: "POST",
@@ -165,14 +181,14 @@ export default function ImportExportManagement() {
                   name: validatedProducts[0]?.subCategory.trim(),
                   parentPath: validatedProducts[0]?.categoryName.trim(),
                 }),
+                credentials: "include",
               });
 
               if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error || "Failed to create category");
               }
-              const data = await response.json();
-              
+              // const data = await response.json();
             }
 
             // );
@@ -184,9 +200,9 @@ export default function ImportExportManagement() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ products: validatedProducts }),
+                credentials: "include",
               }
             );
-            
 
             if (!response.ok) {
               const errorData: APIError = await response
@@ -211,11 +227,11 @@ export default function ImportExportManagement() {
       }
     } catch (err) {
       if (err instanceof Error) {
-        console.error("Import error:", err);
+        
         setError(err.message);
         setTimeout(() => setError(""), 5000);
       } else {
-        console.error("Import error:", err);
+        
         setError("Failed to import data");
         setTimeout(() => setError(""), 5000);
       }
@@ -224,7 +240,6 @@ export default function ImportExportManagement() {
 
   const handleExport = (data: { type: string; format: string }) => {
     try {
-      
       setSuccessMessage(`Exporting ${data.type} in ${data.format} format`);
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (err) {

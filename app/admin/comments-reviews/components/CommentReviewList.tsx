@@ -26,13 +26,13 @@ export default function CommentReviewList({ onEdit, onDelete, items }: CommentRe
             <div>
               <button
                 onClick={() => onEdit(item)}
-                className="bg-yellow-500 text-white px-3 py-1 rounded-lg mr-2 hover:bg-yellow-600 transition-all"
+                className="bg-yellow-500 text-white px-3 py-1 rounded-lg mr-2 hover:bg-yellow-600 transition-all cursor-pointer"
               >
                 Edit
               </button>
               <button
                 onClick={() => onDelete(item.id)}
-                className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition-all"
+                className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-700 transition-all cursor-pointer "
               >
                 Delete
               </button>

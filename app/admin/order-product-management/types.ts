@@ -35,7 +35,6 @@ export interface Order {
   condition: Condition;
   createdAt: string;
   updatedAt: string;
-  bookId: string;
   date?: string;
   title?: string;
   imageUrl?: string | null;
@@ -44,6 +43,7 @@ export interface Order {
   products?: []; 
   totalAmount?: number; 
   shippingAddress?: IAddress;
+  bookId:Book;
 }
 export interface OrderApiResponse {
   _id: string;

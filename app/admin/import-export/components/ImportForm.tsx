@@ -19,6 +19,7 @@ interface ImportFormProps {
 interface UserRow {
   username: string;
   email: string;
+  phone:number;
 }
 
 interface ProductRow {
@@ -108,7 +109,7 @@ export default function ImportForm({ onImport }: ImportFormProps) {
             .map((row) => {
               const u = row as UserRow;
               if (!u.username || !u.email) return null;
-              return { username: u.username, email: u.email } as User;
+              return { username: u.username, email: u.email,phone:u.phone } as User;
             })
             .filter((u): u is User => u !== null);
         } else {

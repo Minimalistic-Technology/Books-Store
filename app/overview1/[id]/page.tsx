@@ -9,6 +9,9 @@ import { useParams, useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { API_BASE_URL } from "../../../utils/api";
 import Link from "next/link";
+import axios from "axios";
+
+import useCheckIsLoggedIn from "@/app/hooks/useCheckIsLoggedIn";
 
 const Header = dynamic(() => import("../../components/header/page"), {
   ssr: false,
@@ -84,19 +87,15 @@ export default function Overview() {
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [reviews, setReviews] = useState<BookstoreReview[]>([]);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  const token = localStorage.getItem("bookstore-token");
-  useEffect(() => {
-    if (token) setIsLoggedIn(true);
-    else setIsLoggedIn(false);
-  }, [token]);
+  const {isLoggedIn} = useCheckIsLoggedIn(true)
+  
 
   useEffect(() => {
     const fetchItemDetails = async () => {
       if (id) {
         try {
-          
           const response = await fetch(
             `${API_BASE_URL}/books/${id}?t=${new Date().getTime()}`,
             { cache: "no-store" }
@@ -108,6 +107,7 @@ export default function Overview() {
             );
           }
           const data = await response.json();
+          console.log(data.condition)
           const newItem = {
             _id: data._id || "",
             name: data.bookName || data.title || "Unknown Title",
@@ -138,6 +138,7 @@ export default function Overview() {
               : newItem.quantityNew > 0
               ? "New"
               : "Old";
+              console.log(selectedCondition)
           setCondition(selectedCondition);
           // Calculate initial discounted price based on selected condition
           const initialDiscount =
@@ -156,10 +157,10 @@ export default function Overview() {
           setAvailableConditions(conditions);
           setError(null);
         } catch (err) {
-          if(err instanceof Error)
-          setError(
-            `Item not found. Please check the item ID (${id}) or try a different one.`
-          );
+          if (err instanceof Error)
+            setError(
+              `Item not found. Please check the item ID (${id}) or try a different one.`
+            );
           setItem({
             _id: "",
             name: "Not Found",
@@ -198,7 +199,7 @@ export default function Overview() {
         );
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          
+
           throw new Error(
             errorData.error || `HTTP error! Status: ${response.status}`
           );
@@ -222,11 +223,10 @@ export default function Overview() {
         setReviews(reviews);
         setReviewError(null);
       } catch (err) {
-          if(err instanceof Error)
-        
-        setReviewError(
-          err.message || "Failed to load reviews. Please try again later."
-        );
+        if (err instanceof Error)
+          setReviewError(
+            err.message || "Failed to load reviews. Please try again later."
+          );
       }
     };
     if (id) {
@@ -276,16 +276,17 @@ export default function Overview() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
+          credentials:"include"
         });
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          
+
           throw new Error(
             errorData.error || `HTTP error! Status: ${response.status}`
           );
         }
         // const newReview = await response.json();
-        
+
         setShowSuccessMessage(true);
         setRating(0);
         setReviewDescription("");
@@ -296,29 +297,51 @@ export default function Overview() {
           setShowSuccessMessage(false);
         }, 5000);
       } catch (err) {
-          if(err instanceof Error)
-       
-        setReviewError(
-          err.message || "Failed to submit review. Please try again later."
-        );
+        if (err instanceof Error)
+          setReviewError(
+            err.message || "Failed to submit review. Please try again later."
+          );
       }
     }
   };
 
-  const handleAddToCart = () => {
-    if (!error && item._id && !isOutOfStock) {
-      const query = new URLSearchParams({
-        _id: item._id,
-        name: item.name,
-        price: item.price.toFixed(2),
-        imageUrl: item.imageUrl || defaultImageUrl,
-        condition,
-        discountedPrice: discountedPrice.toFixed(2),
-        category,
-      }).toString();
-      
-      if (isLoggedIn) router.push(`/cart?${query}`);
-      else setError("Please log in");
+  const handleAddToCart = async () => {
+    try {
+      if (isLoggedIn) {
+        if (!error && item._id && !isOutOfStock) {
+          const query = new URLSearchParams({
+            _id: item._id,
+            name: item.name,
+            price: item.price.toFixed(2),
+            imageUrl: item.imageUrl || defaultImageUrl,
+            condition,
+            discountedPrice: discountedPrice.toFixed(2),
+            category,
+          }).toString();
+          const stock = isOutOfStock
+            ? 0
+            : item.condition.includes("New")
+            ? item.quantityNew
+            : item.quantityOld;
+          await axios.post(
+            `${API_BASE_URL}/addCart`,
+            {
+              bookId: item._id,
+              title: item.name,
+              price: item.price.toFixed(2),
+              quantity: 1,
+              stock,
+              condition
+            },
+            {
+              withCredentials: true,
+            }
+          );
+          router.push(`/cart?${query}`);
+        }
+      } else setError("Please log in");
+    } catch (error) {
+      if (error instanceof Error) console.log(error.message);
     }
   };
 
@@ -333,8 +356,8 @@ export default function Overview() {
         discountedPrice: discountedPrice.toFixed(2),
         category,
       }).toString();
-      
-       if (isLoggedIn) router.push(`/cart?${query}`);
+
+      if (isLoggedIn) router.push(`/cart?${query}`);
       else setError("Please log in");
     }
   };

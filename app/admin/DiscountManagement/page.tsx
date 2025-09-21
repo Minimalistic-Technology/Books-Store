@@ -94,6 +94,7 @@ export default function DiscountManagement() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ discount: Number(discount) }),
+        credentials:"include"
       });
 
       if (!response.ok) {

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 
 import { API_BASE_URL } from "../../utils/api";
 import axios from "axios";
+import useCheckIsLoggedIn from "../hooks/useCheckIsLoggedIn";
 
 const BookStoreLoginPage: React.FC = () => {
   const router = useRouter();
@@ -22,27 +23,15 @@ const BookStoreLoginPage: React.FC = () => {
   });
   const [isMounted, setIsMounted] = useState(false);
   const [forgotMessage, setForgotMessage] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [, setToken] = useState<string | null>();
+  const { isLoggedIn, checking } = useCheckIsLoggedIn(false);
 
   useEffect(() => {
-    setLoading(true);
-    if (typeof window !== "undefined") {
-      const storedToken = localStorage.getItem("bookstore-token");
-      if (storedToken) {
-        setToken(storedToken);
-        router.replace("/");
-      }else{
-        setLoading(false)
-      }
-    }
-  }, [router]);
-  useEffect(() => {
+    if (isLoggedIn) router.replace("/");
     setIsMounted(true);
-  }, []);
+  }, [router, isLoggedIn]);
 
   if (!isMounted) return null;
-  if (loading)
+  if (checking || isLoggedIn)
     return (
       <div className="flex justify-center items-center w-full h-full">
         <h1>Loading...</h1>
@@ -95,7 +84,7 @@ const BookStoreLoginPage: React.FC = () => {
         };
 
         const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        // const response = await fetch(` https://simpsons-charms-blast-tender.trycloudflare.com/auth/login`, {
+          // const response = await fetch(` https://simpsons-charms-blast-tender.trycloudflare.com/auth/login`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -110,13 +99,12 @@ const BookStoreLoginPage: React.FC = () => {
           throw new Error(data.message || "Login failed. Please try again.");
         }
 
-        localStorage.setItem("bookstore-token", data.token);
+        // localStorage.setItem("bookstore-token", data.token);
 
-        alert("Login successful!");
+        // alert("Login successful!");
 
         router.push("/");
       } catch (error) {
-        
         setErrors((prev) => ({
           ...prev,
           apiError:
@@ -135,7 +123,7 @@ const BookStoreLoginPage: React.FC = () => {
     const res = await axios.post(`${API_BASE_URL}/auth/forgot-password`, {
       email,
     });
-    
+
     setForgotMessage(res.data.message);
   };
 
@@ -246,17 +234,6 @@ const BookStoreLoginPage: React.FC = () => {
               Don’t have an account?{" "}
               <Link href="/signup" className="text-teal-600 hover:underline">
                 Sign up.
-              </Link>
-            </p>
-          </div>
-          <div className="mt-4 text-center">
-            <p className="text-sm">
-              Switch to{" "}
-              <Link
-                href="/admin-login"
-                className="text-teal-600 hover:underline"
-              >
-                Admin Login
               </Link>
             </p>
           </div>

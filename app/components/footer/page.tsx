@@ -5,7 +5,7 @@ import Image from 'next/image';
 export default function Footer() {
   return (
     <footer className="bg-gray-900 text-white py-6">
-      <div className="container md:mx-auto px-20 md:px-29 flex flex-col md:flex-row justify-between items-start space-y-6 md:space-y-0 ">
+      <div className="container md:mx-auto px-20  flex flex-col gap-5 flex-wrap md:flex-row justify-between items-start space-y-6 md:space-y-0 ">
         {/* Logo and Contact Info */}
         <div className="flex flex-col items-start">
           <div className="flex items-center mb-2 rounded-xl">
@@ -43,7 +43,7 @@ export default function Footer() {
 
         {/* Categories */}
         <div>
-          <h3 className="font-bold mb-2">Categories</h3>
+          <h3 className="font-bold mb-2 underline">Categories</h3>
           <ul className="space-y-1 text-sm">
             <li><p  className="hover:underline">School Books</p></li>
             <li><p  className="hover:underline">Maharashtra State Board</p></li>
@@ -55,7 +55,7 @@ export default function Footer() {
 
         {/* Quick ps */}
         <div>
-          <h3 className="font-bold mb-2">Quick p</h3>
+          <h3 className="font-bold mb-2 underline">Quick p</h3>
           <ul className="space-y-1 text-sm">
             <li><p  className="hover:underline">About Us</p></li>
             <li><p  className="hover:underline">Disclaimer</p></li>
@@ -66,7 +66,7 @@ export default function Footer() {
 
         {/* Contact Us */}
         <div>
-          <h3 className="font-bold mb-2">Contact Us</h3>
+          <h3 className="font-bold mb-2 underline">Contact Us</h3>
           <ul className="space-y-1 text-sm">
             <li><p className="hover:underline">Contact Us</p></li>
             <li><p className="hover:underline">Cancellation and Refund Policy</p></li>

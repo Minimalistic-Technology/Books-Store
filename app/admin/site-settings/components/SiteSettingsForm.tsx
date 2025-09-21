@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { SiteSettings } from "../page";
+import Image from "next/image";
 
 type SiteSettingsFormProps = {
   settings: SiteSettings;
@@ -64,7 +65,7 @@ export default function SiteSettingsForm({ settings, onSave, saving }: SiteSetti
           <div>
             <label className="block text-sm font-medium text-gray-700">Logo</label>
             {settings.logo && (
-              <img src={settings.logo} alt="Logo Preview" className="mt-2 h-20 w-auto rounded shadow-md" />
+              <Image width={100} height={100} src={settings.logo} alt="Logo Preview" className="mt-2 h-20 w-auto rounded shadow-md" />
             )}
             {!settings.logo && <p className="mt-2 text-gray-500">No logo uploaded</p>}
           </div>
@@ -81,10 +82,6 @@ export default function SiteSettingsForm({ settings, onSave, saving }: SiteSetti
           <div>
             <label className="block text-sm font-medium text-gray-700">Meta Keywords</label>
             <p className="mt-1 p-3 bg-gray-100 border border-gray-300 rounded-lg">{settings.metaKeywords}</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">API Key</label>
-            <p className="mt-1 p-3 bg-gray-100 border border-gray-300 rounded-lg">{settings.apiKey || "Not set"}</p>
           </div>
           <div className="flex items-center">
             <span className="mr-2 h-5 w-5 border-2 border-gray-300 rounded flex items-center justify-center">
@@ -104,7 +101,7 @@ export default function SiteSettingsForm({ settings, onSave, saving }: SiteSetti
         <div>
           <label className="block text-sm font-medium text-gray-700">Logo</label>
           {formData.logo && (
-            <img src={formData.logo} alt="Logo Preview" className="mt-2 h-20 w-auto rounded shadow-md" />
+            <Image width={100} height={100} src={formData.logo} alt="Logo Preview" className="mt-2 h-20 w-auto rounded shadow-md" />
           )}
           <input
             type="file"
@@ -150,15 +147,7 @@ export default function SiteSettingsForm({ settings, onSave, saving }: SiteSetti
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">API Key</label>
-          <input
-            type="text"
-            name="apiKey"
-            value={formData.apiKey}
-            onChange={handleChange}
-            className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-            disabled={saving}
-          />
+         
         </div>
         <div className="flex items-center">
           <input

@@ -50,7 +50,7 @@ const BookStoreSignupPage: React.FC = () => {
         setErrors((prev) => ({ ...prev, email: "Email is required" }));
         return;
       }
-      await axios.post(`api/ml/send-otp`, {
+      await axios.post(`api/bookstore/send-otp`, {
         name,
         email,
       });
@@ -88,11 +88,11 @@ const BookStoreSignupPage: React.FC = () => {
     if (!hasErrors) {
       try {
         // Step 1: Verify OTP
-        const verifyRes = await axios.post(`api/ml/verify-otp`, {
+        const verifyRes = await axios.post(`api/bookstore/verify-otp`, {
           email,
           otp,
         });
-        if(!verifyRes.data.success){
+        if(!(verifyRes.status===200)){
           newErrors.otp="Invalid OTP"
           hasErrors = true
           return

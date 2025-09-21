@@ -56,25 +56,36 @@ interface RazorpayResponseError {
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 import { API_BASE_URL } from "../../utils/api";
 import Image from "next/image";
+import axios from "axios";
+import { Book } from "../admin/order-product-management/types";
+import { useDebouncedCallback } from "../hooks/useDebouncedCallback";
+import useCheckIsLoggedIn from "../hooks/useCheckIsLoggedIn";
 
 const defaultImageUrl =
   "https://images.pexels.com/photos/373465/pexels-photo-373465.jpeg";
 
 interface CartItem {
-  _id: string;
-  name: string;
+  bookId: string;
+  title: string;
   price: number;
   imageUrl: string;
   condition: string;
   discountedPrice: number;
   quantity: number;
+  stock: number;
   categoryName?: string;
 }
-
+interface CartResponse {
+  bookId: Book;
+  quantity: number;
+  stock: number;
+  condition: string;
+  _id: string;
+}
 interface FormData {
   paymentMethod: string;
   cardNumber: string;
@@ -88,7 +99,7 @@ interface FormData {
 
 export default function CartContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
@@ -103,24 +114,11 @@ export default function CartContent() {
   const [email, setEmail] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [, setToken] = useState<string | null>(null);
-  const [, setLoading] = useState(true);
-  const [quantityNew, setQuantityNew] = useState<number | null>(0);
-  const [quantityOld, setQuantityOld] = useState<number | null>(0);
+  const [, setQuantityNew] = useState<number | null>(0);
+  const [, setQuantityOld] = useState<number | null>(0);
 
-  useEffect(() => {
-    setLoading(true);
-    if (typeof window !== "undefined") {
-      const storedToken = localStorage.getItem("bookstore-token");
-      if (storedToken) {
-        setToken(storedToken);
-        setLoading(false);
-      } else {
-        router.replace("/login");
-        
-      }
-    }
-  }, [router]);
+    const { isLoggedIn, checking } = useCheckIsLoggedIn(false);
+
 
   const {
     handleSubmit,
@@ -138,52 +136,91 @@ export default function CartContent() {
       upiId: "",
     },
   });
-
-  useEffect(() => {
-    const storedItems = JSON.parse(localStorage.getItem("cart") || "[]");
-    const id = searchParams.get("_id");
-    const name = searchParams.get("name");
-    const price = searchParams.get("price");
-    const imageUrl = searchParams.get("imageUrl") || defaultImageUrl;
-    const condition = searchParams.get("condition");
-    const discountedPrice = searchParams.get("discountedPrice");
-    const categoryName = searchParams.get("category") || "Non-Academics";
-
-    if (
-      id &&
-      name &&
-      price &&
-      !storedItems.some((item: CartItem) => item._id === id)
-    ) {
-      const newItem: CartItem = {
-        _id: id,
-        name,
-        price: parseFloat(price),
-        imageUrl,
-        condition: condition || "New",
-        discountedPrice: discountedPrice
-          ? parseFloat(discountedPrice)
-          : parseFloat(price),
-        quantity: 1,
-        categoryName,
+  const convertCartDataArray = (cartData: CartResponse[]) => {
+    const newCartData = cartData.map((item: CartResponse) => {
+      const initialDiscount =
+        item.condition === "New"
+          ? item.bookId.discountNew
+          : item.bookId.discountOld;
+      const discountedPrice = item.bookId.price * (1 - initialDiscount / 100);
+      return {
+        bookId: item.bookId._id,
+        title: item.bookId.title,
+        price: item.bookId.price,
+        imageUrl: item.bookId.imageUrl,
+        condition: item.condition,
+        discountedPrice,
+        quantity: item.quantity,
+        stock: item.stock,
+        categoryName: item.bookId.categoryPath,
       };
-      const updatedCart = [...storedItems, newItem];
-      setCartItems(updatedCart);
-      localStorage.setItem("cart", JSON.stringify(updatedCart));
-    } else {
-      setCartItems(storedItems);
+    });
+    console.log(newCartData);
+    return newCartData;
+  };
+  async function getCart() {
+    if (cartItems.length === 0) {
+      const cartDataRes = await axios.get(`${API_BASE_URL}/getCart`, {
+        withCredentials: true,
+      });
+      const cartData = cartDataRes.data.items;
+      console.log(cartDataRes, cartData);
+
+      setCartItems(() => convertCartDataArray(cartData));
+      // console.log(cartData);
     }
-  }, [searchParams]);
+  }
+  useEffect(() => {
+    // const storedItems = JSON.parse(localStorage.getItem("cart") || "[]");
+
+    getCart();
+
+    // const id = searchParams.get("_id");
+    // const name = searchParams.get("name");
+    // const price = searchParams.get("price");
+    // const imageUrl = searchParams.get("imageUrl") || defaultImageUrl;
+    // const condition = searchParams.get("condition");
+    // const discountedPrice = searchParams.get("discountedPrice");
+    // const categoryName = searchParams.get("category") || "Non-Academics";
+
+    // if (
+    //   id &&
+    //   name &&
+    //   price &&
+    //   !storedItems.some((item: CartItem) => item._id === id)
+    // ) {
+    //   const newItem: CartItem = {
+    //     _id: id,
+    //     name,
+    //     price: parseFloat(price),
+    //     imageUrl,
+    //     condition: condition || "New",
+    //     discountedPrice: discountedPrice
+    //       ? parseFloat(discountedPrice)
+    //       : parseFloat(price),
+    //     quantity: 1,
+    //     categoryName,
+    //   };
+    //   const updatedCart = [...storedItems, newItem];
+    //   setCartItems(updatedCart);
+    //   localStorage.setItem("cart", JSON.stringify(updatedCart));
+    // } else {
+    //   setCartItems(storedItems);
+    // }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
-    
+    console.log(cartItems);
+  }, [cartItems]);
+
+  useEffect(() => {
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.async = true;
     document.body.appendChild(script);
 
     return () => {
-      
       document.body.removeChild(script);
     };
   }, []);
@@ -199,18 +236,65 @@ export default function CartContent() {
     );
   };
 
-  const updateQuantity = (id: string, newQuantity: number) => {
-    const updatedCart = cartItems.map((item) =>
-      item._id === id ? { ...item, quantity: Math.max(1, newQuantity) } : item
+  const updateQuantity = async (
+    id: string,
+    newQuantity: number,
+    condition: string
+  ) => {
+    // const updatedCart = cartItems.map((item) =>
+    //   item._id === id ? { ...item, quantity: Math.max(1, newQuantity) } : item
+    // );
+    // setCartItems(updatedCart);
+    // localStorage.setItem("cart", JSON.stringify(updatedCart));
+    const updatedCartRes = await axios.put(
+      `${API_BASE_URL}/updateCart`,
+      {
+        bookId: id,
+        quantity: newQuantity,
+        condition,
+      },
+      {
+        withCredentials: true,
+      }
     );
-    setCartItems(updatedCart);
-    localStorage.setItem("cart", JSON.stringify(updatedCart));
+    // setCartItems(updatedCartRes.data.items);
+    setCartItems(() => convertCartDataArray(updatedCartRes.data.items));
   };
 
-  const removeItem = (id: string) => {
-    const updatedCart = cartItems.filter((item) => item._id !== id);
-    setCartItems(updatedCart);
-    localStorage.setItem("cart", JSON.stringify(updatedCart));
+  // const debouncedUpdateQuantity = useDebouncedCallback(
+  //   async (id: string, newQuantity: number, condition: string) => {
+  //     try {
+  //       await updateQuantity(id, newQuantity, condition);
+  //     } catch (err) {
+  //       console.error("Failed to update quantity", err);
+  //     }
+  //   },
+  //   300 // delay in ms
+  // );
+
+  const debouncedUpdateQuantity = useDebouncedCallback<
+    [string, number, string]
+  >(async (id, newQuantity, condition) => {
+    try {
+      await updateQuantity(id, newQuantity, condition);
+    } catch (err) {
+      console.error("Failed to update quantity", err);
+    }
+  }, 300);
+
+  const removeItem = async (id: string, condition: string) => {
+    if (!id) return;
+    // const updatedCart = cartItems.filter((item) => item._id !== id);
+    // setCartItems(updatedCart);
+    // localStorage.setItem("cart", JSON.stringify(updatedCart));
+    const updatedCartRes = await axios.delete(
+      `${API_BASE_URL}/removeItem/${id}?condition=${condition}`,
+      { withCredentials: true }
+    );
+    // setCartItems(updatedCartRes.data.items);
+    setCartItems(() => convertCartDataArray(updatedCartRes.data.items));
+
+    // await getCart();
   };
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -267,11 +351,10 @@ export default function CartContent() {
       return;
     }
 
-    
     for (const item of cartItems) {
       try {
         const response = await fetch(
-          `${API_BASE_URL}/books/${item._id}?t=${new Date().getTime()}`,
+          `${API_BASE_URL}/books/${item.bookId}?t=${new Date().getTime()}`,
           { cache: "no-store" }
         );
         if (!response.ok) {
@@ -287,30 +370,27 @@ export default function CartContent() {
         const quantityOld = book.quantityOld ?? 0;
         setQuantityOld(quantityOld);
         const itemCondition = mapConditionToOrderSchema(item.condition);
-        
 
         if (itemCondition === "New" && quantityNew < (item.quantity || 1)) {
           setError(
-            `Insufficient new stock for ${item.name}. Only ${quantityNew} available.`
+            `Insufficient new stock for ${item.title}. Only ${quantityNew} available.`
           );
           return;
         }
         if (itemCondition === "Old" && quantityOld < (item.quantity || 1)) {
           setError(
-            `Insufficient old stock for ${item.name}. Only ${quantityOld} available.`
+            `Insufficient old stock for ${item.title}. Only ${quantityOld} available.`
           );
           return;
         }
-      } catch  {
-        
+      } catch {
         setError(
-          `Unable to verify stock for ${item.name}. Please try again or contact support.`
+          `Unable to verify stock for ${item.title}. Please try again or contact support.`
         );
         return;
       }
     }
 
-    
     try {
       for (const item of cartItems) {
         const orderCondition = mapConditionToOrderSchema(item.condition);
@@ -325,24 +405,22 @@ export default function CartContent() {
             country: address.country,
             pinCode: address.postalCode,
           },
-          
+
           quantity: item.quantity || 1,
           amount: getEffectivePrice(item) * (item.quantity || 1) * 100,
           price: item.price,
-          
+
           condition: orderCondition,
-          bookId: item._id,
+          bookId: item.bookId,
         };
 
-        
         const resp = await fetch(`${API_BASE_URL}/order`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(orderData),
-          
+
           credentials: "include",
         }).then((r) => r.json());
-       
 
         const options = {
           key: resp.keyId,
@@ -355,7 +433,7 @@ export default function CartContent() {
             contact: resp.phone,
             name: resp.username,
           },
-          callback_url: resp.callback_url, 
+          callback_url: resp.callback_url,
           handler: async (response: RazorpayResponse) => {
             try {
               const verifyRes = await fetch(`${API_BASE_URL}/verify`, {
@@ -365,7 +443,7 @@ export default function CartContent() {
               }).then((r) => r.json());
 
               if (verifyRes.ok) {
-                localStorage.removeItem("cart");
+                // localStorage.removeItem("cart");
                 setCartItems([]);
                 setShowPaymentForm(false);
                 router.push("/profile?tab=orders");
@@ -374,40 +452,40 @@ export default function CartContent() {
                   "Payment verification failed. Please contact support."
                 );
               }
-            } catch  {
-              
+            } catch {
               setError("Payment verification failed. Please try again.");
             }
           },
 
-          
           modal: {
             ondismiss: () => {
-              
               setError("Payment cancelled. You can try again.");
             },
           },
         };
 
-        
         const rzp = new window.Razorpay(options);
 
-        
         rzp.on("payment.failed", (response: RazorpayResponseError) => {
-          
           setError(
             `Payment failed: ${response.error.description} (${response.error.reason})`
           );
         });
 
-        
         rzp.open();
-      
       }
-    } catch  {
-      
-    }
+    } catch {}
   };
+
+  if (checking || !isLoggedIn) {
+    return (
+      <>
+        <div className="fixed w-screen h-screen z-100 flex justify-center items-center">
+          Loading...
+        </div>
+      </>
+    );
+  }
 
   return (
     <main className="max-w-6xl mx-auto py-10 px-4">
@@ -431,21 +509,24 @@ export default function CartContent() {
           <div className="space-y-6">
             {cartItems.map((item) => (
               <div
-                key={item._id}
+                key={item.bookId}
                 className="flex flex-wrap gap-4 items-center justify-between bg-white p-4 rounded-lg shadow-md"
               >
                 <Image
                   width={100}
                   height={130}
                   src={item.imageUrl || defaultImageUrl}
-                  alt={item.name}
+                  alt={item.title || "Book Image"}
                   className="w-24 h-32 object-cover rounded-md"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = defaultImageUrl;
                   }}
                 />
                 <div className="flex-1 ml-4">
-                  <h3 className="text-lg font-semibold">{item.name}</h3>
+                  <div className="flex gap-2">
+                  <h3 className="text-lg font-semibold">{item.title}</h3>
+                  <h3 className="text-lg text-gray-500">({item.categoryName?.split("/").reverse()[0]})</h3>
+                  </div>
                   <div className="flex  flex-wrap gap-4 items-center space-x-2">
                     {item.discountedPrice > 0 &&
                     item.discountedPrice < item.price ? (
@@ -475,16 +556,30 @@ export default function CartContent() {
                     Condition: {item.condition}
                   </p>
                   <p className="text-sm text-gray-600">
-                    Stock:{" "}
-                    {item.condition === "New" ? quantityNew : quantityOld}
+                    Stock: {item.stock}
+                    {/* {item.condition === "New" ? quantityNew : quantityOld} */}
                   </p>
                 </div>
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-2">
                     <button
-                      onClick={() =>
-                        updateQuantity(item._id, (item.quantity || 1) - 1)
-                      }
+                      onClick={() => {
+                        const newQty = Math.max(1, (item.quantity || 1) - 1);
+                        // optimistic UI update
+                        // setCartItems((prev) =>
+                        //   prev.map((i) =>
+                        //     i.bookId === item.bookId
+                        //       ? { ...i, quantity: newQty }
+                        //       : i
+                        //   )
+                        // );
+                        // debounced API call
+                        debouncedUpdateQuantity(
+                          item.bookId,
+                          newQty,
+                          item.condition
+                        );
+                      }}
                       className="w-8 h-8 bg-gray-200 text-black rounded-full hover:bg-gray-300"
                     >
                       -
@@ -493,16 +588,30 @@ export default function CartContent() {
                       {item.quantity || 1}
                     </span>
                     <button
-                      onClick={() =>
-                        updateQuantity(item._id, (item.quantity || 1) + 1)
-                      }
+                      onClick={() => {
+                        const newQty = (item.quantity || 1) + 1;
+                        // optimistic UI update
+                        // setCartItems((prev) =>
+                        //   prev.map((i) =>
+                        //     i.bookId === item.bookId
+                        //       ? { ...i, quantity: newQty }
+                        //       : i
+                        //   )
+                        // );
+                        // debounced API call
+                        debouncedUpdateQuantity(
+                          item.bookId,
+                          newQty,
+                          item.condition
+                        );
+                      }}
                       className="w-8 h-8 bg-gray-200 text-black rounded-full hover:bg-gray-300"
                     >
                       +
                     </button>
                   </div>
                   <button
-                    onClick={() => removeItem(item._id)}
+                    onClick={() => removeItem(item.bookId, item.condition)}
                     className="text-red-500 hover:underline"
                   >
                     Remove
@@ -617,7 +726,6 @@ export default function CartContent() {
                 onSubmit={handleSubmit(onPaymentSubmit)}
                 className="mt-4 space-y-4"
               >
-               
                 <button
                   type="submit"
                   className="w-full bg-teal-600 text-white rounded-full py-2 hover:bg-teal-700"

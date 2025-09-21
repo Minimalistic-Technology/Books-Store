@@ -95,35 +95,34 @@ export default function CategoryPage() {
     const fetchCategoryAndBooks = async () => {
       try {
         setLoading(true);
-        const categoryArrayFound = categoriesAtomState?.find(
+        const categoryObjectFound = categoriesAtomState?.find(
           (category) => category.name === path
         );
-        if (categoryArrayFound) setCategory(categoryArrayFound);
-        // // if (!(categoriesAtomState?.length && categoriesAtomState.length > 0)) {
-        //   // Fetch category
-        //   const categoryResponse = await fetch(
-        //     `${API_BASE_URL}/book-categories/${encodeURIComponent(path)}`,
-        //     {
-        //       cache: "no-store",
-        //     }
-        //   );
-        //   if (!categoryResponse.ok) {
-        //     if (categoryResponse.status === 404) {
-        //       throw new Error(`Category '${path}' not found`);
-        //     }
-        //     throw new Error(
-        //       `Failed to fetch category: ${categoryResponse.statusText}`
-        //     );
-        //   }
-        //   const categoryData: Category = await categoryResponse.json();
+        if (categoryObjectFound) setCategory(categoryObjectFound);
+        if (!(categoriesAtomState?.length && categoriesAtomState.length > 0)) {
+          // Fetch category
+          const categoryResponse = await fetch(
+            `${API_BASE_URL}/book-categories/${encodeURIComponent(path)}`,
+            {
+              cache: "no-store",
+            }
+          );
+          if (!categoryResponse.ok) {
+            if (categoryResponse.status === 404) {
+              throw new Error(`Category '${path}' not found`);
+            }
+            throw new Error(
+              `Failed to fetch category: ${categoryResponse.statusText}`
+            );
+          }
+          const categoryData: Category = await categoryResponse.json();
+          console.log(categoryData)
 
-        //   if (!categoryData.name || typeof categoryData.name !== "string") {
-        //     throw new Error("Invalid category name");
-        //   }
-        //   setCategory(categoryData);
-        // }else{
-        //   setCategory(categoriesAtomState)
-        // }
+          if (!categoryData.name || typeof categoryData.name !== "string") {
+            throw new Error("Invalid category name");
+          }
+          setCategory(categoryData);
+        }
 
         // Fetch all books under the root category path
         const booksResponse = await fetch(

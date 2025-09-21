@@ -99,7 +99,7 @@ const Page = () => {
   return (
     <div className="flex flex-col min-h-screen w-full bg-white  text-gray-900">
       {successMessage ? (
-        <div>
+        <div className="text-center py-10">
           <h1>{successMessage}</h1>
           <h1 className="text-teal-500">
             Switch to <Link href={"/login"}>Login</Link>

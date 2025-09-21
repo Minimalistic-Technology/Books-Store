@@ -3,11 +3,12 @@ import { API_BASE_URL } from "@/utils/api";
 import axios from "axios";
 import { useAtom } from "jotai";
 import React, { useState } from "react";
-import { roleAtom, tokenAtom } from "../store/auth";
+import { roleAtom } from "../store/auth";
 import { useRouter } from "next/navigation";
-
+import { useRedirectIfAdmin } from "../hooks/useCheckIsLoggedInAdmin";
 
 const AdminLogin = () => {
+  const { checking } = useRedirectIfAdmin();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -15,9 +16,9 @@ const AdminLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [, setToken] = useAtom(tokenAtom);
+  // const [, setToken] = useAtom(tokenAtom);
   const [, setRole] = useAtom(roleAtom);
-  const router = useRouter()
+  const router = useRouter();
   // const setAuth = useSetRecoilState(authAtom);
 
   const handleInputChange = (
@@ -32,45 +33,44 @@ const AdminLogin = () => {
   };
 
   const handleSubmit = async () => {
-    try{
+    try {
+      if (!formData.email || !formData.password) {
+        setError("Please fill in all fields");
+        return;
+      }
 
-    
-    if (!formData.email || !formData.password) {
-      setError("Please fill in all fields");
-      return;
-    }
+      setLoading(true);
+      setError("");
 
-    setLoading(true);
-    setError("");
+      const response = await axios.post(
+        `${API_BASE_URL}/auth/admin/login`,
+        {
+          email: formData.email,
+          password: formData.password,
+        },
+        { withCredentials: true }
+      );
 
-    // Simulate API call
+      if (response) {
+        const {  role } = response.data;
 
-    const response = await axios.post(`${API_BASE_URL}/auth/admin/login`, {
-      email: formData.email,
-      password: formData.password,
-    },{withCredentials:true});
-    
-    if (response) {
-      const { token, role } = response.data;
+        // setToken(token);
+        setRole(role);
 
-      setToken(token);
-      setRole(role);
+        // optionally persist to localStorage
+      //   localStorage.setItem("token", token);
+      //   localStorage.setItem("role", role);
+      }
+      router.push("/admin/dashboard");
 
-      // optionally persist to localStorage
-      localStorage.setItem("token", token);
-      localStorage.setItem("role", role);
-    }
-    router.push("/admin/dashboard");
-
-    //   setAuth({
-    //   token: response.data.token,
-    //   role: response.data.role,
-    // });
-    setLoading(false);}
-    catch(err){
-      
-      setError((err as Error).message)
-      setLoading(false)
+      //   setAuth({
+      //   token: response.data.token,
+      //   role: response.data.role,
+      // });
+      setLoading(false);
+    } catch (err) {
+      setError((err as Error).message);
+      setLoading(false);
     }
   };
 
@@ -80,6 +80,12 @@ const AdminLogin = () => {
     }
   };
 
+  if (checking)
+    return (
+      <div className="w-screen h-screen flex justify-center items-center bg-white text-black">
+        Loading...
+      </div>
+    );
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">

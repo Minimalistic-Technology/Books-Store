@@ -86,6 +86,7 @@ export default function SiteSettings() {
           apiKey: updatedSettings.apiKey,
           maintenanceMode: updatedSettings.maintenanceMode,
         }),
+        credentials:"include"
       });
 
       if (!response.ok) {
